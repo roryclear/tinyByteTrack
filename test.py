@@ -356,29 +356,29 @@ def get_weights_location(yolo_variant: str) -> Path:
   return f32_weights
 
 def draw_predictions_on_frame(frame, predictions, class_labels, color_dict):
-    font = cv2.FONT_HERSHEY_SIMPLEX
+  font = cv2.FONT_HERSHEY_SIMPLEX
 
-    def is_bright_color(color):
-        r, g, b = color
-        brightness = (r * 299 + g * 587 + b * 114) / 1000
-        return brightness > 127
+  def is_bright_color(color):
+    r, g, b = color
+    brightness = (r * 299 + g * 587 + b * 114) / 1000
+    return brightness > 127
 
-    h, w, _ = frame.shape
-    box_thickness = int((h + w) / 400)
-    font_scale = (h + w) / 2500
+  h, w, _ = frame.shape
+  box_thickness = int((h + w) / 400)
+  font_scale = (h + w) / 2500
 
-    for pred in predictions:
-        x1, y1, x2, y2, conf, class_id = pred
-        if conf == 0: continue
-        x1, y1, x2, y2, class_id = map(int, (x1, y1, x2, y2, class_id))
-        color = color_dict[class_labels[class_id]]
-        label = f"{class_labels[class_id]} {conf:.2f}"
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, box_thickness)
-        text_size, _ = cv2.getTextSize(label, font, font_scale, 1)
-        label_y, bg_y = (y1 - 4, y1 - text_size[1] - 4) if y1 - text_size[1] - 4 > 0 else (y1 + text_size[1], y1)
-        cv2.rectangle(frame, (x1, bg_y), (x1 + text_size[0], bg_y + text_size[1]), color, -1)
-        font_color = (0, 0, 0) if is_bright_color(color) else (255, 255, 255)
-        cv2.putText(frame, label, (x1, label_y), font, font_scale, font_color, 1, cv2.LINE_AA)
+  for pred in predictions:
+    x1, y1, x2, y2, conf, class_id = pred
+    if conf == 0: continue
+    x1, y1, x2, y2, class_id = map(int, (x1, y1, x2, y2, class_id))
+    color = color_dict[class_labels[class_id]]
+    label = f"{class_labels[class_id]} {int(conf)}"
+    cv2.rectangle(frame, (x1, y1), (x2, y2), color, box_thickness)
+    text_size, _ = cv2.getTextSize(label, font, font_scale, 1)
+    label_y, bg_y = (y1 - 4, y1 - text_size[1] - 4) if y1 - text_size[1] - 4 > 0 else (y1 + text_size[1], y1)
+    cv2.rectangle(frame, (x1, bg_y), (x1 + text_size[0], bg_y + text_size[1]), color, -1)
+    font_color = (0, 0, 0) if is_bright_color(color) else (255, 255, 255)
+    cv2.putText(frame, label, (x1, label_y), font, font_scale, font_color, 1, cv2.LINE_AA)
 
 
 from yolox.tracker.byte_tracker import BYTETracker
@@ -401,97 +401,71 @@ def do_inf(image):
 from urllib.request import urlopen, urlretrieve
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Error: Video URL or path not provided.")
-        sys.exit(1)
+  if len(sys.argv) < 2:
+    print("Error: Video URL or path not provided.")
+    sys.exit(1)
 
-    video_path = sys.argv[1]
-    yolo_variant = sys.argv[2] if len(sys.argv) >= 3 else (print("No variant given, so choosing 'n' as default.") or 'n')
-    print(f'Running inference for YOLOv8 variant: {yolo_variant}')
+  video_path = sys.argv[1]
+  yolo_variant = sys.argv[2] if len(sys.argv) >= 3 else (print("No variant given, so choosing 'n' as default.") or 'n')
+  print(f'Running inference for YOLOv8 variant: {yolo_variant}')
 
-    output_folder_path = Path('./outputs_yolov8')
-    output_folder_path.mkdir(parents=True, exist_ok=True)
+  output_folder_path = Path('./outputs_yolov8')
+  output_folder_path.mkdir(parents=True, exist_ok=True)
 
-    # Download and open the video
-    local_video_path = fetch(video_path).as_posix()
-    cap = cv2.VideoCapture(local_video_path)
+  # Download and open the video
+  local_video_path = fetch(video_path).as_posix()
+  cap = cv2.VideoCapture(local_video_path)
 
-    if not cap.isOpened():
-        print("Error: Could not open video.")
-        sys.exit(1)
+  if not cap.isOpened():
+    print("Error: Could not open video.")
+    sys.exit(1)
 
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+  fps = int(cap.get(cv2.CAP_PROP_FPS))
+  width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+  height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    out_path = (output_folder_path / f"{Path(local_video_path).stem}_output.mp4").as_posix()
-    out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+  out_path = (output_folder_path / f"{Path(local_video_path).stem}_output.mp4").as_posix()
+  out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-    # Load YOLOv8 model
-    depth, width_mult, ratio = get_variant_multiples(yolo_variant)
-    yolo_infer = YOLOv8(w=width_mult, r=ratio, d=depth, num_classes=80)
-    state_dict = safe_load(get_weights_location(yolo_variant))
-    load_state_dict(yolo_infer, state_dict)
+  # Load YOLOv8 model
+  depth, width_mult, ratio = get_variant_multiples(yolo_variant)
+  yolo_infer = YOLOv8(w=width_mult, r=ratio, d=depth, num_classes=80)
+  state_dict = safe_load(get_weights_location(yolo_variant))
+  load_state_dict(yolo_infer, state_dict)
 
-    class_labels = fetch('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names').read_text().split("\n")
-    color_dict = {label: tuple((((i+1) * 50) % 256, ((i+1) * 100) % 256, ((i+1) * 150) % 256)) for i, label in enumerate(class_labels)}
+  class_labels = fetch('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names').read_text().split("\n")
+  color_dict = {label: tuple((((i+1) * 50) % 256, ((i+1) * 100) % 256, ((i+1) * 150) % 256)) for i, label in enumerate(class_labels)}
+  
+  frame_count = 0
+  mx = 0
+  while True:
+    ret, frame = cap.read()
+    if not ret:
+      break
+    frame_count += 1
+
+    pre_processed = preprocess(frame)
+    predictions = do_inf(pre_processed).numpy()
+    predictions = predictions[predictions[:, -1] == 0] #people only exp
+    pred_track = predictions[:, :-1]
     
-    frame_count = 0
-    mx = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frame_count += 1
+    #print("rory predictions =",predictions)
+    online_targets = tracker.update(torch.tensor(pred_track), [1280,1280], [1280,1280])
+    pred_track = np.array([np.append(p.tlbr, [p.track_id,0.0]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
+    for p in pred_track: mx = max(mx,p[-2])
+    print(mx)
+    pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)
+    predictions = scale_boxes(pre_processed.shape[2:], predictions, frame.shape)
 
-        pre_processed = preprocess(frame)
-        predictions = do_inf(pre_processed).numpy()
-        predictions = predictions[predictions[:, -1] == 0] #people only exp
-        pred_track = predictions[:, :-1]
-        
-        #print("rory predictions =",predictions)
-        online_targets = tracker.update(torch.tensor(pred_track), [1280,1280], [1280,1280])
-        pred_track = np.array([np.append(p.tlbr, [p.track_id,0.0]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
-        for p in pred_track: mx = max(mx,p[-2])
-        print(mx)
-        pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)
-        predictions = scale_boxes(pre_processed.shape[2:], predictions, frame.shape)
+    # Draw predictions
+    #draw_predictions_on_frame(frame, predictions, class_labels, color_dict)
+    draw_predictions_on_frame(frame, pred_track, class_labels, color_dict)
 
-        # Draw predictions
-        #draw_predictions_on_frame(frame, predictions, class_labels, color_dict)
-        draw_predictions_on_frame(frame, pred_track, class_labels, color_dict)
+    out_writer.write(frame)
 
-        out_writer.write(frame)
+    if frame_count % 10 == 0:
+      print(f"Processed frame {frame_count}")
 
-        if frame_count % 10 == 0:
-            print(f"Processed frame {frame_count}")
-
-    cap.release()
-    out_writer.release()
-    print(f"Saved processed video to {out_path}")
-
-# TODO for later:
-#  1. Fix SPPF minor difference due to maxpool
-#  2. AST exp overflow warning while on cpu
-#  3. Make NMS faster
-#  4. Add video inference and webcam support
-exit()
-
-images = [None,None]
-for image in images:
-   #dets = detector(image)
-    dets = torch.tensor([
-        [100, 200, 150, 250, 0.9],   # x1, y1, x2, y2, score, class
-        [300, 400, 350, 450, 0.85],
-        [50,  60,  80,  90,  0.75],
-        [120, 130, 170, 180, 0.92],
-        [200, 220, 260, 280, 0.88],
-    ])
-    online_targets = tracker.update(dets, [1280,1280], [1280,1280])
-print(online_targets)
-for t in online_targets:
-    tlwh = t.tlwh  # top-left x, y, width, height
-    track_id = t.track_id
-    print(f"ID {track_id}: {tlwh}")
-
-print("ffs")
+  cap.release()
+  out_writer.release()
+  print(f"Saved processed video to {out_path}")

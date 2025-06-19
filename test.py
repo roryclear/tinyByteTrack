@@ -447,9 +447,8 @@ if __name__ == '__main__':
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed).numpy()
     predictions = predictions[predictions[:, -1] == 0] #people only exp
-    pred_track = predictions[:, :-1]
+    pred_track = predictions
     
-    #print("rory predictions =",predictions)
     online_targets = tracker.update(torch.tensor(pred_track), [1280,1280], [1280,1280])
     pred_track = np.array([np.append(p.tlbr, [p.track_id,0.0]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
     for p in pred_track: mx = max(mx,p[-2])

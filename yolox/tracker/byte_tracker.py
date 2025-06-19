@@ -170,6 +170,7 @@ class BYTETracker(object):
         remain_inds = scores > self.args.track_thresh
         inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
+        inds_second = inds_low & inds_high
 
         classes = classes.numpy()
         scores = scores.numpy()
@@ -178,8 +179,8 @@ class BYTETracker(object):
         remain_inds = remain_inds.numpy()
         inds_low = inds_low.numpy()
         inds_high = inds_high.numpy()
-
-        inds_second = np.logical_and(inds_low, inds_high)
+        inds_second = inds_second.numpy()
+        
         dets_second = bboxes[inds_second]
         dets = bboxes[remain_inds]
         scores_keep = scores[remain_inds]

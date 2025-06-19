@@ -162,18 +162,22 @@ class BYTETracker(object):
         classes = output_results[:, 5]
         scores = output_results[:, 4]
         bboxes = output_results[:, :4]
+        
+        img_h, img_w = img_info[0], img_info[1]
+        scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
+        bboxes = bboxes / scale
+
+        remain_inds = scores > self.args.track_thresh
+        inds_low = scores > 0.1
+        inds_high = scores < self.args.track_thresh
 
         classes = classes.numpy()
         scores = scores.numpy()
         bboxes = bboxes.numpy()
 
-        img_h, img_w = img_info[0], img_info[1]
-        scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
-        bboxes /= scale
-
-        remain_inds = scores > self.args.track_thresh
-        inds_low = scores > 0.1
-        inds_high = scores < self.args.track_thresh
+        remain_inds = remain_inds.numpy()
+        inds_low = inds_low.numpy()
+        inds_high = inds_high.numpy()
 
         inds_second = np.logical_and(inds_low, inds_high)
         dets_second = bboxes[inds_second]

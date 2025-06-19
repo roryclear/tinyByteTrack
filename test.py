@@ -446,11 +446,11 @@ if __name__ == '__main__':
 
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed).numpy()
-    predictions = predictions[predictions[:, -1] == 0] #people only exp
+    #predictions = predictions[predictions[:, -1] == 0] #people only exp
     pred_track = predictions
     
     online_targets = tracker.update(torch.tensor(pred_track), [1280,1280], [1280,1280])
-    pred_track = np.array([np.append(p.tlbr, [p.track_id,0.0]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
+    pred_track = np.array([np.append(p.tlbr, [p.track_id,p.class_id]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
     for p in pred_track: mx = max(mx,p[-2])
     print(mx)
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)

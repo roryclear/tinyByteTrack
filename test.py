@@ -11,7 +11,6 @@ import time, sys
 from tinygrad.helpers import fetch
 from tinygrad.nn.state import safe_load, load_state_dict
 import json
-import torch
 from tinygrad import TinyJit
 
 #Model architecture from https://github.com/ultralytics/ultralytics/issues/189
@@ -382,7 +381,6 @@ def draw_predictions_on_frame(frame, predictions, class_labels, color_dict):
 
 
 from yolox.tracker.byte_tracker import BYTETracker
-import torch
 
 class Args:
     def __init__(self):
@@ -437,22 +435,26 @@ if __name__ == '__main__':
   color_dict = {label: tuple((((i+1) * 50) % 256, ((i+1) * 100) % 256, ((i+1) * 150) % 256)) for i, label in enumerate(class_labels)}
   
   frame_count = 0
-  mx = 0
+  people = set()
   while True:
     ret, frame = cap.read()
     if not ret:
       break
     frame_count += 1
-
+    
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed).numpy()
     #predictions = predictions[predictions[:, -1] == 0] #people only exp
     pred_track = predictions
     
-    online_targets = tracker.update(torch.tensor(pred_track), [1280,1280], [1280,1280])
+    online_targets = tracker.update(pred_track, [1280,1280], [1280,1280])
     pred_track = np.array([np.append(p.tlbr, [p.track_id,p.class_id]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
-    for p in pred_track: mx = max(mx,p[-2])
-    print(mx)
+    
+    # sanity check print people
+    for p in online_targets:
+      if p.class_id == 0: 
+        people.add(p.track_id)
+    
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)
     predictions = scale_boxes(pre_processed.shape[2:], predictions, frame.shape)
 
@@ -468,3 +470,5 @@ if __name__ == '__main__':
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")
+
+  print(len(people))

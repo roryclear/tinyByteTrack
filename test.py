@@ -443,19 +443,17 @@ if __name__ == '__main__':
     frame_count += 1
     
     pre_processed = preprocess(frame)
-    predictions = do_inf(pre_processed).numpy()
-    #predictions = predictions[predictions[:, -1] == 0] #people only exp
-    pred_track = predictions
-    
-    online_targets = tracker.update(pred_track, [1280,1280], [1280,1280])
+    predictions = do_inf(pre_processed)
+    online_targets = tracker.update(predictions, [1280,1280], [1280,1280])
     pred_track = np.array([np.append(p.tlbr, [p.track_id,p.class_id]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
-    
+
     # sanity check print people
     for p in online_targets:
       if p.class_id == 0: 
         people.add(p.track_id)
     
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)
+    predictions = predictions.numpy()
     predictions = scale_boxes(pre_processed.shape[2:], predictions, frame.shape)
 
     # Draw predictions

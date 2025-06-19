@@ -3,6 +3,7 @@ import numpy as np
 from .kalman_filter import KalmanFilter
 from yolox.tracker import matching
 from .basetrack import BaseTrack, TrackState
+from tinygrad import Tensor
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
@@ -161,6 +162,10 @@ class BYTETracker(object):
         classes = output_results[:, 5]
         scores = output_results[:, 4]
         bboxes = output_results[:, :4]
+
+        classes = classes.numpy()
+        scores = scores.numpy()
+        bboxes = bboxes.numpy()
 
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))

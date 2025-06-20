@@ -171,34 +171,20 @@ class BYTETracker(object):
         inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
         inds_second = inds_low & inds_high
-        
+
         dets = bboxes * remain_inds.unsqueeze(1)
         dets_second = bboxes * inds_second.unsqueeze(1)
         scores_keep = scores * remain_inds
         scores_second = scores * inds_second
-        classes_keep = classes + 1 #todo hack because zero is a class
-        classes_keep = classes_keep * remain_inds
-        classes_second = classes + 1
-        classes_second = classes_second * inds_second
 
         dets = dets.numpy()
-        dets = dets[~np.all(dets == 0, axis=1)]
         dets_second = dets_second.numpy()
-        dets_second = dets_second[~np.all(dets_second == 0, axis=1)]
         scores_keep = scores_keep.numpy()
-        scores_keep = scores_keep[scores_keep != 0]
         scores_second = scores_second.numpy()
-        scores_second = scores_second[scores_second != 0]
-        classes_keep = classes_keep.numpy()
-        classes_keep = classes_keep[classes_keep != 0]
-        classes_keep -= 1
-        classes_second = classes_second.numpy()
-        classes_second = classes_second[classes_second != 0]
-        classes_second -= 1
-
-
+        classes = classes.numpy()
+        
         # was a useless if here?
-        detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets, scores_keep, classes_keep)]
+        detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets, scores_keep, classes)]
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -229,7 +215,7 @@ class BYTETracker(object):
         # association the untrack to the low score detections
 
         # was a useless if here?
-        detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets_second, scores_second, classes_second)]
+        detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets_second, scores_second, classes)]
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         dists = matching.iou_distance(r_tracked_stracks, detections_second)
         matches, u_track, _ = matching.linear_assignment(dists, thresh=0.5)

@@ -7,9 +7,10 @@ from tinygrad import Tensor
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
-    def __init__(self, tlwh, score, class_id):
+    def __init__(self,t,l,w,h,score,class_id):
 
         # wait activate
+        tlwh = [t,l,w,h]
         self._tlwh = np.asarray(tlwh, dtype=np.float)
         self.kalman_filter = None
         self.mean, self.covariance = None, None
@@ -185,8 +186,12 @@ class BYTETracker(object):
         scores_keep = scores_keep.numpy()
         scores_second = scores_second.numpy()
         classes = classes.numpy()
-        
-        detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
+        # todo this is dumb?, it's a [(300,4),(300),(300)] thing, just use an np (300,6) before trying tinygrad
+        #detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
+        detections = [
+            STrack(t, l, w, h, s, c)
+            for (t, l, w, h), s, c in zip(dets, scores_keep, classes)
+        ]
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -215,7 +220,12 @@ class BYTETracker(object):
 
         ''' Step 3: Second association, with low score detection boxes'''
         # association the untrack to the low score detections
-        detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
+        #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
+        detections_second = [
+            STrack(t, l, w, h, s, c)
+            for (t, l, w, h), s, c in zip(dets_second, scores_second, classes)
+        ]
+
 
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         dists = matching.iou_distance(r_tracked_stracks, detections_second)

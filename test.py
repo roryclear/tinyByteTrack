@@ -407,7 +407,7 @@ if __name__ == '__main__':
   yolo_variant = sys.argv[2] if len(sys.argv) >= 3 else (print("No variant given, so choosing 'n' as default.") or 'n')
   print(f'Running inference for YOLOv8 variant: {yolo_variant}')
 
-  output_folder_path = Path('./outputs_yolov8')
+  output_folder_path = Path('./video_outputs')
   output_folder_path.mkdir(parents=True, exist_ok=True)
 
   # Download and open the video

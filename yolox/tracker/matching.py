@@ -78,13 +78,8 @@ def iou_distance(atracks, btracks):
 
     :rtype cost_matrix np.ndarray
     """
-
-    if (len(atracks)>0 and isinstance(atracks[0], np.ndarray)) or (len(btracks) > 0 and isinstance(btracks[0], np.ndarray)):
-        atlbrs = atracks
-        btlbrs = btracks
-    else:
-        atlbrs = [track.tlbr for track in atracks]
-        btlbrs = [track.tlbr for track in btracks]
+    atlbrs = [track.tlbr for track in atracks]
+    btlbrs = [track.tlbr for track in btracks]
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
 

@@ -175,22 +175,18 @@ class BYTETracker(object):
 
         dets = bboxes * remain_inds.unsqueeze(1)
         dets_second = bboxes * inds_second.unsqueeze(1)
-        scores_keep = scores * remain_inds
-        scores_second = scores * inds_second
 
         dets[:, 2:] -= dets[:, :2] #tlbr to tlwh
         dets_second[:, 2:] -= dets_second[:, :2]
-
-        dets = dets.numpy()
-        dets_second = dets_second.numpy()
-        scores_keep = scores_keep.numpy()
-        scores_second = scores_second.numpy()
-        classes = classes.numpy()
+        dets_score_classes = dets.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
+        dets_score_classes = dets_score_classes.numpy()
+        dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
+        dets_score_classes_second = dets_score_classes_second.numpy()
         # todo this is dumb?, it's a [(300,4),(300),(300)] thing, just use an np (300,6) before trying tinygrad
         #detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
         detections = [
             STrack(t, l, w, h, s, c)
-            for (t, l, w, h), s, c in zip(dets, scores_keep, classes)
+            for t, l, w, h, s, c in dets_score_classes
         ]
 
         unconfirmed = []
@@ -223,7 +219,7 @@ class BYTETracker(object):
         #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
         detections_second = [
             STrack(t, l, w, h, s, c)
-            for (t, l, w, h), s, c in zip(dets_second, scores_second, classes)
+            for t, l, w, h, s, c in dets_score_classes_second
         ]
 
 

@@ -183,8 +183,8 @@ class BYTETracker(object):
         scores_second = scores_second.numpy()
         classes = classes.numpy()
         
-        # was a useless if here?
-        detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets, scores_keep, classes)]
+        dets_tlwh = [STrack.tlbr_to_tlwh(tlbr) for tlbr in dets]
+        detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_tlwh, scores_keep, classes)]
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -214,8 +214,9 @@ class BYTETracker(object):
         ''' Step 3: Second association, with low score detection boxes'''
         # association the untrack to the low score detections
 
-        # was a useless if here?
-        detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets_second, scores_second, classes)]
+        dets_second_tlwh = [STrack.tlbr_to_tlwh(tlbr) for tlbr in dets_second]
+        detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second_tlwh, scores_second, classes)]
+
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         dists = matching.iou_distance(r_tracked_stracks, detections_second)
         matches, u_track, _ = matching.linear_assignment(dists, thresh=0.5)

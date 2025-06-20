@@ -123,8 +123,8 @@ class STrack(BaseTrack):
     @staticmethod
     # @jit(nopython=True)
     def tlbr_to_tlwh(tlbr):
-        ret = np.asarray(tlbr).copy()
-        ret[2:] -= ret[:2]
+        ret = tlbr
+        ret[:, 2:] -= ret[:, :2]
         return ret
 
     @staticmethod
@@ -177,14 +177,16 @@ class BYTETracker(object):
         scores_keep = scores * remain_inds
         scores_second = scores * inds_second
 
+        dets[:, 2:] -= dets[:, :2] #tlbr to tlwh
+        dets_second[:, 2:] -= dets_second[:, :2]
+
         dets = dets.numpy()
         dets_second = dets_second.numpy()
         scores_keep = scores_keep.numpy()
         scores_second = scores_second.numpy()
         classes = classes.numpy()
         
-        dets_tlwh = [STrack.tlbr_to_tlwh(tlbr) for tlbr in dets]
-        detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_tlwh, scores_keep, classes)]
+        detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -213,9 +215,7 @@ class BYTETracker(object):
 
         ''' Step 3: Second association, with low score detection boxes'''
         # association the untrack to the low score detections
-
-        dets_second_tlwh = [STrack.tlbr_to_tlwh(tlbr) for tlbr in dets_second]
-        detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second_tlwh, scores_second, classes)]
+        detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
 
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         dists = matching.iou_distance(r_tracked_stracks, detections_second)

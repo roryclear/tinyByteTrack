@@ -171,22 +171,31 @@ class BYTETracker(object):
         inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
         inds_second = inds_low & inds_high
-
-        classes = classes.numpy()
-        scores = scores.numpy()
-        bboxes = bboxes.numpy()
-
-        remain_inds = remain_inds.numpy()
-        inds_low = inds_low.numpy()
-        inds_high = inds_high.numpy()
-        inds_second = inds_second.numpy()
         
-        dets_second = bboxes[inds_second]
-        dets = bboxes[remain_inds]
-        scores_keep = scores[remain_inds]
-        scores_second = scores[inds_second]
-        classes_keep = classes[remain_inds]
-        classes_second = classes[inds_second]
+        dets = bboxes * remain_inds.unsqueeze(1)
+        dets_second = bboxes * inds_second.unsqueeze(1)
+        scores_keep = scores * remain_inds
+        scores_second = scores * inds_second
+        classes_keep = classes + 1 #todo hack because zero is a class
+        classes_keep = classes_keep * remain_inds
+        classes_second = classes + 1
+        classes_second = classes_second * inds_second
+
+        dets = dets.numpy()
+        dets = dets[~np.all(dets == 0, axis=1)]
+        dets_second = dets_second.numpy()
+        dets_second = dets_second[~np.all(dets_second == 0, axis=1)]
+        scores_keep = scores_keep.numpy()
+        scores_keep = scores_keep[scores_keep != 0]
+        scores_second = scores_second.numpy()
+        scores_second = scores_second[scores_second != 0]
+        classes_keep = classes_keep.numpy()
+        classes_keep = classes_keep[classes_keep != 0]
+        classes_keep -= 1
+        classes_second = classes_second.numpy()
+        classes_second = classes_second[classes_second != 0]
+        classes_second -= 1
+
 
         # was a useless if here?
         detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, c) for (tlbr, s, c) in zip(dets, scores_keep, classes_keep)]
@@ -322,3 +331,4 @@ def remove_duplicate_stracks(stracksa, stracksb):
     resa = [t for i, t in enumerate(stracksa) if not i in dupa]
     resb = [t for i, t in enumerate(stracksb) if not i in dupb]
     return resa, resb
+

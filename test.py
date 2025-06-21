@@ -286,24 +286,20 @@ class BYTETracker(object):
             updated_tracks = vectorized_update(itracked_arr, idet_arr, unconfirmed, detections, self.frame_id)
             activated_starcks.extend(updated_tracks.tolist())
 
-        u_unconfirmed_np = np.array(u_unconfirmed)
-        tracks = np.array([unconfirmed[key] for key in u_unconfirmed_np])
+        u_unconfirmed_np = np.asarray(u_unconfirmed)
+        tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         if tracks.size > 0:
-            for track in tracks:
-                track.state = TrackState.Removed
-        removed_stracks.extend(tracks.tolist())
+            np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
+            removed_stracks.extend(tracks.tolist())
 
-        all_det_values = np.array([d.values for d in detections])  # shape [N, D]
-
-        # Vectorized processing
         u_detection = np.asarray(u_detection)
-        track_scores = all_det_values[u_detection, 4]  # Direct score access
+        track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
         valid_mask = track_scores >= self.det_thresh
         valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
 
         # Get tracks using proper list indexing
         valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
-        valid_values = all_det_values[valid_indices]  # Get corresponding values
+        valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
 
         # Batch activation
         for track, vals in zip(valid_tracks, valid_values):

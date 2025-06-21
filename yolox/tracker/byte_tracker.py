@@ -11,8 +11,6 @@ class STrack(BaseTrack):
 
         # wait activate
         self.values = values
-        tlwh = values[:4]
-        self._tlwh = np.asarray(tlwh, dtype=np.float)
         self.kalman_filter = None
         self.mean, self.covariance = None, None
         self.is_activated = False
@@ -41,7 +39,7 @@ class STrack(BaseTrack):
         """Start a new tracklet"""
         self.kalman_filter = kalman_filter
         self.track_id = self.next_id()
-        self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(self._tlwh))
+        self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(self.values[:4]))
 
         self.tracklet_len = 0
         self.state = TrackState.Tracked
@@ -74,7 +72,7 @@ class STrack(BaseTrack):
         self.frame_id = frame_id
         self.tracklet_len += 1
 
-        new_tlwh = new_track.tlwh
+        new_tlwh = new_track.values[:4]
         self.mean, self.covariance = self.kalman_filter.update(
             self.mean, self.covariance, self.tlwh_to_xyah(new_tlwh))
         self.state = TrackState.Tracked
@@ -89,7 +87,7 @@ class STrack(BaseTrack):
                 width, height)`.
         """
         if self.mean is None:
-            return self._tlwh.copy()
+            return self.values[:4].copy()
         ret = self.mean[:4].copy()
         ret[2] *= ret[3]
         ret[:2] -= ret[2:] / 2

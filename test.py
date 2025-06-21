@@ -49,21 +49,21 @@ class STrack():
         self.covariance = None
         self.is_activated = False
 
-def tlbr(x):
+def tlbr_np(values,mean):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
     `(top left, bottom right)`.
     """
-    ret = tlwh(x).copy()
+    ret = tlwh_np(values,mean).copy()
     ret[2:] += ret[:2]
     return ret
 
-def tlwh(x):
+def tlwh_np(values,mean):
     """Get current position in bounding box format `(top left x, top left y,
             width, height)`.
     """
-    if x.mean is None:
-        return x.values[:4].copy()
-    ret = x.mean[:4].copy()
+    if mean is None:
+        return values[:4].copy()
+    ret = mean[:4].copy()
     ret[2] *= ret[3]
     ret[:2] -= ret[2:] / 2
     return ret
@@ -93,7 +93,7 @@ def activate(strack, kalman_filter, frame_id):
 
 def re_activate(strack, new_track, frame_id, new_id=False):
     strack.mean, strack.covariance = strack.kalman_filter.update(
-        strack.mean, strack.covariance, tlwh_to_xyah(tlwh(new_track))
+        strack.mean, strack.covariance, tlwh_to_xyah(tlwh_np(new_track.values, new_track.mean))
     )
     strack.tracklet_len = 0
     strack.state = TrackState.Tracked
@@ -375,8 +375,8 @@ def iou_distance(atracks, btracks):
 
     :rtype cost_matrix np.ndarray
     """
-    atlbrs = [tlbr(track) for track in atracks]
-    btlbrs = [tlbr(track) for track in btracks]
+    atlbrs = [tlbr_np(track.values,track.mean) for track in atracks]
+    btlbrs = [tlbr_np(track.values,track.mean) for track in btracks]
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
 
@@ -799,7 +799,7 @@ if __name__ == '__main__':
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed)
     online_targets = tracker.update(predictions, [1280,1280], [1280,1280])
-    pred_track = np.array([np.append(tlbr(p), [p.track_id,p.values[5]]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
+    pred_track = np.array([np.append(tlbr_np(p.values,p.mean), [p.track_id,p.values[5]]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
 
     # sanity check print people
     for p in online_targets:

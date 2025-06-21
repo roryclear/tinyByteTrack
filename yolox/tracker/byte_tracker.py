@@ -12,7 +12,6 @@ class TrackState(object):
     Removed = 3
     Replaced = 4
 
-
 class STrack():
     _count = 0
     track_id = 0
@@ -38,15 +37,13 @@ class STrack():
         self.covariance = None
         self.is_activated = False
 
-    @property
-    # @jit(nopython=True)
-    def tlbr(self):
-        """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
-        `(top left, bottom right)`.
-        """
-        ret = tlwh(self).copy()
-        ret[2:] += ret[:2]
-        return ret
+def tlbr(x):
+    """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
+    `(top left, bottom right)`.
+    """
+    ret = tlwh(x).copy()
+    ret[2:] += ret[:2]
+    return ret
 
 def tlwh(x):
     """Get current position in bounding box format `(top left x, top left y,
@@ -94,17 +91,6 @@ def re_activate(strack, new_track, frame_id, new_id=False):
         strack.track_id = STrack._count = STrack._count + 1
     strack.values[4] = new_track.values[4]
 
-def multi_predict(stracks):
-    if len(stracks) > 0:
-        multi_mean = np.asarray([st.mean.copy() for st in stracks])
-        multi_covariance = np.asarray([st.covariance for st in stracks])
-        for i, st in enumerate(stracks):
-            if st.state != TrackState.Tracked:
-                multi_mean[i][7] = 0
-        multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
-        for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
-            stracks[i].mean = mean
-            stracks[i].covariance = cov
 
 def update(strack, new_track, frame_id):
     """
@@ -181,7 +167,17 @@ class BYTETracker(object):
 
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
         # Predict the current location with KF
-        multi_predict(strack_pool)
+        if len(strack_pool) > 0:
+            multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
+            multi_covariance = np.asarray([st.covariance for st in strack_pool])
+            for i, st in enumerate(strack_pool):
+                if st.state != TrackState.Tracked:
+                    multi_mean[i][7] = 0
+            multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
+            for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
+                strack_pool[i].mean = mean
+                strack_pool[i].covariance = cov
+        
         dists = matching.iou_distance(strack_pool, detections)
         dists = matching.fuse_score(dists, detections)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=self.args.match_thresh)

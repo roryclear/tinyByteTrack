@@ -242,10 +242,7 @@ class BYTETracker(object):
             temp_detections.append(detections[u_detection[i]])
         detections = temp_detections
 
-        atlbrs = [tlbr(track) for track in unconfirmed]
-        btlbrs = [tlbr(track) for track in detections]
-        _ious = ious(atlbrs, btlbrs)
-        dists = 1 - _ious
+        dists = iou_distance(unconfirmed, detections)
 
         if not self.args.mot20:
             dists = fuse_score(dists, detections)

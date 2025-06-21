@@ -13,13 +13,11 @@ class TrackState(object):
     Replaced = 4
 
 
-class BaseTrack(object):
+class STrack():
     _count = 0
-
     track_id = 0
     is_activated = False
     state = TrackState.New
-
     history = OrderedDict()
     features = []
     curr_feature = None
@@ -27,25 +25,23 @@ class BaseTrack(object):
     start_frame = 0
     frame_id = 0
     time_since_update = 0
-
+    
     # multi-camera
     location = (np.inf, np.inf)
 
-    @staticmethod
-    def next_id():
-        BaseTrack._count += 1
-        return BaseTrack._count
-
-class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
     def __init__(self,values):
-
         # wait activate
         self.values = values
         self.kalman_filter = None
         self.mean = None
         self.covariance = None
         self.is_activated = False
+
+    @staticmethod
+    def next_id():
+        STrack._count += 1
+        return STrack._count
 
     @property
     # @jit(nopython=True)

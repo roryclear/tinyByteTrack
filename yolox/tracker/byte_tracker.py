@@ -64,7 +64,7 @@ class STrack(BaseTrack):
         self.frame_id = frame_id
         if new_id:
             self.track_id = self.next_id()
-        self.score = new_track.score
+        self.values[4] = new_track.values[4]
 
     def update(self, new_track, frame_id):
         """
@@ -83,7 +83,7 @@ class STrack(BaseTrack):
         self.state = TrackState.Tracked
         self.is_activated = True
 
-        self.score = new_track.score
+        self.values[4] = new_track.values[4]
 
     @property
     # @jit(nopython=True)
@@ -260,7 +260,7 @@ class BYTETracker(object):
         """ Step 4: Init new stracks"""
         for inew in u_detection:
             track = detections[inew]
-            if track.score < self.det_thresh:
+            if track.values[4] < self.det_thresh:
                 continue
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)

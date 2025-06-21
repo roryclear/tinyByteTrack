@@ -448,25 +448,6 @@ def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
     return c_xy.cat(wh, dim=1)
   return x1y1.cat(x2y2, dim=1)
 
-def tlbr(x):
-    """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
-    `(top left, bottom right)`.
-    """
-    ret = tlwh(x).copy()
-    ret[2:] += ret[:2]
-    return ret
-
-def tlwh(x):
-    """Get current position in bounding box format `(top left x, top left y,
-            width, height)`.
-    """
-    if x.mean is None:
-        return x.values[:4].copy()
-    ret = x.mean[:4].copy()
-    ret[2] *= ret[3]
-    ret[:2] -= ret[2:] / 2
-    return ret
-
 def make_anchors(feats, strides, grid_cell_offset=0.5):
   anchor_points, stride_tensor = [], []
   assert feats is not None

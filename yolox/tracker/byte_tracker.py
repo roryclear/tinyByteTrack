@@ -4,6 +4,7 @@ from .kalman_filter import KalmanFilter
 from yolox.tracker import matching
 from tinygrad import Tensor
 from collections import OrderedDict
+from cython_bbox import bbox_overlaps as bbox_ious
 
 class TrackState(object):
     New = 0
@@ -219,7 +220,12 @@ class BYTETracker(object):
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         detections = [detections[i] for i in u_detection]
-        dists = matching.iou_distance(unconfirmed, detections)
+
+        atlbrs = [tlbr(track) for track in unconfirmed]
+        btlbrs = [tlbr(track) for track in detections]
+        _ious = ious(atlbrs, btlbrs)
+        dists = 1 - _ious
+
         if not self.args.mot20:
             dists = matching.fuse_score(dists, detections)
         matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
@@ -259,6 +265,25 @@ class BYTETracker(object):
 
         return output_stracks
 
+
+def ious(atlbrs, btlbrs):
+    """
+    Compute cost based on IoU
+    :type atlbrs: list[tlbr] | np.ndarray
+    :type atlbrs: list[tlbr] | np.ndarray
+
+    :rtype ious np.ndarray
+    """
+    ious = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float)
+    if ious.size == 0:
+        return ious
+
+    ious = bbox_ious(
+        np.ascontiguousarray(atlbrs, dtype=np.float),
+        np.ascontiguousarray(btlbrs, dtype=np.float)
+    )
+
+    return ious
 
 def joint_stracks(tlista, tlistb):
     exists = {}

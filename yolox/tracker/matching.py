@@ -69,7 +69,6 @@ def ious(atlbrs, btlbrs):
 
     return ious
 
-
 def tlbr(x):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
     `(top left, bottom right)`.

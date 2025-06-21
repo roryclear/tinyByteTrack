@@ -1,10 +1,10 @@
 import numpy as np
 
 from .kalman_filter import KalmanFilter
-from yolox.tracker import matching
 from tinygrad import Tensor
 from collections import OrderedDict
 from cython_bbox import bbox_overlaps as bbox_ious
+import lap
 
 class TrackState(object):
     New = 0
@@ -160,7 +160,8 @@ class BYTETracker(object):
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
-        for track in self.tracked_stracks:
+        for i in range(len(self.tracked_stracks)):
+            track = self.tracked_stracks[i]
             if not track.is_activated:
                 unconfirmed.append(track)
             else:
@@ -171,26 +172,28 @@ class BYTETracker(object):
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
             multi_covariance = np.asarray([st.covariance for st in strack_pool])
-            for i, st in enumerate(strack_pool):
+            for i in range(len(strack_pool)):
+                st = strack_pool[i]
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
-            for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
-                strack_pool[i].mean = mean
-                strack_pool[i].covariance = cov
+            for i in range(len(strack_pool)):
+                strack_pool[i].mean = multi_mean[i]
+                strack_pool[i].covariance = multi_covariance[i]
         
-        dists = matching.iou_distance(strack_pool, detections)
-        dists = matching.fuse_score(dists, detections)
-        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=self.args.match_thresh)
+        dists = iou_distance(strack_pool, detections)
+        dists = fuse_score(dists, detections)
+        matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        for itracked, idet in matches:
+        for i in range(len(matches)):
+            itracked, idet = matches[i]
             track = strack_pool[itracked]
             det = detections[idet]
             if track.state == TrackState.Tracked:
                 update(track, detections[idet], self.frame_id)
                 activated_starcks.append(track)
             else:
-                re_activate(track,det, self.frame_id, new_id=False)
+                re_activate(track, det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         ''' Step 3: Second association, with low score detection boxes'''
@@ -198,11 +201,15 @@ class BYTETracker(object):
         #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
         detections_second = [STrack(d) for d in dets_score_classes_second]
 
-
-        r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
-        dists = matching.iou_distance(r_tracked_stracks, detections_second)
-        matches, u_track, _ = matching.linear_assignment(dists, thresh=0.5)
-        for itracked, idet in matches:
+        r_tracked_stracks = []
+        for i in range(len(u_track)):
+            if strack_pool[u_track[i]].state == TrackState.Tracked:
+                r_tracked_stracks.append(strack_pool[u_track[i]])
+        
+        dists = iou_distance(r_tracked_stracks, detections_second)
+        matches, u_track, _ = linear_assignment(dists, thresh=0.5)
+        for i in range(len(matches)):
+            itracked, idet = matches[i]
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
             if track.state == TrackState.Tracked:
@@ -212,14 +219,17 @@ class BYTETracker(object):
                 re_activate(track, det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
-        for it in u_track:
-            track = r_tracked_stracks[it]
+        for i in range(len(u_track)):
+            track = r_tracked_stracks[u_track[i]]
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
-        detections = [detections[i] for i in u_detection]
+        temp_detections = []
+        for i in range(len(u_detection)):
+            temp_detections.append(detections[u_detection[i]])
+        detections = temp_detections
 
         atlbrs = [tlbr(track) for track in unconfirmed]
         btlbrs = [tlbr(track) for track in detections]
@@ -227,32 +237,40 @@ class BYTETracker(object):
         dists = 1 - _ious
 
         if not self.args.mot20:
-            dists = matching.fuse_score(dists, detections)
-        matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
-        for itracked, idet in matches:
+            dists = fuse_score(dists, detections)
+        matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
+        for i in range(len(matches)):
+            itracked, idet = matches[i]
             update(unconfirmed[itracked], detections[idet], self.frame_id)
             activated_starcks.append(unconfirmed[itracked])
-        for it in u_unconfirmed:
-            track = unconfirmed[it]
+        for i in range(len(u_unconfirmed)):
+            track = unconfirmed[u_unconfirmed[i]]
             track.state = TrackState.Removed
             removed_stracks.append(track)
 
         """ Step 4: Init new stracks"""
-        for inew in u_detection:
+        for i in range(len(u_detection)):
+            inew = u_detection[i]
             track = detections[inew]
             if track.values[4] < self.det_thresh:
                 continue
-            activate(track,self.kalman_filter, self.frame_id)
+            activate(track, self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
         """ Step 5: Update state"""
-        for track in self.lost_stracks:
+        for i in range(len(self.lost_stracks)):
+            track = self.lost_stracks[i]
             if self.frame_id - track.frame_id > self.max_time_lost:
                 track.state = TrackState.Removed
                 removed_stracks.append(track)
 
         # print('Ramained match {} s'.format(t4-t3))
 
-        self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
+        temp_tracked = []
+        for i in range(len(self.tracked_stracks)):
+            if self.tracked_stracks[i].state == TrackState.Tracked:
+                temp_tracked.append(self.tracked_stracks[i])
+        self.tracked_stracks = temp_tracked
+        
         self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
         self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
@@ -261,7 +279,10 @@ class BYTETracker(object):
         self.removed_stracks.extend(removed_stracks)
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
         # get scores of lost tracks
-        output_stracks = [track for track in self.tracked_stracks if track.is_activated]
+        output_stracks = []
+        for i in range(len(self.tracked_stracks)):
+            if self.tracked_stracks[i].is_activated:
+                output_stracks.append(self.tracked_stracks[i])
 
         return output_stracks
 
@@ -288,10 +309,12 @@ def ious(atlbrs, btlbrs):
 def joint_stracks(tlista, tlistb):
     exists = {}
     res = []
-    for t in tlista:
+    for i in range(len(tlista)):
+        t = tlista[i]
         exists[t.track_id] = 1
         res.append(t)
-    for t in tlistb:
+    for i in range(len(tlistb)):
+        t = tlistb[i]
         tid = t.track_id
         if not exists.get(tid, 0):
             exists[tid] = 1
@@ -301,9 +324,11 @@ def joint_stracks(tlista, tlistb):
 
 def sub_stracks(tlista, tlistb):
     stracks = {}
-    for t in tlista:
+    for i in range(len(tlista)):
+        t = tlista[i]
         stracks[t.track_id] = t
-    for t in tlistb:
+    for i in range(len(tlistb)):
+        t = tlistb[i]
         tid = t.track_id
         if stracks.get(tid, 0):
             del stracks[tid]
@@ -311,17 +336,63 @@ def sub_stracks(tlista, tlistb):
 
 
 def remove_duplicate_stracks(stracksa, stracksb):
-    pdist = matching.iou_distance(stracksa, stracksb)
+    pdist = iou_distance(stracksa, stracksb)
     pairs = np.where(pdist < 0.15)
     dupa, dupb = list(), list()
-    for p, q in zip(*pairs):
+    for i in range(len(pairs[0])):
+        p = pairs[0][i]
+        q = pairs[1][i]
         timep = stracksa[p].frame_id - stracksa[p].start_frame
         timeq = stracksb[q].frame_id - stracksb[q].start_frame
         if timep > timeq:
             dupb.append(q)
         else:
             dupa.append(p)
-    resa = [t for i, t in enumerate(stracksa) if not i in dupa]
-    resb = [t for i, t in enumerate(stracksb) if not i in dupb]
+    resa = []
+    for i in range(len(stracksa)):
+        if i not in dupa:
+            resa.append(stracksa[i])
+    resb = []
+    for i in range(len(stracksb)):
+        if i not in dupb:
+            resb.append(stracksb[i])
     return resa, resb
 
+
+def iou_distance(atracks, btracks):
+    """
+    Compute cost based on IoU
+    :type atracks: list[STrack]
+    :type btracks: list[STrack]
+
+    :rtype cost_matrix np.ndarray
+    """
+    atlbrs = [tlbr(track) for track in atracks]
+    btlbrs = [tlbr(track) for track in btracks]
+    _ious = ious(atlbrs, btlbrs)
+    cost_matrix = 1 - _ious
+
+    return cost_matrix
+
+def fuse_score(cost_matrix, detections):
+    if cost_matrix.size == 0:
+        return cost_matrix
+    iou_sim = 1 - cost_matrix
+    det_scores = np.array([det.values[4] for det in detections])
+    det_scores = np.expand_dims(det_scores, axis=0).repeat(cost_matrix.shape[0], axis=0)
+    fuse_sim = iou_sim * det_scores
+    fuse_cost = 1 - fuse_sim
+    return fuse_cost
+
+def linear_assignment(cost_matrix, thresh):
+    if cost_matrix.size == 0:
+        return np.empty((0, 2), dtype=int), tuple(range(cost_matrix.shape[0])), tuple(range(cost_matrix.shape[1]))
+    matches, unmatched_a, unmatched_b = [], [], []
+    cost, x, y = lap.lapjv(cost_matrix, extend_cost=True, cost_limit=thresh)
+    for ix, mx in enumerate(x):
+        if mx >= 0:
+            matches.append([ix, mx])
+    unmatched_a = np.where(x < 0)[0]
+    unmatched_b = np.where(y < 0)[0]
+    matches = np.asarray(matches)
+    return matches, unmatched_a, unmatched_b

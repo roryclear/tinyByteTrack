@@ -163,8 +163,6 @@ class BYTETracker(object):
         dets_score_classes = dets_score_classes.numpy()
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
-        # todo this is dumb?, it's a [(300,4),(300),(300)] thing, just use an np (300,6) before trying tinygrad
-        #detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
         detections = [STrack(d) for d in dets_score_classes]
 
         unconfirmed = []

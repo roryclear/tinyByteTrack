@@ -14,7 +14,6 @@ import json
 from tinygrad import TinyJit
 import lap
 from collections import OrderedDict
-from cython_bbox import bbox_overlaps as bbox_ious
 from yolox.tracker.kalman_filter import KalmanFilter
 
 class TrackState(object):
@@ -191,7 +190,7 @@ class BYTETracker(object):
                 strack_pool[i].covariance = multi_covariance[i]
         
         dists = iou_distance(strack_pool, detections)
-        dists = fuse_score(dists, detections)
+        dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
         for i in range(len(matches)):
@@ -236,14 +235,16 @@ class BYTETracker(object):
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         temp_detections = []
+        temp_values = []
         for i in range(len(u_detection)):
             temp_detections.append(detections[u_detection[i]])
+            temp_values.append(detections[u_detection[i]].values)
         detections = temp_detections
+        dets_score_classes_second = temp_values
 
         dists = iou_distance(unconfirmed, detections)
 
-        if not self.args.mot20:
-            dists = fuse_score(dists, detections)
+        dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
         for i in range(len(matches)):
             itracked, idet = matches[i]
@@ -380,11 +381,11 @@ def iou_distance(atracks, btracks):
 
     return cost_matrix
 
-def fuse_score(cost_matrix, detections):
+def fuse_score(cost_matrix, det_values):
     if cost_matrix.size == 0:
         return cost_matrix
     iou_sim = 1 - cost_matrix
-    det_scores = np.array([det.values[4] for det in detections])
+    det_scores = np.array([det[4] for det in det_values])
     det_scores = np.expand_dims(det_scores, axis=0).repeat(cost_matrix.shape[0], axis=0)
     fuse_sim = iou_sim * det_scores
     fuse_cost = 1 - fuse_sim

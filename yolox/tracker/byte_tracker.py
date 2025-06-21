@@ -16,8 +16,6 @@ class STrack(BaseTrack):
         self.kalman_filter = None
         self.mean, self.covariance = None, None
         self.is_activated = False
-
-        self.class_id = values[5]
         self.tracklet_len = 0
 
     def predict(self):

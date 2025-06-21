@@ -408,11 +408,11 @@ if __name__ == '__main__':
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed)
     online_targets = tracker.update(predictions, [1280,1280], [1280,1280])
-    pred_track = np.array([np.append(p.tlbr, [p.track_id,p.class_id]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
+    pred_track = np.array([np.append(p.tlbr, [p.track_id,p.values[5]]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
 
     # sanity check print people
     for p in online_targets:
-      if p.class_id == 0: 
+      if p.values[5] == 0: 
         people.add(p.track_id)
     
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)

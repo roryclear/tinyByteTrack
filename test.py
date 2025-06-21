@@ -120,6 +120,41 @@ def update(strack, values, new_track_values, frame_id):
     strack.is_activated = True
     values[4] = new_track_values[4]
 
+def vectorized_update(itracked_arr, idet_arr, unconfirmed, detections, frame_id):
+    """
+    Vectorized version of the update function
+    :param itracked_arr: Array of track indices
+    :param idet_arr: Array of detection indices
+    :param unconfirmed: Dictionary of unconfirmed tracks
+    :param detections: List of detections
+    :param frame_id: Current frame ID
+    :return: Array of updated tracks
+    """
+    # Convert to numpy arrays if they aren't already
+    itracked_arr = np.asarray(itracked_arr)
+    idet_arr = np.asarray(idet_arr)
+    
+    # Get all tracks and detections at once
+    tracks = np.array([unconfirmed[itracked] for itracked in itracked_arr])
+    dets = np.array([detections[idet] for idet in idet_arr])
+    
+    # Extract all values needed for updates
+    frame_ids = np.full(len(tracks), frame_id)
+    new_tlwh = np.array([det.values[:4] for det in dets])
+    new_scores = np.array([det.values[4] for det in dets])
+    
+    # Vectorized updates
+    for track, tlwh, score in zip(tracks, new_tlwh, new_scores):
+        track.frame_id = frame_id
+        track.tracklet_len += 1
+        track.mean, track.covariance = track.kalman_filter.update(
+            track.mean, track.covariance, tlwh_to_xyah(tlwh))
+        track.state = TrackState.Tracked
+        track.is_activated = True
+        track.values[4] = score
+    
+    return tracks
+
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self.tracked_stracks = []  # type: list[STrack]
@@ -248,14 +283,20 @@ class BYTETracker(object):
 
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
-        for i in range(len(matches)):
-            itracked, idet = matches[i]
-            update(unconfirmed[itracked], unconfirmed[itracked].values, detections[idet].values, self.frame_id)
-            activated_starcks.append(unconfirmed[itracked])
-        for i in range(len(u_unconfirmed)):
-            track = unconfirmed[u_unconfirmed[i]]
-            track.state = TrackState.Removed
-            removed_stracks.append(track)
+
+        if len(matches) > 0:
+            matches_arr = np.array(matches)
+            itracked_arr = matches_arr[:, 0]
+            idet_arr = matches_arr[:, 1]
+            updated_tracks = vectorized_update(itracked_arr, idet_arr, unconfirmed, detections, self.frame_id)
+            activated_starcks.extend(updated_tracks.tolist())
+
+        u_unconfirmed_np = np.array(u_unconfirmed)
+        tracks = np.array([unconfirmed[key] for key in u_unconfirmed_np])
+        if tracks.size > 0:
+            for track in tracks:
+                track.state = TrackState.Removed
+        removed_stracks.extend(tracks.tolist())
 
         u_detection_arr = np.array(u_detection)
         detections_arr = np.array(detections, dtype=object)
@@ -804,3 +845,6 @@ if __name__ == '__main__':
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")
+
+#https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
+#https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4

@@ -38,11 +38,6 @@ class STrack():
         self.covariance = None
         self.is_activated = False
 
-    @staticmethod
-    def next_id():
-        STrack._count += 1
-        return STrack._count
-
     @property
     # @jit(nopython=True)
     def tlbr(self):
@@ -76,7 +71,7 @@ def tlwh_to_xyah(tlwh):
 def activate(strack, kalman_filter, frame_id):
     """Start a new tracklet"""
     strack.kalman_filter = kalman_filter
-    strack.track_id = strack.next_id()
+    strack.track_id = STrack._count = STrack._count + 1
     strack.mean, strack.covariance = strack.kalman_filter.initiate(tlwh_to_xyah(strack.values[:4]))
 
     strack.tracklet_len = 0
@@ -96,7 +91,7 @@ def re_activate(strack, new_track, frame_id, new_id=False):
     strack.is_activated = True
     strack.frame_id = frame_id
     if new_id:
-        strack.track_id = strack.next_id()
+        strack.track_id = STrack._count = STrack._count + 1
     strack.values[4] = new_track.values[4]
 
 def multi_predict(stracks):

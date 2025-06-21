@@ -293,16 +293,33 @@ class BYTETracker(object):
                 track.state = TrackState.Removed
         removed_stracks.extend(tracks.tolist())
 
-        u_detection_arr = np.array(u_detection)
-        detections_arr = np.array(detections, dtype=object)
-        track_values = np.array([d.values for d in detections_arr[u_detection_arr]])
-        confidence_scores = track_values[:, 4]
-        valid_mask = confidence_scores >= self.det_thresh
-        valid_indices = u_detection_arr[valid_mask]
-        valid_tracks = detections_arr[valid_indices]
-        for track in valid_tracks:
-            activate(track, track.values, self.kalman_filter, self.frame_id)
-        activated_starcks.extend(valid_tracks.tolist())
+        all_det_values = np.array([d.values for d in detections])  # shape [N, D]
+
+        # Vectorized processing
+        u_detection = np.asarray(u_detection)
+        track_scores = all_det_values[u_detection, 4]  # Direct score access
+        valid_mask = track_scores >= self.det_thresh
+        valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
+
+        # Get tracks using proper list indexing
+        valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
+        valid_values = all_det_values[valid_indices]  # Get corresponding values
+
+        # Batch activation
+        for track, vals in zip(valid_tracks, valid_values):
+            track.kalman_filter = self.kalman_filter
+            track.track_id = STrack._count = STrack._count + 1
+            track.mean, track.covariance = track.kalman_filter.initiate(
+                tlwh_to_xyah(vals[:4]))
+            
+            track.tracklet_len = 0
+            track.state = TrackState.Tracked
+            if self.frame_id == 1:
+                track.is_activated = True
+            track.frame_id = self.frame_id
+            track.start_frame = self.frame_id
+
+        activated_starcks.extend(valid_tracks)
 
         lost_stracks_array = np.array(self.lost_stracks, dtype=object)
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)

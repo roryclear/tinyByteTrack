@@ -12,15 +12,9 @@ class STrack(BaseTrack):
         # wait activate
         self.values = values
         self.kalman_filter = None
-        self.mean, self.covariance = None, None
+        self.mean = None
+        self.covariance = None
         self.is_activated = False
-        self.tracklet_len = 0
-
-    def predict(self):
-        mean_state = self.mean.copy()
-        if self.state != TrackState.Tracked:
-            mean_state[7] = 0
-        self.mean, self.covariance = self.kalman_filter.predict(mean_state, self.covariance)
 
     @staticmethod
     def multi_predict(stracks):

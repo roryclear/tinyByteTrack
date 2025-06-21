@@ -174,7 +174,11 @@ class BYTETracker(object):
             else:
                 tracked_stracks.append(track)
 
-        strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
+        ids_tracked = np.array([t.track_id for t in tracked_stracks])
+        ids_lost = np.array([t.track_id for t in self.lost_stracks])
+        keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
+        strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
+
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
@@ -232,7 +236,6 @@ class BYTETracker(object):
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
 
-        '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         temp_detections = []
         temp_values = []
         for i in range(len(u_detection)):
@@ -254,37 +257,41 @@ class BYTETracker(object):
             track.state = TrackState.Removed
             removed_stracks.append(track)
 
-        """ Step 4: Init new stracks"""
-        for i in range(len(u_detection)):
-            inew = u_detection[i]
-            track = detections[inew]
-            if track.values[4] < self.det_thresh:
-                continue
+        u_detection_arr = np.array(u_detection)
+        detections_arr = np.array(detections, dtype=object)
+        track_values = np.array([d.values for d in detections_arr[u_detection_arr]])
+        confidence_scores = track_values[:, 4]
+        valid_mask = confidence_scores >= self.det_thresh
+        valid_indices = u_detection_arr[valid_mask]
+        valid_tracks = detections_arr[valid_indices]
+        for track in valid_tracks:
             activate(track, track.values, self.kalman_filter, self.frame_id)
-            activated_starcks.append(track)
-        """ Step 5: Update state"""
-        for i in range(len(self.lost_stracks)):
-            track = self.lost_stracks[i]
-            if self.frame_id - track.frame_id > self.max_time_lost:
-                track.state = TrackState.Removed
-                removed_stracks.append(track)
+        activated_starcks.extend(valid_tracks.tolist())
 
-        # print('Ramained match {} s'.format(t4-t3))
-
-        temp_tracked = []
-        for i in range(len(self.tracked_stracks)):
-            if self.tracked_stracks[i].state == TrackState.Tracked:
-                temp_tracked.append(self.tracked_stracks[i])
-        self.tracked_stracks = temp_tracked
-        
-        self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
-        self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
-        self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
-        self.lost_stracks.extend(lost_stracks)
-        self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
+        lost_stracks_array = np.array(self.lost_stracks, dtype=object)
+        frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
+        remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
+        removed_stracks.extend(lost_stracks_array[remove_mask].tolist())
+        for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
+        self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
+        tracked_array = np.array(self.tracked_stracks, dtype=object)
+        states = np.array([t.state for t in self.tracked_stracks], dtype=int)
+        mask = states == TrackState.Tracked
+        self.tracked_stracks = tracked_array[mask].tolist()
+        ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
+        ids_activated = np.array([t.track_id for t in activated_starcks])
+        keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
+        self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_starcks[i] for i in keep_activated]
+        ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
+        ids_refind = np.array([t.track_id for t in refind_stracks])
+        keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
+        self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
+        self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
+        self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
+        self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.removed_stracks.extend(removed_stracks)
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
-        # get scores of lost tracks
+  
         output_stracks = []
         for i in range(len(self.tracked_stracks)):
             if self.tracked_stracks[i].is_activated:
@@ -312,14 +319,10 @@ def ious(atlbrs, btlbrs):
 
     return ious
 
-def joint_stracks(tlista, tlistb):
-    ids_a = np.array([t.track_id for t in tlista])
-    ids_b = np.array([t.track_id for t in tlistb])
-    mask = ~np.isin(ids_b, ids_a)
-    unique_b = np.array(tlistb)[mask]
-    combined = list(tlista) + list(unique_b)
-    return combined
 
+def joint_stracks_indices(ids_a, ids_b):
+    mask_b = ~np.isin(ids_b, ids_a)
+    return np.arange(len(ids_a)), np.where(mask_b)[0]
 
 def sub_stracks(tlista, tlistb):
     ids_a = np.array([t.track_id for t in tlista])

@@ -313,57 +313,37 @@ def ious(atlbrs, btlbrs):
     return ious
 
 def joint_stracks(tlista, tlistb):
-    exists = {}
-    res = []
-    for i in range(len(tlista)):
-        t = tlista[i]
-        exists[t.track_id] = 1
-        res.append(t)
-    for i in range(len(tlistb)):
-        t = tlistb[i]
-        tid = t.track_id
-        if not exists.get(tid, 0):
-            exists[tid] = 1
-            res.append(t)
-    return res
+    ids_a = np.array([t.track_id for t in tlista])
+    ids_b = np.array([t.track_id for t in tlistb])
+    mask = ~np.isin(ids_b, ids_a)
+    unique_b = np.array(tlistb)[mask]
+    combined = list(tlista) + list(unique_b)
+    return combined
 
 
 def sub_stracks(tlista, tlistb):
-    stracks = {}
-    for i in range(len(tlista)):
-        t = tlista[i]
-        stracks[t.track_id] = t
-    for i in range(len(tlistb)):
-        t = tlistb[i]
-        tid = t.track_id
-        if stracks.get(tid, 0):
-            del stracks[tid]
-    return list(stracks.values())
-
+    ids_a = np.array([t.track_id for t in tlista])
+    ids_b = np.array([t.track_id for t in tlistb])
+    mask = ~np.isin(ids_a, ids_b)
+    filtered = np.array(tlista)[mask]
+    return list(filtered)
 
 def remove_duplicate_stracks(stracksa, stracksb):
     pdist = iou_distance(stracksa, stracksb)
     pairs = np.where(pdist < 0.15)
-    dupa, dupb = list(), list()
-    for i in range(len(pairs[0])):
-        p = pairs[0][i]
-        q = pairs[1][i]
-        timep = stracksa[p].frame_id - stracksa[p].start_frame
-        timeq = stracksb[q].frame_id - stracksb[q].start_frame
-        if timep > timeq:
-            dupb.append(q)
-        else:
-            dupa.append(p)
-    resa = []
-    for i in range(len(stracksa)):
-        if i not in dupa:
-            resa.append(stracksa[i])
-    resb = []
-    for i in range(len(stracksb)):
-        if i not in dupb:
-            resb.append(stracksb[i])
-    return resa, resb
-
+    if pairs[0].size == 0: return list(stracksa), list(stracksb)
+    p_idx, q_idx = pairs[0], pairs[1]
+    timep = np.array([stracksa[i].frame_id - stracksa[i].start_frame for i in p_idx])
+    timeq = np.array([stracksb[i].frame_id - stracksb[i].start_frame for i in q_idx])
+    keep_p = timep <= timeq
+    keep_q = ~keep_p
+    dupa = p_idx[~keep_p]
+    dupb = q_idx[~keep_q]
+    mask_a = np.ones(len(stracksa), dtype=bool)
+    mask_a[dupa] = False
+    mask_b = np.ones(len(stracksb), dtype=bool)
+    mask_b[dupb] = False
+    return list(np.array(stracksa)[mask_a]), list(np.array(stracksb)[mask_b])
 
 def iou_distance(atracks, btracks):
     """

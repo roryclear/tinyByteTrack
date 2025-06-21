@@ -18,61 +18,39 @@ class STrack(BaseTrack):
 
     @property
     # @jit(nopython=True)
-    def tlwh(self):
-        """Get current position in bounding box format `(top left x, top left y,
-                width, height)`.
-        """
-        if self.mean is None:
-            return self.values[:4].copy()
-        ret = self.mean[:4].copy()
-        ret[2] *= ret[3]
-        ret[:2] -= ret[2:] / 2
-        return ret
-
-    @property
-    # @jit(nopython=True)
     def tlbr(self):
         """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
         `(top left, bottom right)`.
         """
-        ret = self.tlwh.copy()
+        ret = tlwh(self).copy()
         ret[2:] += ret[:2]
         return ret
 
-    @staticmethod
-    # @jit(nopython=True)
-    def tlwh_to_xyah(tlwh):
-        """Convert bounding box to format `(center x, center y, aspect ratio,
-        height)`, where the aspect ratio is `width / height`.
-        """
-        ret = np.asarray(tlwh).copy()
-        ret[:2] += ret[2:] / 2
-        ret[2] /= ret[3]
-        return ret
+def tlwh(x):
+    """Get current position in bounding box format `(top left x, top left y,
+            width, height)`.
+    """
+    if x.mean is None:
+        return x.values[:4].copy()
+    ret = x.mean[:4].copy()
+    ret[2] *= ret[3]
+    ret[:2] -= ret[2:] / 2
+    return ret
 
-    @staticmethod
-    # @jit(nopython=True)
-    def tlbr_to_tlwh(tlbr):
-        ret = tlbr
-        ret[:, 2:] -= ret[:, :2]
-        return ret
-
-    @staticmethod
-    # @jit(nopython=True)
-    def tlwh_to_tlbr(tlwh):
-        ret = np.asarray(tlwh).copy()
-        ret[2:] += ret[:2]
-        return ret
-
-    def __repr__(self):
-        return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame, self.end_frame)
-
+def tlwh_to_xyah(tlwh):
+    """Convert bounding box to format `(center x, center y, aspect ratio,
+    height)`, where the aspect ratio is `width / height`.
+    """
+    ret = np.asarray(tlwh).copy()
+    ret[:2] += ret[2:] / 2
+    ret[2] /= ret[3]
+    return ret
 
 def activate(strack, kalman_filter, frame_id):
     """Start a new tracklet"""
     strack.kalman_filter = kalman_filter
     strack.track_id = strack.next_id()
-    strack.mean, strack.covariance = strack.kalman_filter.initiate(strack.tlwh_to_xyah(strack.values[:4]))
+    strack.mean, strack.covariance = strack.kalman_filter.initiate(tlwh_to_xyah(strack.values[:4]))
 
     strack.tracklet_len = 0
     strack.state = TrackState.Tracked
@@ -84,7 +62,7 @@ def activate(strack, kalman_filter, frame_id):
 
 def re_activate(strack, new_track, frame_id, new_id=False):
     strack.mean, strack.covariance = strack.kalman_filter.update(
-        strack.mean, strack.covariance, strack.tlwh_to_xyah(new_track.tlwh)
+        strack.mean, strack.covariance, tlwh_to_xyah(tlwh(new_track))
     )
     strack.tracklet_len = 0
     strack.state = TrackState.Tracked
@@ -119,7 +97,7 @@ def update(strack, new_track, frame_id):
 
     new_tlwh = new_track.values[:4]
     strack.mean, strack.covariance = strack.kalman_filter.update(
-        strack.mean, strack.covariance, strack.tlwh_to_xyah(new_tlwh))
+        strack.mean, strack.covariance, tlwh_to_xyah(new_tlwh))
     strack.state = TrackState.Tracked
     strack.is_activated = True
     strack.values[4] = new_track.values[4]

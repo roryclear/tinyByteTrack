@@ -17,7 +17,6 @@ class STrack(BaseTrack):
         self.mean, self.covariance = None, None
         self.is_activated = False
 
-        self.score = values[4]
         self.class_id = values[5]
         self.tracklet_len = 0
 

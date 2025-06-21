@@ -16,38 +16,6 @@ class STrack(BaseTrack):
         self.covariance = None
         self.is_activated = False
 
-    @staticmethod
-    def multi_predict(stracks):
-        if len(stracks) > 0:
-            multi_mean = np.asarray([st.mean.copy() for st in stracks])
-            multi_covariance = np.asarray([st.covariance for st in stracks])
-            for i, st in enumerate(stracks):
-                if st.state != TrackState.Tracked:
-                    multi_mean[i][7] = 0
-            multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
-            for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
-                stracks[i].mean = mean
-                stracks[i].covariance = cov
-
-    def update(self, new_track, frame_id):
-        """
-        Update a matched track
-        :type new_track: STrack
-        :type frame_id: int
-        :type update_feature: bool
-        :return:
-        """
-        self.frame_id = frame_id
-        self.tracklet_len += 1
-
-        new_tlwh = new_track.values[:4]
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_to_xyah(new_tlwh))
-        self.state = TrackState.Tracked
-        self.is_activated = True
-
-        self.values[4] = new_track.values[4]
-
     @property
     # @jit(nopython=True)
     def tlwh(self):
@@ -81,9 +49,6 @@ class STrack(BaseTrack):
         ret[:2] += ret[2:] / 2
         ret[2] /= ret[3]
         return ret
-
-    def to_xyah(self):
-        return self.tlwh_to_xyah(self.tlwh)
 
     @staticmethod
     # @jit(nopython=True)
@@ -127,6 +92,36 @@ def re_activate(strack, new_track, frame_id, new_id=False):
     strack.frame_id = frame_id
     if new_id:
         strack.track_id = strack.next_id()
+    strack.values[4] = new_track.values[4]
+
+def multi_predict(stracks):
+    if len(stracks) > 0:
+        multi_mean = np.asarray([st.mean.copy() for st in stracks])
+        multi_covariance = np.asarray([st.covariance for st in stracks])
+        for i, st in enumerate(stracks):
+            if st.state != TrackState.Tracked:
+                multi_mean[i][7] = 0
+        multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
+        for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
+            stracks[i].mean = mean
+            stracks[i].covariance = cov
+
+def update(strack, new_track, frame_id):
+    """
+    Update a matched track
+    :type new_track: STrack
+    :type frame_id: int
+    :type update_feature: bool
+    :return:
+    """
+    strack.frame_id = frame_id
+    strack.tracklet_len += 1
+
+    new_tlwh = new_track.values[:4]
+    strack.mean, strack.covariance = strack.kalman_filter.update(
+        strack.mean, strack.covariance, strack.tlwh_to_xyah(new_tlwh))
+    strack.state = TrackState.Tracked
+    strack.is_activated = True
     strack.values[4] = new_track.values[4]
 
 class BYTETracker(object):
@@ -189,7 +184,7 @@ class BYTETracker(object):
 
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
         # Predict the current location with KF
-        STrack.multi_predict(strack_pool)
+        multi_predict(strack_pool)
         dists = matching.iou_distance(strack_pool, detections)
         dists = matching.fuse_score(dists, detections)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=self.args.match_thresh)
@@ -198,7 +193,7 @@ class BYTETracker(object):
             track = strack_pool[itracked]
             det = detections[idet]
             if track.state == TrackState.Tracked:
-                track.update(detections[idet], self.frame_id)
+                update(track, detections[idet], self.frame_id)
                 activated_starcks.append(track)
             else:
                 re_activate(track,det, self.frame_id, new_id=False)
@@ -220,7 +215,7 @@ class BYTETracker(object):
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
             if track.state == TrackState.Tracked:
-                track.update(det, self.frame_id)
+                update(track, det, self.frame_id)
                 activated_starcks.append(track)
             else:
                 re_activate(track, det, self.frame_id, new_id=False)
@@ -239,7 +234,7 @@ class BYTETracker(object):
             dists = matching.fuse_score(dists, detections)
         matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
         for itracked, idet in matches:
-            unconfirmed[itracked].update(detections[idet], self.frame_id)
+            update(unconfirmed[itracked], detections[idet], self.frame_id)
             activated_starcks.append(unconfirmed[itracked])
         for it in u_unconfirmed:
             track = unconfirmed[it]

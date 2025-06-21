@@ -328,10 +328,9 @@ class BYTETracker(object):
         self.removed_stracks.extend(removed_stracks)
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
   
-        output_stracks = []
-        for i in range(len(self.tracked_stracks)):
-            if self.tracked_stracks[i].is_activated:
-                output_stracks.append(self.tracked_stracks[i])
+        tracked_stracks = np.array(self.tracked_stracks)
+        is_activated = np.array([track.is_activated for track in tracked_stracks])
+        output_stracks = tracked_stracks[is_activated].tolist()
 
         return output_stracks
 

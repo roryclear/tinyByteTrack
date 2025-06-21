@@ -15,6 +15,7 @@ from tinygrad import TinyJit
 import lap
 from collections import OrderedDict
 from yolox.tracker.kalman_filter import KalmanFilter
+from cython_bbox import bbox_overlaps as bbox_ious
 
 class TrackState(object):
     New = 0

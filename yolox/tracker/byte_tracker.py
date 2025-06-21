@@ -31,33 +31,10 @@ class BaseTrack(object):
     # multi-camera
     location = (np.inf, np.inf)
 
-    @property
-    def end_frame(self):
-        return self.frame_id
-
     @staticmethod
     def next_id():
         BaseTrack._count += 1
         return BaseTrack._count
-
-    def activate(self, *args):
-        raise NotImplementedError
-
-    def predict(self):
-        raise NotImplementedError
-
-    def update(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def mark_lost(self):
-        self.state = TrackState.Lost
-
-    def mark_removed(self):
-        self.state = TrackState.Removed
-
-    def mark_replaced(self):
-        self.state = TrackState.Replaced
-
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
@@ -201,10 +178,7 @@ class BYTETracker(object):
         dets_score_classes_second = dets_score_classes_second.numpy()
         # todo this is dumb?, it's a [(300,4),(300),(300)] thing, just use an np (300,6) before trying tinygrad
         #detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
-        detections = [
-            STrack(d)
-            for d in dets_score_classes
-        ]
+        detections = [STrack(d) for d in dets_score_classes]
 
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -234,10 +208,7 @@ class BYTETracker(object):
         ''' Step 3: Second association, with low score detection boxes'''
         # association the untrack to the low score detections
         #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
-        detections_second = [
-            STrack(d)
-            for d in dets_score_classes_second
-        ]
+        detections_second = [STrack(d) for d in dets_score_classes_second]
 
 
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
@@ -256,7 +227,7 @@ class BYTETracker(object):
         for it in u_track:
             track = r_tracked_stracks[it]
             if not track.state == TrackState.Lost:
-                track.mark_lost()
+                track.state = TrackState.Lost
                 lost_stracks.append(track)
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
@@ -270,7 +241,7 @@ class BYTETracker(object):
             activated_starcks.append(unconfirmed[itracked])
         for it in u_unconfirmed:
             track = unconfirmed[it]
-            track.mark_removed()
+            track.state = TrackState.Removed
             removed_stracks.append(track)
 
         """ Step 4: Init new stracks"""
@@ -282,8 +253,8 @@ class BYTETracker(object):
             activated_starcks.append(track)
         """ Step 5: Update state"""
         for track in self.lost_stracks:
-            if self.frame_id - track.end_frame > self.max_time_lost:
-                track.mark_removed()
+            if self.frame_id - track.frame_id > self.max_time_lost:
+                track.state = TrackState.Removed
                 removed_stracks.append(track)
 
         # print('Ramained match {} s'.format(t4-t3))

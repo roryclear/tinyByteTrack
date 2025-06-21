@@ -7,17 +7,18 @@ from tinygrad import Tensor
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
-    def __init__(self,t,l,w,h,score,class_id):
+    def __init__(self,values):
 
         # wait activate
-        tlwh = [t,l,w,h]
+        self.values = values
+        tlwh = values[:4]
         self._tlwh = np.asarray(tlwh, dtype=np.float)
         self.kalman_filter = None
         self.mean, self.covariance = None, None
         self.is_activated = False
 
-        self.score = score
-        self.class_id = class_id
+        self.score = values[4]
+        self.class_id = values[5]
         self.tracklet_len = 0
 
     def predict(self):
@@ -185,8 +186,8 @@ class BYTETracker(object):
         # todo this is dumb?, it's a [(300,4),(300),(300)] thing, just use an np (300,6) before trying tinygrad
         #detections = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets, scores_keep, classes)]
         detections = [
-            STrack(t, l, w, h, s, c)
-            for t, l, w, h, s, c in dets_score_classes
+            STrack(d)
+            for d in dets_score_classes
         ]
 
         unconfirmed = []
@@ -218,8 +219,8 @@ class BYTETracker(object):
         # association the untrack to the low score detections
         #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
         detections_second = [
-            STrack(t, l, w, h, s, c)
-            for t, l, w, h, s, c in dets_score_classes_second
+            STrack(d)
+            for d in dets_score_classes_second
         ]
 
 

@@ -427,9 +427,8 @@ if __name__ == '__main__':
 
     if frame_count % 10 == 0:
       print(f"Processed frame {frame_count}")
+      print(len(people))
 
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")
-
-  print(len(people))

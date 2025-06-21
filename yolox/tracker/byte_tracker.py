@@ -29,32 +29,6 @@ class STrack(BaseTrack):
                 stracks[i].mean = mean
                 stracks[i].covariance = cov
 
-    def activate(self, kalman_filter, frame_id):
-        """Start a new tracklet"""
-        self.kalman_filter = kalman_filter
-        self.track_id = self.next_id()
-        self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(self.values[:4]))
-
-        self.tracklet_len = 0
-        self.state = TrackState.Tracked
-        if frame_id == 1:
-            self.is_activated = True
-        # self.is_activated = True
-        self.frame_id = frame_id
-        self.start_frame = frame_id
-
-    def re_activate(self, new_track, frame_id, new_id=False):
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh)
-        )
-        self.tracklet_len = 0
-        self.state = TrackState.Tracked
-        self.is_activated = True
-        self.frame_id = frame_id
-        if new_id:
-            self.track_id = self.next_id()
-        self.values[4] = new_track.values[4]
-
     def update(self, new_track, frame_id):
         """
         Update a matched track
@@ -129,6 +103,32 @@ class STrack(BaseTrack):
         return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame, self.end_frame)
 
 
+def activate(strack, kalman_filter, frame_id):
+    """Start a new tracklet"""
+    strack.kalman_filter = kalman_filter
+    strack.track_id = strack.next_id()
+    strack.mean, strack.covariance = strack.kalman_filter.initiate(strack.tlwh_to_xyah(strack.values[:4]))
+
+    strack.tracklet_len = 0
+    strack.state = TrackState.Tracked
+    if frame_id == 1:
+        strack.is_activated = True
+    # self.is_activated = True
+    strack.frame_id = frame_id
+    strack.start_frame = frame_id
+
+def re_activate(strack, new_track, frame_id, new_id=False):
+    strack.mean, strack.covariance = strack.kalman_filter.update(
+        strack.mean, strack.covariance, strack.tlwh_to_xyah(new_track.tlwh)
+    )
+    strack.tracklet_len = 0
+    strack.state = TrackState.Tracked
+    strack.is_activated = True
+    strack.frame_id = frame_id
+    if new_id:
+        strack.track_id = strack.next_id()
+    strack.values[4] = new_track.values[4]
+
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self.tracked_stracks = []  # type: list[STrack]
@@ -201,7 +201,7 @@ class BYTETracker(object):
                 track.update(detections[idet], self.frame_id)
                 activated_starcks.append(track)
             else:
-                track.re_activate(det, self.frame_id, new_id=False)
+                re_activate(track,det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         ''' Step 3: Second association, with low score detection boxes'''
@@ -223,7 +223,7 @@ class BYTETracker(object):
                 track.update(det, self.frame_id)
                 activated_starcks.append(track)
             else:
-                track.re_activate(det, self.frame_id, new_id=False)
+                re_activate(track, det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         for it in u_track:
@@ -251,7 +251,7 @@ class BYTETracker(object):
             track = detections[inew]
             if track.values[4] < self.det_thresh:
                 continue
-            track.activate(self.kalman_filter, self.frame_id)
+            activate(track,self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
         """ Step 5: Update state"""
         for track in self.lost_stracks:

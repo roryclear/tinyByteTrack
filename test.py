@@ -271,16 +271,11 @@ class BYTETracker(object):
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
 
-        temp_detections = []
-        temp_values = []
-        for i in range(len(u_detection)):
-            temp_detections.append(detections[u_detection[i]])
-            temp_values.append(detections[u_detection[i]].values)
-        detections = temp_detections
-        dets_score_classes_second = temp_values
+        u_detection_np = np.array(u_detection)
+        detections = np.array(detections)[u_detection_np]
+        dets_score_classes_second = np.array([det.values for det in detections])
 
         dists = iou_distance(unconfirmed, detections)
-
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
@@ -390,13 +385,6 @@ def remove_duplicate_stracks(stracksa, stracksb):
     return list(np.array(stracksa)[mask_a]), list(np.array(stracksb)[mask_b])
 
 def iou_distance(atracks, btracks):
-    """
-    Compute cost based on IoU
-    :type atracks: list[STrack]
-    :type btracks: list[STrack]
-
-    :rtype cost_matrix np.ndarray
-    """
     atlbrs = [tlbr_np(track.values,track.mean) for track in atracks]
     btlbrs = [tlbr_np(track.values,track.mean) for track in btracks]
     _ious = ious(atlbrs, btlbrs)

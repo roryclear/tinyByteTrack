@@ -91,18 +91,18 @@ def activate(strack, values, kalman_filter, frame_id):
     strack.frame_id = frame_id
     strack.start_frame = frame_id
 
-def re_activate(strack, values, new_track, frame_id, new_id=False):
-    strack.mean, strack.covariance = strack.kalman_filter.update(strack.mean, strack.covariance, tlwh_to_xyah(tlwh_np(new_track.values, new_track.mean)))
+def re_activate(strack, values, new_track_values, new_track_mean, frame_id, new_id=False):
+    strack.mean, strack.covariance = strack.kalman_filter.update(strack.mean, strack.covariance, tlwh_to_xyah(tlwh_np(new_track_values, new_track_mean)))
     strack.tracklet_len = 0
     strack.state = TrackState.Tracked
     strack.is_activated = True
     strack.frame_id = frame_id
     if new_id:
         strack.track_id = STrack._count = STrack._count + 1
-    values[4] = new_track.values[4]
+    values[4] = new_track_values[4]
 
 
-def update(strack, new_track, frame_id):
+def update(strack, values, new_track_values, frame_id):
     """
     Update a matched track
     :type new_track: STrack
@@ -113,12 +113,12 @@ def update(strack, new_track, frame_id):
     strack.frame_id = frame_id
     strack.tracklet_len += 1
 
-    new_tlwh = new_track.values[:4]
+    new_tlwh = new_track_values[:4]
     strack.mean, strack.covariance = strack.kalman_filter.update(
         strack.mean, strack.covariance, tlwh_to_xyah(new_tlwh))
     strack.state = TrackState.Tracked
     strack.is_activated = True
-    strack.values[4] = new_track.values[4]
+    values[4] = new_track_values[4]
 
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
@@ -199,10 +199,10 @@ class BYTETracker(object):
             track = strack_pool[itracked]
             det = detections[idet]
             if track.state == TrackState.Tracked:
-                update(track, detections[idet], self.frame_id)
+                update(track, track.values, detections[idet].values, self.frame_id)
                 activated_starcks.append(track)
             else:
-                re_activate(track, track.values, det, self.frame_id, new_id=False)
+                re_activate(track, track.values, det.values, det.mean, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         ''' Step 3: Second association, with low score detection boxes'''
@@ -222,10 +222,10 @@ class BYTETracker(object):
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
             if track.state == TrackState.Tracked:
-                update(track, det, self.frame_id)
+                update(track, track.values, det.values, self.frame_id)
                 activated_starcks.append(track)
             else:
-                re_activate(track, track.values, det, self.frame_id, new_id=False)
+                re_activate(track, track.values, det.values, det.mean, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         for i in range(len(u_track)):
@@ -247,7 +247,7 @@ class BYTETracker(object):
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
         for i in range(len(matches)):
             itracked, idet = matches[i]
-            update(unconfirmed[itracked], detections[idet], self.frame_id)
+            update(unconfirmed[itracked], unconfirmed[itracked].values, detections[idet].values, self.frame_id)
             activated_starcks.append(unconfirmed[itracked])
         for i in range(len(u_unconfirmed)):
             track = unconfirmed[u_unconfirmed[i]]

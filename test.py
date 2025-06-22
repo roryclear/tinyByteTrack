@@ -171,26 +171,22 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        for i in range(len(matches)):
-            itracked, idet = matches[i]
+        det_values_arr = [detections[i].values for _, i in matches]
+        det_means = [detections[i].mean for _, i in matches]  
+        for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
-            det = detections[idet]
-            
+            det_values = det_values_arr[idx]
+            det_mean = det_means[idx]
+            det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
+            track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, det_xyah)
+            track.frame_id = self.frame_id
             if track.state == TrackState.Tracked:
-                # Inlined update()
-                track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, tlwh_to_xyah(tlwh_np(det.values, det.mean)))
-                track.values[4] = det.values[4]  # Update score
-                track.frame_id = self.frame_id
                 track.tracklet_len += 1
                 activated_starcks.append(track)
             else:
-                # Inlined re_activate()
-                track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, tlwh_to_xyah(tlwh_np(det.values, det.mean)))
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
                 track.is_activated = True
-                track.frame_id = self.frame_id
-                track.values[4] = det.values[4]  # Update score
                 refind_stracks.append(track)
 
         ''' Step 3: Second association, with low score detection boxes'''

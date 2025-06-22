@@ -81,20 +81,6 @@ def tlwh_to_xyah(tlwh):
     ret[2] /= ret[3]
     return ret
 
-def activate(strack, values, kalman_filter, frame_id):
-    """Start a new tracklet"""
-    strack.kalman_filter = kalman_filter
-    strack.track_id = STrack._count = STrack._count + 1
-    strack.mean, strack.covariance = strack.kalman_filter.initiate(tlwh_to_xyah(values[:4]))
-
-    strack.tracklet_len = 0
-    strack.state = TrackState.Tracked
-    if frame_id == 1:
-        strack.is_activated = True
-    # self.is_activated = True
-    strack.frame_id = frame_id
-    strack.start_frame = frame_id
-
 def re_activate(strack, values, new_track_values, new_track_mean, frame_id, new_id=False):
     strack.mean, strack.covariance = strack.kalman_filter.update(strack.mean, strack.covariance, tlwh_to_xyah(tlwh_np(new_track_values, new_track_mean)))
     strack.tracklet_len = 0

@@ -288,8 +288,9 @@ class BYTETracker(object):
 
             means = [t.mean for t in tracks]
             covariances = [t.covariance for t in tracks]
-            tlwhs = [d.values[:4] for d in dets]
-            scores = [d.values[4] for d in dets]
+            det_values = dets_score_classes_second[idet_arr]
+            tlwhs = det_values[:, :4]
+            scores = det_values[:, 4]
 
             updated_means, updated_covs, updated_scores, frame_id_val = vectorized_update(tracks[0].kalman_filter, means, covariances, tlwhs, scores, self.frame_id)
 

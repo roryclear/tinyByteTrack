@@ -49,11 +49,15 @@ class STrack():
         self.covariance = None
         self.is_activated = False
 
-def tlbr_np(values,mean):
+def tlbr_np(values, mean):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
-    `(top left, bottom right)`.
-    """
-    ret = tlwh_np(values,mean).copy()
+    `(top left, bottom right)`."""
+    if mean is None:
+        ret = values[:4].copy()
+    else:
+        ret = mean[:4].copy()
+        ret[2] *= ret[3]
+        ret[:2] -= ret[2:] / 2
     ret[2:] += ret[:2]
     return ret
 

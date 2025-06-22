@@ -358,8 +358,24 @@ class BYTETracker(object):
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.removed_stracks.extend(removed_stracks)
-        self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
-  
+        
+        values_a = [track.values for track in self.tracked_stracks]
+        mean_a = [track.mean for track in self.tracked_stracks]
+        frame_id_a = [track.frame_id for track in self.tracked_stracks]
+        start_frame_a = [track.start_frame for track in self.tracked_stracks]
+
+        values_b = [track.values for track in self.lost_stracks]
+        mean_b = [track.mean for track in self.lost_stracks]
+        frame_id_b = [track.frame_id for track in self.lost_stracks]
+        start_frame_b = [track.start_frame for track in self.lost_stracks]
+        keep_a, keep_b = remove_duplicate_stracks(
+            self.tracked_stracks, self.lost_stracks,
+            values_a, mean_a, frame_id_a, start_frame_a,
+            values_b, mean_b, frame_id_b, start_frame_b
+        )
+        self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
+        self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
+          
         tracked_stracks = np.array(self.tracked_stracks)
         is_activated = np.array([track.is_activated for track in tracked_stracks])
         output_stracks = tracked_stracks[is_activated].tolist()
@@ -394,29 +410,48 @@ def sub_stracks(tlista, tlistb):
     filtered = np.array(tlista)[mask]
     return list(filtered)
 
-def remove_duplicate_stracks(stracksa, stracksb):
-    atlbrs = [tlbr_np(track.values, track.mean) for track in stracksa]
-    btlbrs = [tlbr_np(track.values, track.mean) for track in stracksb]
-    pdist = iou_distance(atlbrs, btlbrs)
-    pairs = np.where(pdist < 0.15)
-    if pairs[0].size == 0: return list(stracksa), list(stracksb)
-    p_idx, q_idx = pairs[0], pairs[1]
-    timep = np.array([stracksa[i].frame_id - stracksa[i].start_frame for i in p_idx])
-    timeq = np.array([stracksb[i].frame_id - stracksb[i].start_frame for i in q_idx])
-    keep_p = timep <= timeq
-    keep_q = ~keep_p
-    dupa = p_idx[~keep_p]
-    dupb = q_idx[~keep_q]
-    mask_a = np.ones(len(stracksa), dtype=bool)
-    mask_a[dupa] = False
-    mask_b = np.ones(len(stracksb), dtype=bool)
-    mask_b[dupb] = False
-    return list(np.array(stracksa)[mask_a]), list(np.array(stracksb)[mask_b])
-
 def iou_distance(atlbrs, btlbrs):
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
     return cost_matrix
+
+def remove_duplicate_stracks(stracksa, stracksb, 
+                            values_a, mean_a, frame_id_a, start_frame_a,
+                            values_b, mean_b, frame_id_b, start_frame_b):
+    """
+    Args:
+        stracksa, stracksb: Lists of objects (kept for length reference)
+        values_a, values_b: List of values properties for each track
+        mean_a, mean_b: List of mean properties for each track
+        frame_id_a, frame_id_b: List of frame_id properties
+        start_frame_a, start_frame_b: List of start_frame properties
+    Returns:
+        keep_a: Boolean mask of which tracks to keep from stracksa
+        keep_b: Boolean mask of which tracks to keep from stracksb
+    """
+    atlbrs = [tlbr_np(values, mean) for values, mean in zip(values_a, mean_a)]
+    btlbrs = [tlbr_np(values, mean) for values, mean in zip(values_b, mean_b)]
+    pdist = iou_distance(atlbrs, btlbrs)
+    pairs = np.where(pdist < 0.15)
+    
+    if pairs[0].size == 0: 
+        return np.ones(len(stracksa), dtype=bool), np.ones(len(stracksb), dtype=bool)
+        
+    p_idx, q_idx = pairs[0], pairs[1]
+    timep = np.array([frame_id_a[i] - start_frame_a[i] for i in p_idx])
+    timeq = np.array([frame_id_b[i] - start_frame_b[i] for i in q_idx])
+    
+    keep_p = timep <= timeq
+    keep_q = ~keep_p
+    dupa = p_idx[~keep_p]
+    dupb = q_idx[~keep_q]
+    
+    mask_a = np.ones(len(stracksa), dtype=bool)
+    mask_a[dupa] = False
+    mask_b = np.ones(len(stracksb), dtype=bool)
+    mask_b[dupb] = False
+    
+    return mask_a, mask_b
 
 def fuse_score(cost_matrix, det_values):
     if cost_matrix.size == 0:

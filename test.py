@@ -232,7 +232,8 @@ class BYTETracker(object):
                 strack_pool[i].covariance = multi_covariance[i]
         
         atlbrs = [tlbr_np(track.values,track.mean) for track in strack_pool]
-        btlbrs = [tlbr_np(track.values,track.mean) for track in detections]
+        bmeans = [track.mean for track in detections]
+        btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)

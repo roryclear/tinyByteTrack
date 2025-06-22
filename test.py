@@ -81,35 +81,6 @@ def tlwh_to_xyah(tlwh):
     ret[2] /= ret[3]
     return ret
 
-def re_activate(strack, values, new_track_values, new_track_mean, frame_id, new_id=False):
-    strack.mean, strack.covariance = strack.kalman_filter.update(strack.mean, strack.covariance, tlwh_to_xyah(tlwh_np(new_track_values, new_track_mean)))
-    strack.tracklet_len = 0
-    strack.state = TrackState.Tracked
-    strack.is_activated = True
-    strack.frame_id = frame_id
-    if new_id:
-        strack.track_id = STrack._count = STrack._count + 1
-    values[4] = new_track_values[4]
-
-
-def update(strack, values, new_track_values, frame_id):
-    """
-    Update a matched track
-    :type new_track: STrack
-    :type frame_id: int
-    :type update_feature: bool
-    :return:
-    """
-    strack.frame_id = frame_id
-    strack.tracklet_len += 1
-
-    new_tlwh = new_track_values[:4]
-    strack.mean, strack.covariance = strack.kalman_filter.update(
-        strack.mean, strack.covariance, tlwh_to_xyah(new_tlwh))
-    strack.state = TrackState.Tracked
-    strack.is_activated = True
-    values[4] = new_track_values[4]
-
 def vectorized_update(kf, means, covariances, tlwhs, scores, frame_id):
     updated_means = []
     updated_covariances = []
@@ -204,11 +175,22 @@ class BYTETracker(object):
             itracked, idet = matches[i]
             track = strack_pool[itracked]
             det = detections[idet]
+            
             if track.state == TrackState.Tracked:
-                update(track, track.values, detections[idet].values, self.frame_id)
+                # Inlined update()
+                track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, tlwh_to_xyah(tlwh_np(det.values, det.mean)))
+                track.values[4] = det.values[4]  # Update score
+                track.frame_id = self.frame_id
+                track.tracklet_len += 1
                 activated_starcks.append(track)
             else:
-                re_activate(track, track.values, det.values, det.mean, self.frame_id, new_id=False)
+                # Inlined re_activate()
+                track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, tlwh_to_xyah(tlwh_np(det.values, det.mean)))
+                track.tracklet_len = 0
+                track.state = TrackState.Tracked
+                track.is_activated = True
+                track.frame_id = self.frame_id
+                track.values[4] = det.values[4]  # Update score
                 refind_stracks.append(track)
 
         ''' Step 3: Second association, with low score detection boxes'''
@@ -239,12 +221,20 @@ class BYTETracker(object):
             d_val = det_values[idet]
             d_mean = det_means[idet]
 
+            xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
+            track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, xyah)
+            t_val[4] = d_val[4]  # Update score
+            track.frame_id = self.frame_id
+            
             if track.state == TrackState.Tracked:
-                update(track, t_val, d_val, self.frame_id)
+                track.tracklet_len += 1
                 activated_starcks.append(track)
             else:
-                re_activate(track, t_val, d_val, d_mean, self.frame_id, new_id=False)
+                track.tracklet_len = 0
+                track.state = TrackState.Tracked
+                track.is_activated = True
                 refind_stracks.append(track)
+
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]

@@ -379,13 +379,6 @@ def joint_stracks_indices(ids_a, ids_b):
     mask_b = ~np.isin(ids_b, ids_a)
     return np.arange(len(ids_a)), np.where(mask_b)[0]
 
-def sub_stracks(tlista, tlistb):
-    ids_a = np.array([t.track_id for t in tlista])
-    ids_b = np.array([t.track_id for t in tlistb])
-    mask = ~np.isin(ids_a, ids_b)
-    filtered = np.array(tlista)[mask]
-    return list(filtered)
-
 def iou_distance(atlbrs, btlbrs):
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious

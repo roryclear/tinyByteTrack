@@ -171,7 +171,7 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        det_values_arr = [detections[i].values for _, i in matches]
+        det_values_arr = [dets_score_classes[i] for _, i in matches]
         det_means = [detections[i].mean for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]

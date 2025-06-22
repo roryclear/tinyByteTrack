@@ -143,7 +143,6 @@ def vectorized_update(itracked_arr, idet_arr, unconfirmed, detections, frame_id)
     dets = np.array([detections[idet] for idet in idet_arr])
     
     # Extract all values needed for updates
-    frame_ids = np.full(len(tracks), frame_id)
     new_tlwh = np.array([det.values[:4] for det in dets])
     new_scores = np.array([det.values[4] for det in dets])
     
@@ -258,20 +257,30 @@ class BYTETracker(object):
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
-        
-        atlbrs = [tlbr_np(track.values,track.mean) for track in r_tracked_stracks]
-        btlbrs = [tlbr_np(track.values,track.mean) for track in detections_second]
+
+        r_values = [track.values for track in r_tracked_stracks]
+        r_means = [track.mean for track in r_tracked_stracks]
+
+        det_values = [dets_score_classes_second[i] for i in range(len(detections_second))]
+        det_means = [None] * len(detections_second)  # all means are None initially
+
+        atlbrs = [tlbr_np(v, m) for v, m in zip(r_values, r_means)]
+        btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]
         dists = iou_distance(atlbrs, btlbrs)
+
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
-        for i in range(len(matches)):
-            itracked, idet = matches[i]
+
+        for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
-            det = detections_second[idet]
+            t_val = r_values[itracked]
+            d_val = det_values[idet]
+            d_mean = det_means[idet]
+
             if track.state == TrackState.Tracked:
-                update(track, track.values, det.values, self.frame_id)
+                update(track, t_val, d_val, self.frame_id)
                 activated_starcks.append(track)
             else:
-                re_activate(track, track.values, det.values, det.mean, self.frame_id, new_id=False)
+                re_activate(track, t_val, d_val, d_mean, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
         for i in range(len(u_track)):
@@ -279,6 +288,7 @@ class BYTETracker(object):
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
+
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]

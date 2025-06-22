@@ -172,7 +172,7 @@ class BYTETracker(object):
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
         det_values_arr = [detections[i].values for _, i in matches]
-        det_means = [detections[i].mean for _, i in matches]  
+        det_means = [detections[i].mean for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
             det_values = det_values_arr[idx]
@@ -189,11 +189,6 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
 
-        ''' Step 3: Second association, with low score detection boxes'''
-        # association the untrack to the low score detections
-        #detections_second = [STrack(tlwh, s, c) for (tlwh, s, c) in zip(dets_second, scores_second, classes)]
-        detections_second = [STrack(d) for d in dets_score_classes_second]
-
         r_tracked_stracks = []
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
@@ -202,8 +197,8 @@ class BYTETracker(object):
         r_values = [track.values for track in r_tracked_stracks]
         r_means = [track.mean for track in r_tracked_stracks]
 
-        det_values = [dets_score_classes_second[i] for i in range(len(detections_second))]
-        det_means = [None] * len(detections_second)  # all means are None initially
+        det_values = dets_score_classes_second
+        det_means = [None] * len(det_values)  # all means are None initially
 
         atlbrs = [tlbr_np(v, m) for v, m in zip(r_values, r_means)]
         btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]

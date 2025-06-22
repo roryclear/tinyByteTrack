@@ -227,7 +227,9 @@ class BYTETracker(object):
                 strack_pool[i].mean = multi_mean[i]
                 strack_pool[i].covariance = multi_covariance[i]
         
-        dists = iou_distance(strack_pool, detections)
+        atlbrs = [tlbr_np(track.values,track.mean) for track in strack_pool]
+        btlbrs = [tlbr_np(track.values,track.mean) for track in detections]
+        dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
@@ -252,7 +254,9 @@ class BYTETracker(object):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
         
-        dists = iou_distance(r_tracked_stracks, detections_second)
+        atlbrs = [tlbr_np(track.values,track.mean) for track in r_tracked_stracks]
+        btlbrs = [tlbr_np(track.values,track.mean) for track in detections_second]
+        dists = iou_distance(atlbrs, btlbrs)
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
         for i in range(len(matches)):
             itracked, idet = matches[i]
@@ -275,7 +279,10 @@ class BYTETracker(object):
         detections = np.array(detections)[u_detection_np]
         dets_score_classes_second = np.array([det.values for det in detections])
 
-        dists = iou_distance(unconfirmed, detections)
+
+        atlbrs = [tlbr_np(track.values,track.mean) for track in unconfirmed]
+        btlbrs = [tlbr_np(track.values,track.mean) for track in detections]
+        dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
@@ -359,12 +366,8 @@ def ious(atlbrs, btlbrs):
     ious = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float)
     if ious.size == 0:
         return ious
-
-    ious = bbox_ious(
-        np.ascontiguousarray(atlbrs, dtype=np.float),
-        np.ascontiguousarray(btlbrs, dtype=np.float)
-    )
-
+    
+    ious = bbox_ious(np.ascontiguousarray(atlbrs, dtype=np.float), np.ascontiguousarray(btlbrs, dtype=np.float))
     return ious
 
 
@@ -380,7 +383,9 @@ def sub_stracks(tlista, tlistb):
     return list(filtered)
 
 def remove_duplicate_stracks(stracksa, stracksb):
-    pdist = iou_distance(stracksa, stracksb)
+    atlbrs = [tlbr_np(track.values, track.mean) for track in stracksa]
+    btlbrs = [tlbr_np(track.values, track.mean) for track in stracksb]
+    pdist = iou_distance(atlbrs, btlbrs)
     pairs = np.where(pdist < 0.15)
     if pairs[0].size == 0: return list(stracksa), list(stracksb)
     p_idx, q_idx = pairs[0], pairs[1]
@@ -396,12 +401,9 @@ def remove_duplicate_stracks(stracksa, stracksb):
     mask_b[dupb] = False
     return list(np.array(stracksa)[mask_a]), list(np.array(stracksb)[mask_b])
 
-def iou_distance(atracks, btracks):
-    atlbrs = [tlbr_np(track.values,track.mean) for track in atracks]
-    btlbrs = [tlbr_np(track.values,track.mean) for track in btracks]
+def iou_distance(atlbrs, btlbrs):
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
-
     return cost_matrix
 
 def fuse_score(cost_matrix, det_values):

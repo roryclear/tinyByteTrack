@@ -98,6 +98,7 @@ class BYTETracker(object):
     def update(self, output_results, img_info, img_size):
         lost_stracks_values = [track.values for track in self.lost_stracks]
         self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
+        self.removed_stracks_values = [tuple(t.values) for t in self.removed_stracks]
         self.frame_id += 1
         activated_starcks = []
         activated_starcks_values = []
@@ -324,6 +325,7 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(lost_stracks_array[remove_mask].tolist())
+        
         for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
         tracked_array = np.array(self.tracked_stracks, dtype=object)
@@ -343,13 +345,21 @@ class BYTETracker(object):
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
+
+        self.tracked_stracks_values = [tuple(t.values) for t in self.tracked_stracks]
+        self.lost_stracks_values = [tuple(t.values) for t in self.lost_stracks]
+        lost_stracks_values = [tuple(t.values) for t in lost_stracks]
+
+        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.tracked_stracks_values]
+        self.lost_stracks_values.extend([t for t in self.lost_stracks_values if t not in self.tracked_stracks_values])
+
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
-        self.lost_stracks_values = [tuple(t.values) for t in self.lost_stracks]
-        self.removed_stracks_values = [tuple(t.values) for t in self.removed_stracks]
+
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in set(self.removed_stracks_values)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.removed_stracks.extend(removed_stracks)
+
         
         mean_a = [track.mean for track in self.tracked_stracks]
         frame_id_a = [track.frame_id for track in self.tracked_stracks]

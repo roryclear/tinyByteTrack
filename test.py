@@ -144,6 +144,7 @@ class BYTETracker(object):
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
         
+        tracked_stracks_values = self.tracked_stracks_values
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
@@ -251,7 +252,6 @@ class BYTETracker(object):
 
         
         tracks_values = []
-        
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
@@ -290,7 +290,6 @@ class BYTETracker(object):
             activated_starcks.extend(tracks)
 
         activated_starcks_values.extend(tracks_values)
-        
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
@@ -334,11 +333,10 @@ class BYTETracker(object):
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
         self.tracked_stracks = tracked_array[mask].tolist()
+        tracked_stracks_values = np.array(tracked_stracks_values)[mask].tolist()
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_starcks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
-
-        tracked_stracks_values = [t.values for t in self.tracked_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_starcks[i] for i in keep_activated]
         keep_tracked_values = [tracked_stracks_values[i] for i in keep_tracked] + [activated_starcks_values[i] for i in keep_activated]

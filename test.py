@@ -81,17 +81,6 @@ def tlwh_to_xyah(tlwh):
     ret[2] /= ret[3]
     return ret
 
-def vectorized_update(kf, means, covariances, tlwhs, scores, frame_id):
-    updated_means = []
-    updated_covariances = []
-
-    for mean, cov, tlwh in zip(means, covariances, tlwhs):
-        new_mean, new_cov = kf.update(mean, cov, tlwh_to_xyah(tlwh))
-        updated_means.append(new_mean)
-        updated_covariances.append(new_cov)
-
-    return updated_means, updated_covariances, scores, frame_id
-
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self.tracked_stracks = []  # type: list[STrack]
@@ -262,7 +251,17 @@ class BYTETracker(object):
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
 
-            updated_means, updated_covs, updated_scores, frame_id_val = vectorized_update(tracks[0].kalman_filter, means, covariances, tlwhs, scores, self.frame_id)
+            kf = tracks[0].kalman_filter
+            updated_means = []
+            updated_covs = []
+
+            for mean, cov, tlwh in zip(means, covariances, tlwhs):
+                new_mean, new_cov = kf.update(mean, cov, tlwh_to_xyah(tlwh))
+                updated_means.append(new_mean)
+                updated_covs.append(new_cov)
+
+            updated_scores = scores
+            frame_id_val = self.frame_id
 
             for track, mean, cov, score in zip(tracks, updated_means, updated_covs, updated_scores):
                 track.mean = mean

@@ -171,10 +171,9 @@ class BYTETracker(object):
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         det_means = [detections[i].mean for _, i in matches]
-        strack_pool_values = [t.values for t in strack_pool]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
-            value = strack_pool_values[itracked]
+            value = strack_values[itracked]
             det_values = det_values_arr[idx]
             det_mean = det_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
@@ -196,7 +195,7 @@ class BYTETracker(object):
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
-                r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
+                r_tracked_stracks_values.append(strack_values[u_track[i]])
 
         r_means = [track.mean for track in r_tracked_stracks]
 

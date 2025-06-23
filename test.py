@@ -275,6 +275,8 @@ class BYTETracker(object):
 
             activated_starcks.extend(tracks)
 
+        activated_starcks_values = [t.values for t in activated_starcks]
+
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         if tracks.size > 0:
@@ -304,8 +306,8 @@ class BYTETracker(object):
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
 
+        activated_starcks_values.extend(valid_values)
         activated_starcks.extend(valid_tracks)
-        activated_starcks_values = [t.values for t in activated_starcks]
 
         lost_stracks_array = np.array(self.lost_stracks, dtype=object)
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
@@ -865,3 +867,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+

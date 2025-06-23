@@ -181,27 +181,33 @@ class BYTETracker(object):
                 track.state = TrackState.Tracked
                 track.is_activated = True
                 refind_stracks.append(track)
-
+        
+        refind_stracks_values = [t.values for t in refind_stracks]
         r_tracked_stracks = []
+        r_tracked_stracks_values = []
+        strack_pool_values = [t.values for t in strack_pool]
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
+                r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
 
-        r_values = [track.values for track in r_tracked_stracks]
         r_means = [track.mean for track in r_tracked_stracks]
 
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
 
-        atlbrs = [tlbr_np(v, m) for v, m in zip(r_values, r_means)]
+        atlbrs = [tlbr_np(v, m) for v, m in zip(r_tracked_stracks_values, r_means)]
         btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+        activated_starcks_values = [t.values for t in activated_starcks]
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
-            t_val = r_values[itracked]
+            values = r_tracked_stracks_values[itracked]
+            t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]
             d_mean = det_means[idet]
 
@@ -213,13 +219,13 @@ class BYTETracker(object):
             if track.state == TrackState.Tracked:
                 track.tracklet_len += 1
                 activated_starcks.append(track)
+                activated_starcks_values.append(values)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
                 track.is_activated = True
                 refind_stracks.append(track)
-
-        refind_stracks_values = [t.values for t in refind_stracks]
+                refind_stracks_values.append(values)
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -239,7 +245,7 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
-        activated_starcks_values = [t.values for t in activated_starcks]
+        
         tracks_values = []
         
         if len(matches) > 0:

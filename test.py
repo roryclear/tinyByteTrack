@@ -97,6 +97,7 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         lost_stracks_values = [track.values for track in self.lost_stracks]
+        self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         self.frame_id += 1
         activated_starcks = []
         activated_starcks_values = []
@@ -132,7 +133,6 @@ class BYTETracker(object):
         unconfirmed = []
         unconfirmed_values = []
         tracked_stracks = []  # type: list[STrack]
-        self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]

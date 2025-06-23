@@ -236,11 +236,11 @@ class BYTETracker(object):
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
-        dets_score_classes_second = np.array([det.values for det in detections])
+        dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
 
-
-        atlbrs = [tlbr_np(track.values,track.mean) for track in unconfirmed]
-        btlbrs = [tlbr_np(track.values,track.mean) for track in detections]
+      
+        atlbrs = [tlbr_np(unconfirmed_values[i], track.mean) for i, track in enumerate(unconfirmed)]
+        btlbrs = [tlbr_np(dets_score_classes_second[i], track.mean) for i, track in enumerate(detections)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)

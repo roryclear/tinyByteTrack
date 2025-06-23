@@ -322,12 +322,14 @@ class BYTETracker(object):
         activated_starcks.extend(valid_tracks)
 
         lost_stracks_array = np.array(self.lost_stracks, dtype=object)
+        lost_stracks_array_values = np.array(self.lost_stracks)
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(lost_stracks_array[remove_mask].tolist())
         
         for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
+        self.lost_stracks_values = lost_stracks_array_values[~remove_mask].tolist()
         tracked_array = np.array(self.tracked_stracks, dtype=object)
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
@@ -346,7 +348,6 @@ class BYTETracker(object):
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
 
-        self.lost_stracks_values = [tuple(t.values) for t in self.lost_stracks]
         lost_stracks_values = [tuple(t.values) for t in lost_stracks]
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.tracked_stracks_values]

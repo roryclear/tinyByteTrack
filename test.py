@@ -128,16 +128,19 @@ class BYTETracker(object):
         detections = [STrack(d) for d in dets_score_classes]
 
         unconfirmed = []
+        unconfirmed_values = []
         tracked_stracks = []  # type: list[STrack]
+        tracked_stracks_values = []
+        self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
+            value = self.tracked_stracks_values[i]
             if not track.is_activated:
                 unconfirmed.append(track)
+                unconfirmed_values.append(value)
             else:
                 tracked_stracks.append(track)
-        
-        tracked_stracks_values = [track.values for track in tracked_stracks]
-        unconfirmed_values = [t.values for t in unconfirmed]
+                tracked_stracks_values.append(value)
         
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])

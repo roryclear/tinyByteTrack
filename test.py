@@ -342,7 +342,6 @@ class BYTETracker(object):
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
-        values_a = [keep_tracked_values[i] for i in keep_tracked] + [refind_stracks_values[i] for i in keep_refind]
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
@@ -353,14 +352,14 @@ class BYTETracker(object):
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
-        values_b = [track.values for track in self.lost_stracks]
+        self.lost_stracks_values = [track.values for track in self.lost_stracks]
         mean_b = [track.mean for track in self.lost_stracks]
         frame_id_b = [track.frame_id for track in self.lost_stracks]
         start_frame_b = [track.start_frame for track in self.lost_stracks]
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks,
             self.tracked_stracks_values, mean_a, frame_id_a, start_frame_a,
-            values_b, mean_b, frame_id_b, start_frame_b
+            self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
         )
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]

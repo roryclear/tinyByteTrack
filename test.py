@@ -99,6 +99,7 @@ class BYTETracker(object):
         lost_stracks_values = [track.values for track in self.lost_stracks]
         self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         self.removed_stracks_values = [tuple(t.values) for t in self.removed_stracks]
+        self.lost_stracks_values = [track.values for track in self.lost_stracks]
         lost_stracks_array_values = np.array(self.lost_stracks)
         self.frame_id += 1
         activated_starcks = []
@@ -365,7 +366,6 @@ class BYTETracker(object):
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
-        self.lost_stracks_values = [track.values for track in self.lost_stracks]
         mean_b = [track.mean for track in self.lost_stracks]
         frame_id_b = [track.frame_id for track in self.lost_stracks]
         start_frame_b = [track.start_frame for track in self.lost_stracks]

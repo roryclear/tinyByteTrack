@@ -238,12 +238,16 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
+        activated_starcks_values = [t.values for t in activated_starcks]
+        tracks_values = []
+        
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
 
             tracks = [unconfirmed[i] for i in itracked_arr]
+            tracks_values = [t.values for t in tracks]
             dets = [detections[i] for i in idet_arr]
 
             means = [t.mean for t in tracks]
@@ -263,11 +267,10 @@ class BYTETracker(object):
 
             updated_scores = scores
             frame_id_val = self.frame_id
-
-            for track, mean, cov, score in zip(tracks, updated_means, updated_covs, updated_scores):
+            for track, mean, cov, score, values in zip(tracks, updated_means, updated_covs, updated_scores, tracks_values):
                 track.mean = mean
                 track.covariance = cov
-                track.values[4] = score
+                values[4] = score
                 track.frame_id = frame_id_val
                 track.tracklet_len += 1
                 track.state = TrackState.Tracked
@@ -275,7 +278,8 @@ class BYTETracker(object):
 
             activated_starcks.extend(tracks)
 
-        activated_starcks_values = [t.values for t in activated_starcks]
+        activated_starcks_values.extend(tracks_values)
+        
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)

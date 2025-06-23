@@ -132,7 +132,6 @@ class BYTETracker(object):
         unconfirmed = []
         unconfirmed_values = []
         tracked_stracks = []  # type: list[STrack]
-        tracked_stracks_values = []
         self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
@@ -142,14 +141,12 @@ class BYTETracker(object):
                 unconfirmed_values.append(value)
             else:
                 tracked_stracks.append(track)
-                tracked_stracks_values.append(value)
-        
-        tracked_stracks_values = self.tracked_stracks_values
+      
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
-        strack_values = [tracked_stracks_values[i] for i in keep_a] + [lost_stracks_values[i] for i in keep_b]
+        strack_values = [self.tracked_stracks_values[i] for i in keep_a] + [lost_stracks_values[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
@@ -333,13 +330,13 @@ class BYTETracker(object):
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
         self.tracked_stracks = tracked_array[mask].tolist()
-        tracked_stracks_values = np.array(tracked_stracks_values)[mask].tolist()
+        self.tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_starcks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_starcks[i] for i in keep_activated]
-        keep_tracked_values = [tracked_stracks_values[i] for i in keep_tracked] + [activated_starcks_values[i] for i in keep_activated]
+        keep_tracked_values = [self.tracked_stracks_values[i] for i in keep_tracked] + [activated_starcks_values[i] for i in keep_activated]
 
 
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])

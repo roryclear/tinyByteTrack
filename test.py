@@ -137,6 +137,7 @@ class BYTETracker(object):
                 tracked_stracks.append(track)
         
         tracked_stracks_values = [track.values for track in tracked_stracks]
+        unconfirmed_values = [t.values for t in unconfirmed]
         
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
@@ -245,9 +246,9 @@ class BYTETracker(object):
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
-
             tracks = [unconfirmed[i] for i in itracked_arr]
-            tracks_values = [t.values for t in tracks]
+            tracks_values = [unconfirmed_values[i] for i in itracked_arr]
+
             dets = [detections[i] for i in idet_arr]
 
             means = [t.mean for t in tracks]

@@ -346,8 +346,8 @@ class BYTETracker(object):
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
         self.lost_stracks_values = [tuple(t.values) for t in self.lost_stracks]
-        self.removed_stracks_values = set(tuple(t.values) for t in self.removed_stracks)
-        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
+        self.removed_stracks_values = [tuple(t.values) for t in self.removed_stracks]
+        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in set(self.removed_stracks_values)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.removed_stracks.extend(removed_stracks)
         

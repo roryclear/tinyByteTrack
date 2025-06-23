@@ -218,6 +218,7 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
 
+        refind_stracks_values = [t.values for t in refind_stracks]
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -304,6 +305,7 @@ class BYTETracker(object):
             track.start_frame = self.frame_id
 
         activated_starcks.extend(valid_tracks)
+        activated_starcks_values = [t.values for t in activated_starcks]
 
         lost_stracks_array = np.array(self.lost_stracks, dtype=object)
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
@@ -318,10 +320,17 @@ class BYTETracker(object):
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_starcks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
+
+        tracked_stracks_values = [t.values for t in self.tracked_stracks]
+
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_starcks[i] for i in keep_activated]
+        keep_tracked_values = [tracked_stracks_values[i] for i in keep_tracked] + [activated_starcks_values[i] for i in keep_activated]
+
+
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
+        values_a = [keep_tracked_values[i] for i in keep_tracked] + [refind_stracks_values[i] for i in keep_refind]
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])

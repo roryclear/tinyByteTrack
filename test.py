@@ -99,7 +99,9 @@ class BYTETracker(object):
         lost_stracks_values = [track.values for track in self.lost_stracks]
         self.frame_id += 1
         activated_starcks = []
+        activated_starcks_values = []
         refind_stracks = []
+        refind_stracks_values = []
         lost_stracks = []
         removed_stracks = []
 
@@ -169,8 +171,10 @@ class BYTETracker(object):
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         det_means = [detections[i].mean for _, i in matches]
+        strack_pool_values = [t.values for t in strack_pool]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
+            value = strack_pool_values[itracked]
             det_values = det_values_arr[idx]
             det_mean = det_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
@@ -179,16 +183,16 @@ class BYTETracker(object):
             if track.state == TrackState.Tracked:
                 track.tracklet_len += 1
                 activated_starcks.append(track)
+                activated_starcks_values.append(value)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
                 track.is_activated = True
                 refind_stracks.append(track)
+                refind_stracks_values.append(value)
         
-        refind_stracks_values = [t.values for t in refind_stracks]
         r_tracked_stracks = []
         r_tracked_stracks_values = []
-        strack_pool_values = [t.values for t in strack_pool]
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
@@ -204,8 +208,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
-
-        activated_starcks_values = [t.values for t in activated_starcks]
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]

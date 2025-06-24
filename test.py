@@ -138,7 +138,6 @@ class BYTETracker(object):
         unconfirmed_means = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_values = []
-        tracked_stracks_means = []
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
@@ -342,10 +341,9 @@ class BYTETracker(object):
         for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
-        tracked_array = np.array(self.tracked_stracks, dtype=object)
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
-        self.tracked_stracks = tracked_array[mask].tolist()
+        self.tracked_stracks = np.array(self.tracked_stracks)[mask].tolist()
         self.tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_starcks])
@@ -405,9 +403,8 @@ class BYTETracker(object):
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         
-        tracked_stracks = np.array(self.tracked_stracks)
-        is_activated = np.array([track.is_activated for track in tracked_stracks])
-        output_stracks = tracked_stracks[is_activated].tolist()
+        is_activated = np.array([track.is_activated for track in self.tracked_stracks])
+        output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()
         output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
         output_stracks_means = [t.mean for t in output_stracks]
         output_track_ids = [t.track_id for t in output_stracks]

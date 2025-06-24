@@ -87,6 +87,10 @@ class BYTETracker(object):
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
 
+        self.tracked_stracks_values = []
+        self.lost_stracks_values = []
+        self.removed_stracks_values = []
+
         self.frame_id = 0
         self.args = args
         #self.det_thresh = args.track_thresh
@@ -96,9 +100,7 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     def update(self, output_results, img_info, img_size):
-        lost_stracks_values = [track.values for track in self.lost_stracks]
         self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
-        self.removed_stracks_values = [tuple(t.values) for t in self.removed_stracks]
         self.lost_stracks_values = [track.values for track in self.lost_stracks]
         lost_stracks_array_values = np.array(self.lost_stracks)
         self.frame_id += 1

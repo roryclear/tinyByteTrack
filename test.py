@@ -88,7 +88,6 @@ class BYTETracker(object):
 
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
-        self.removed_stracks_values = []
 
         self.frame_id = 0
         self.args = args
@@ -108,6 +107,7 @@ class BYTETracker(object):
         lost_stracks = []
         lost_stracks_values = []
         removed_stracks = []
+        removed_stracks_values = []
 
         classes = output_results[:, 5]
         scores = output_results[:, 4]
@@ -308,9 +308,11 @@ class BYTETracker(object):
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
+        values = np.fromiter((unconfirmed_values[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         if tracks.size > 0:
             np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
+            removed_stracks_values.extend(values.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -388,7 +390,7 @@ class BYTETracker(object):
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
         
-        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
+        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t.mean for t in self.lost_stracks if t not in self.removed_stracks]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         

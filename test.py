@@ -386,7 +386,7 @@ class BYTETracker(object):
         self.removed_stracks.extend(removed_stracks)
 
         
-        mean_a = [track.mean for track in self.tracked_stracks]
+        mean_a = [mean for mean in self.tracked_stracks_means]
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 

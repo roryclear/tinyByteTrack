@@ -100,6 +100,7 @@ class BYTETracker(object):
     def update(self, output_results, img_info, img_size):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.lost_stracks_means = [t.mean for t in self.lost_stracks]
+        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -355,7 +356,7 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(lost_stracks_array[remove_mask].tolist())
-        
+
         for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
@@ -363,11 +364,11 @@ class BYTETracker(object):
         mask = states == TrackState.Tracked
         self.tracked_stracks = np.array(self.tracked_stracks)[mask].tolist()
         self.tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
+        self.tracked_stracks_means = np.array(self.tracked_stracks_means)[mask]
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
-        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]

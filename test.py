@@ -350,6 +350,7 @@ class BYTETracker(object):
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
+        self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.tracked_stracks_values]
         self.lost_stracks_values.extend([t for t in self.lost_stracks_values if t not in self.tracked_stracks_values])
@@ -374,7 +375,7 @@ class BYTETracker(object):
             self.tracked_stracks_values, mean_a, frame_id_a, start_frame_a,
             self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
         )
-        self.tracked_stracks_values = [track.values for track, keep in zip(self.tracked_stracks, keep_a) if keep]
+        self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         
@@ -891,3 +892,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+

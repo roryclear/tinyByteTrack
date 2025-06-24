@@ -131,6 +131,7 @@ class BYTETracker(object):
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
         detections = [STrack() for _ in dets_score_classes]
+        detections_means = [None for _ in dets_score_classes]
 
         unconfirmed = []
         unconfirmed_values = []
@@ -165,19 +166,18 @@ class BYTETracker(object):
                 strack_pool[i].covariance = multi_covariance[i]
         
         atlbrs = [tlbr_np(values, track.mean) for values, track in zip(strack_pool_values, strack_pool)]
-        bmeans = [track.mean for track in detections]
+        bmeans = detections_means
         btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
-        det_means = [detections[i].mean for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
             value = strack_pool_values[itracked]
             det_values = det_values_arr[idx]
-            det_mean = det_means[idx]
+            det_mean = detections_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
             track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, det_xyah)
             track.frame_id = self.frame_id
@@ -246,11 +246,12 @@ class BYTETracker(object):
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
+        detections_means = np.array(detections_means)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
 
       
         atlbrs = [tlbr_np(unconfirmed_values[i], track.mean) for i, track in enumerate(unconfirmed)]
-        btlbrs = [tlbr_np(dets_score_classes_second[i], track.mean) for i, track in enumerate(detections)]
+        btlbrs = [tlbr_np(dets_score_classes_second[i], mean) for i, mean in enumerate(detections_means)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)

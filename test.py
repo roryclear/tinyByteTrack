@@ -353,17 +353,32 @@ class BYTETracker(object):
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
+
+
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
+        
+        tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
-        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.tracked_stracks_values]
-        self.lost_stracks_values.extend([t for t in self.lost_stracks_values if t not in self.tracked_stracks_values])
+        new_lost_stracks = []
+        new_lost_stracks_values = []
 
-        self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
-        self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
+        for t, v in zip(self.lost_stracks, self.lost_stracks_values):
+            if tuple(v) not in tracked_values_set:
+                new_lost_stracks.append(t)
+                new_lost_stracks_values.append(v)
+
+        self.lost_stracks = new_lost_stracks
+        self.lost_stracks_values = new_lost_stracks_values
+
+        for s, v in zip(lost_stracks, lost_stracks_values):
+            if s not in self.tracked_stracks:
+                self.lost_stracks.append(s)
+                self.lost_stracks_values.append(v)
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
+
         self.removed_stracks.extend(removed_stracks)
 
         
@@ -382,6 +397,7 @@ class BYTETracker(object):
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
+        self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         
         tracked_stracks = np.array(self.tracked_stracks)
         is_activated = np.array([track.is_activated for track in tracked_stracks])
@@ -896,4 +912,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+
+
 

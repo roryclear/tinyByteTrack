@@ -89,6 +89,9 @@ class BYTETracker(object):
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
 
+        self.removed_stracks_means = []
+        self.tracked_stracks_means = []
+
         self.frame_id = 0
         self.args = args
         #self.det_thresh = args.track_thresh
@@ -100,8 +103,7 @@ class BYTETracker(object):
     def update(self, output_results, img_info, img_size):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.lost_stracks_means = [t.mean for t in self.lost_stracks]
-        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
-        self.removed_stracks_means = [t.mean for t in self.removed_stracks]
+        
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []

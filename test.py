@@ -145,12 +145,14 @@ class BYTETracker(object):
                 unconfirmed_values.append(value)
             else:
                 tracked_stracks.append(track)
-      
+        
+        #strack_pool_values is wrong (strack_pool)
+
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
-        strack_values = [self.tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
+        strack_pool_values = [self.tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
@@ -164,7 +166,7 @@ class BYTETracker(object):
                 strack_pool[i].mean = multi_mean[i]
                 strack_pool[i].covariance = multi_covariance[i]
         
-        atlbrs = [tlbr_np(values, track.mean) for values, track in zip(strack_values, strack_pool)]
+        atlbrs = [tlbr_np(values, track.mean) for values, track in zip(strack_pool_values, strack_pool)]
         bmeans = [track.mean for track in detections]
         btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
         dists = iou_distance(atlbrs, btlbrs)
@@ -175,7 +177,7 @@ class BYTETracker(object):
         det_means = [detections[i].mean for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
-            value = strack_values[itracked]
+            value = strack_pool_values[itracked]
             det_values = det_values_arr[idx]
             det_mean = det_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
@@ -191,13 +193,14 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(value)
-        
+
         r_tracked_stracks = []
         r_tracked_stracks_values = []
+
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
-                r_tracked_stracks_values.append(strack_values[u_track[i]])
+                r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
 
         r_means = [track.mean for track in r_tracked_stracks]
 
@@ -370,15 +373,15 @@ class BYTETracker(object):
 
         self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
-
+        
         for s, v in zip(lost_stracks, lost_stracks_values):
             if s not in self.tracked_stracks:
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
-
+        
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
-
+        
         self.removed_stracks.extend(removed_stracks)
 
         
@@ -396,6 +399,7 @@ class BYTETracker(object):
         )
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
+
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         

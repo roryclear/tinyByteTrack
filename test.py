@@ -105,6 +105,7 @@ class BYTETracker(object):
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
+        activated_stracks_means = []
         refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
@@ -200,6 +201,7 @@ class BYTETracker(object):
                 track.tracklet_len += 1
                 activated_stracks.append(track)
                 activated_stracks_values.append(value)
+                activated_stracks_means.append(mean)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
@@ -246,6 +248,7 @@ class BYTETracker(object):
                 track.tracklet_len += 1
                 activated_stracks.append(track)
                 activated_stracks_values.append(values)
+                activated_stracks_means.append(mean)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
@@ -275,7 +278,6 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
-        activated_stracks_means = [t.mean for t in activated_stracks]
         updated_means = []
         tracks_values = []
         if len(matches) > 0:

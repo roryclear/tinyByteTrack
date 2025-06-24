@@ -380,8 +380,10 @@ class BYTETracker(object):
         tracked_stracks = np.array(self.tracked_stracks)
         is_activated = np.array([track.is_activated for track in tracked_stracks])
         output_stracks = tracked_stracks[is_activated].tolist()
-
-        return output_stracks
+        output_stracks_values = [t.values for t in output_stracks]
+        output_stracks_means = [t.mean for t in output_stracks]
+        output_track_ids = [t.track_id for t in output_stracks]
+        return output_stracks_values, output_stracks_means, output_track_ids
 
 
 def ious(atlbrs, btlbrs):
@@ -860,13 +862,13 @@ if __name__ == '__main__':
     
     pre_processed = preprocess(frame)
     predictions = do_inf(pre_processed)
-    online_targets = tracker.update(predictions, [1280,1280], [1280,1280])
-    pred_track = np.array([np.append(tlbr_np(p.values,p.mean), [p.track_id,p.values[5]]) for p in online_targets], dtype=np.float32) # track_id as accuracy hack
+    values, means, track_ids = tracker.update(predictions, [1280,1280], [1280,1280])
+    pred_track = np.array([np.append(tlbr_np(v,m), [tid,v[5]]) for v,m,tid in zip(values,means,track_ids)], dtype=np.float32)
 
     # sanity check print people
-    for p in online_targets:
-      if p.values[5] == 0: 
-        people.add(p.track_id)
+    for v,tid in zip(values,track_ids):
+      if v[5] == 0: 
+        people.add(tid)
     
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)
     predictions = predictions.numpy()
@@ -888,4 +890,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
-

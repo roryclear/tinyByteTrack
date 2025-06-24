@@ -380,6 +380,7 @@ class BYTETracker(object):
                 self.lost_stracks_values.append(v)
         
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks if t not in self.removed_stracks]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         
         self.removed_stracks.extend(removed_stracks)
@@ -389,16 +390,15 @@ class BYTETracker(object):
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
-        mean_b = [track.mean for track in self.lost_stracks]
         frame_id_b = [track.frame_id for track in self.lost_stracks]
         start_frame_b = [track.start_frame for track in self.lost_stracks]
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks,
             self.tracked_stracks_values, mean_a, frame_id_a, start_frame_a,
-            self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
+            self.lost_stracks_values, self.lost_stracks_means, frame_id_b, start_frame_b
         )
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
-        self.tracked_stracks_means = [t.mean for t, keep in zip(self.tracked_stracks, keep_a) if keep]
+        self.tracked_stracks_means = [t for t, keep in zip(mean_a, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]

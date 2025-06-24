@@ -359,6 +359,7 @@ class BYTETracker(object):
 
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
+        self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
@@ -384,8 +385,6 @@ class BYTETracker(object):
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
-
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
 
         new_lost_stracks = []
         new_lost_stracks_values = []

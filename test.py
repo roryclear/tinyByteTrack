@@ -109,6 +109,7 @@ class BYTETracker(object):
         refind_stracks_values = []
         refind_stracks_means = []
         lost_stracks = []
+        lost_stracks_means = []
         lost_stracks_values = []
         removed_stracks = []
         removed_stracks_values = []
@@ -252,14 +253,16 @@ class BYTETracker(object):
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
                 refind_stracks_means.append(mean)
-        
+
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
             values = tuple(r_tracked_stracks_values[u_track[i]])
+            mean = r_tracked_stracks_means[u_track[i]]
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
                 lost_stracks_values.append(values)
+                lost_stracks_means.append(mean)
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
@@ -399,8 +402,6 @@ class BYTETracker(object):
         self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
         self.lost_stracks_means = new_lost_stracks_means
-
-        lost_stracks_means = [t.mean for t in lost_stracks]
 
         for s, v, m in zip(lost_stracks, lost_stracks_values, lost_stracks_means):
             if s not in self.tracked_stracks:

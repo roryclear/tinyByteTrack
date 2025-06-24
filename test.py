@@ -214,8 +214,11 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+        refind_stracks_means = [t.mean for t in refind_stracks]
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
+            mean = r_tracked_stracks[itracked].mean
             values = r_tracked_stracks_values[itracked]
             t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]
@@ -238,6 +241,7 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
+                refind_stracks_means.append(mean)
         
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -357,9 +361,10 @@ class BYTETracker(object):
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
 
+        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
-        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
+        self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [refind_stracks_means[i] for i in keep_refind]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)

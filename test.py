@@ -100,7 +100,6 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     def update(self, output_results, img_info, img_size):
-        self.lost_stracks_values = [track.values for track in self.lost_stracks]
         self.frame_id += 1
         activated_starcks = []
         activated_starcks_values = []
@@ -137,6 +136,7 @@ class BYTETracker(object):
         unconfirmed = []
         unconfirmed_values = []
         tracked_stracks = []  # type: list[STrack]
+        tracked_stracks_values = []
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
@@ -145,14 +145,13 @@ class BYTETracker(object):
                 unconfirmed_values.append(value)
             else:
                 tracked_stracks.append(track)
-        
-        #strack_pool_values is wrong (strack_pool)
+                tracked_stracks_values.append(value)
 
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
-        strack_pool_values = [self.tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
+        strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])

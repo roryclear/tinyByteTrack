@@ -101,6 +101,7 @@ class BYTETracker(object):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
+        self.removed_stracks_means = [t.mean for t in self.removed_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -351,14 +352,13 @@ class BYTETracker(object):
 
         activated_stracks_values.extend(valid_values)
         activated_stracks.extend(valid_tracks)
-
-        lost_stracks_array = np.array(self.lost_stracks, dtype=object)
+        
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
-        removed_stracks.extend(lost_stracks_array[remove_mask].tolist())
+        removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
 
-        for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
-        self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
+        for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
+        self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
@@ -401,8 +401,10 @@ class BYTETracker(object):
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
         
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
+
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks if t not in self.removed_stracks]
+        self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in self.removed_stracks_means)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         
         self.removed_stracks.extend(removed_stracks)

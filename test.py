@@ -359,7 +359,6 @@ class BYTETracker(object):
 
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
-        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
@@ -386,7 +385,7 @@ class BYTETracker(object):
         self.removed_stracks.extend(removed_stracks)
 
         
-        mean_a = [mean for mean in self.tracked_stracks_means]
+        mean_a = [track.mean for track in self.tracked_stracks]
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
@@ -399,7 +398,7 @@ class BYTETracker(object):
             self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
         )
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
-        self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
+        self.tracked_stracks_means = [t.mean for t, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
@@ -918,7 +917,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
-
-
-
-

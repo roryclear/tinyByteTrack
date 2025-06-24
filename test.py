@@ -135,14 +135,18 @@ class BYTETracker(object):
 
         unconfirmed = []
         unconfirmed_values = []
+        unconfirmed_means = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_values = []
+        tracked_stracks_means = []
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
+            mean = self.tracked_stracks[i].mean
             if not track.is_activated:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
+                unconfirmed_means.append(mean)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
@@ -248,9 +252,8 @@ class BYTETracker(object):
         detections = np.array(detections)[u_detection_np]
         detections_means = np.array(detections_means)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
-
       
-        atlbrs = [tlbr_np(unconfirmed_values[i], track.mean) for i, track in enumerate(unconfirmed)]
+        atlbrs = [tlbr_np(unconfirmed_values[i], mean) for i, mean in enumerate(unconfirmed_means)]
         btlbrs = [tlbr_np(dets_score_classes_second[i], mean) for i, mean in enumerate(detections_means)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
@@ -915,6 +918,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+
 
 
 

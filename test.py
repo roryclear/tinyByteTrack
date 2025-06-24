@@ -100,7 +100,6 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     def update(self, output_results, img_info, img_size):
-        self.tracked_stracks_values = [t.values for t in self.tracked_stracks]
         self.lost_stracks_values = [track.values for track in self.lost_stracks]
         lost_stracks_array_values = np.array(self.lost_stracks)
         self.frame_id += 1
@@ -221,7 +220,9 @@ class BYTETracker(object):
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
             track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, xyah)
+            t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
+            t_val = tuple(t_val)
             track.frame_id = self.frame_id
             
             if track.state == TrackState.Tracked:
@@ -279,18 +280,20 @@ class BYTETracker(object):
                 new_mean, new_cov = kf.update(mean, cov, tlwh_to_xyah(tlwh))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
-
+            
             updated_scores = scores
             frame_id_val = self.frame_id
             for track, mean, cov, score, values in zip(tracks, updated_means, updated_covs, updated_scores, tracks_values):
                 track.mean = mean
                 track.covariance = cov
+                values = list(values)
                 values[4] = score
+                values = tuple(values)
                 track.frame_id = frame_id_val
                 track.tracklet_len += 1
                 track.state = TrackState.Tracked
                 track.is_activated = True
-
+  
             activated_starcks.extend(tracks)
 
         activated_starcks_values.extend(tracks_values)

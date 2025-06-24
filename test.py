@@ -41,9 +41,8 @@ class STrack():
     location = (np.inf, np.inf)
 
     shared_kalman = KalmanFilter()
-    def __init__(self,values):
+    def __init__(self):
         # wait activate
-        self.values = values
         self.kalman_filter = None
         self.mean = None
         self.covariance = None
@@ -131,7 +130,7 @@ class BYTETracker(object):
         dets_score_classes = dets_score_classes.numpy()
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
-        detections = [STrack(d) for d in dets_score_classes]
+        detections = [STrack() for _ in dets_score_classes]
 
         unconfirmed = []
         unconfirmed_values = []

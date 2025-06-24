@@ -156,6 +156,7 @@ class BYTETracker(object):
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
+        strack_pool_means = [t.mean for t in strack_pool]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
@@ -167,6 +168,7 @@ class BYTETracker(object):
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
                 strack_pool[i].mean = multi_mean[i]
+                strack_pool_means[i] = multi_mean[i]
                 strack_pool[i].covariance = multi_covariance[i]
         
         atlbrs = [tlbr_np(values, track.mean) for values, track in zip(strack_pool_values, strack_pool)]
@@ -179,7 +181,7 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
-            mean = strack_pool[itracked].mean
+            mean = strack_pool_means[itracked]
             value = strack_pool_values[itracked]
             det_values = det_values_arr[idx]
             det_mean = detections_means[idx]
@@ -197,8 +199,6 @@ class BYTETracker(object):
                 refind_stracks.append(track)
                 refind_stracks_values.append(value)
                 refind_stracks_means.append(mean)
-        
-        strack_pool_means = [t.mean for t in strack_pool]
 
         r_tracked_stracks = []
         r_tracked_stracks_values = []

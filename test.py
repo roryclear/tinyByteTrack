@@ -107,6 +107,7 @@ class BYTETracker(object):
         refind_stracks = []
         refind_stracks_values = []
         lost_stracks = []
+        lost_stracks_values = []
         removed_stracks = []
 
         classes = output_results[:, 5]
@@ -149,7 +150,7 @@ class BYTETracker(object):
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
-        strack_values = [self.tracked_stracks_values[i] for i in keep_a] + [lost_stracks_values[i] for i in keep_b]
+        strack_values = [self.tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
@@ -231,13 +232,14 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
-
+        
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
+            values = tuple(r_tracked_stracks_values[u_track[i]])
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
-
+                lost_stracks_values.append(values)
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
@@ -348,8 +350,6 @@ class BYTETracker(object):
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
-
-        lost_stracks_values = [tuple(t.values) for t in lost_stracks]
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.tracked_stracks_values]
         self.lost_stracks_values.extend([t for t in self.lost_stracks_values if t not in self.tracked_stracks_values])

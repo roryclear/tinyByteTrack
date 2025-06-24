@@ -359,6 +359,7 @@ class BYTETracker(object):
 
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
+        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
@@ -398,6 +399,7 @@ class BYTETracker(object):
             self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
         )
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
+        self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
@@ -405,8 +407,9 @@ class BYTETracker(object):
         
         is_activated = np.array([track.is_activated for track in self.tracked_stracks])
         output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()
+        output_stracks_means = np.array(self.tracked_stracks_means)[is_activated].tolist()
         output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
-        output_stracks_means = [t.mean for t in output_stracks]
+        output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = [t.track_id for t in output_stracks]
         return output_stracks_values, output_stracks_means, output_track_ids
 

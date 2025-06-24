@@ -101,7 +101,6 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.lost_stracks_values = [track.values for track in self.lost_stracks]
-        lost_stracks_array_values = np.array(self.lost_stracks)
         self.frame_id += 1
         activated_starcks = []
         activated_starcks_values = []
@@ -337,7 +336,7 @@ class BYTETracker(object):
         
         for t in lost_stracks_array[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = lost_stracks_array[~remove_mask].tolist()
-        self.lost_stracks_values = lost_stracks_array_values[~remove_mask].tolist()
+        self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
         tracked_array = np.array(self.tracked_stracks, dtype=object)
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
@@ -363,7 +362,7 @@ class BYTETracker(object):
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.tracked_stracks]
         self.lost_stracks.extend([t for t in lost_stracks if t not in self.tracked_stracks])
 
-        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in set(self.removed_stracks_values)]
+        self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in self.removed_stracks_values]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.removed_stracks.extend(removed_stracks)
 

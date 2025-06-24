@@ -385,23 +385,29 @@ class BYTETracker(object):
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
+
         new_lost_stracks = []
         new_lost_stracks_values = []
+        new_lost_stracks_means = []
 
-        for t, v in zip(self.lost_stracks, self.lost_stracks_values):
+        for t, v, m in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means):
             if tuple(v) not in tracked_values_set:
                 new_lost_stracks.append(t)
                 new_lost_stracks_values.append(v)
+                new_lost_stracks_means.append(m)
 
         self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
-        
-        for s, v in zip(lost_stracks, lost_stracks_values):
+        self.lost_stracks_means = new_lost_stracks_means
+
+        lost_stracks_means = [t.mean for t in lost_stracks]
+
+        for s, v, m in zip(lost_stracks, lost_stracks_values, lost_stracks_means):
             if s not in self.tracked_stracks:
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
-        
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
+                self.lost_stracks_means.append(m)
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in self.removed_stracks_means)]

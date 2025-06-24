@@ -104,6 +104,7 @@ class BYTETracker(object):
         activated_starcks_values = []
         refind_stracks = []
         refind_stracks_values = []
+        refind_stracks_means = []
         lost_stracks = []
         lost_stracks_values = []
         removed_stracks = []
@@ -178,6 +179,7 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             track = strack_pool[itracked]
+            mean = strack_pool[itracked].mean
             value = strack_pool_values[itracked]
             det_values = det_values_arr[idx]
             det_mean = detections_means[idx]
@@ -194,6 +196,7 @@ class BYTETracker(object):
                 track.is_activated = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(value)
+                refind_stracks_means.append(mean)
 
         r_tracked_stracks = []
         r_tracked_stracks_values = []
@@ -213,8 +216,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
-
-        refind_stracks_means = [t.mean for t in refind_stracks]
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]

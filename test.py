@@ -98,6 +98,8 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     def update(self, output_results, img_info, img_size):
+        self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -133,16 +135,17 @@ class BYTETracker(object):
         dets_score_classes_second = dets_score_classes_second.numpy()
         detections = [STrack() for _ in dets_score_classes]
         detections_means = [None for _ in dets_score_classes]
-
+        
         unconfirmed = []
         unconfirmed_values = []
         unconfirmed_means = []
         tracked_stracks = []  # type: list[STrack]
+        tracked_stracks_means = []
         tracked_stracks_values = []
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
-            mean = self.tracked_stracks[i].mean
+            mean = self.tracked_stracks_means[i]
             if not track.is_activated:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
@@ -150,13 +153,15 @@ class BYTETracker(object):
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
+                tracked_stracks_means.append(mean)
 
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
+
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
-        strack_pool_means = [t.mean for t in strack_pool]
+        strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st.mean.copy() for st in strack_pool])

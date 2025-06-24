@@ -197,21 +197,23 @@ class BYTETracker(object):
                 refind_stracks.append(track)
                 refind_stracks_values.append(value)
                 refind_stracks_means.append(mean)
+        
+        strack_pool_means = [t.mean for t in strack_pool]
 
         r_tracked_stracks = []
         r_tracked_stracks_values = []
+        r_tracked_stracks_means = []
 
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
                 r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
-
-        r_means = [track.mean for track in r_tracked_stracks]
+                r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
 
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
 
-        atlbrs = [tlbr_np(v, m) for v, m in zip(r_tracked_stracks_values, r_means)]
+        atlbrs = [tlbr_np(v, m) for v, m in zip(r_tracked_stracks_values, r_tracked_stracks_means)]
         btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]
         dists = iou_distance(atlbrs, btlbrs)
 
@@ -219,7 +221,7 @@ class BYTETracker(object):
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
-            mean = r_tracked_stracks[itracked].mean
+            mean = r_tracked_stracks_means[itracked]
             values = r_tracked_stracks_values[itracked]
             t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]

@@ -322,7 +322,7 @@ class BYTETracker(object):
         # Get tracks using proper list indexing
         valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
-        valid_means = [detections[i].mean for i in valid_indices]
+        valid_means = [detections_means[i] for i in valid_indices]
 
         # Batch activation
         for i, (track, vals, mean) in enumerate(zip(valid_tracks, valid_values, valid_means)):

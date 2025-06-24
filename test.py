@@ -374,13 +374,14 @@ class BYTETracker(object):
             self.tracked_stracks_values, mean_a, frame_id_a, start_frame_a,
             self.lost_stracks_values, mean_b, frame_id_b, start_frame_b
         )
+        self.tracked_stracks_values = [track.values for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
-          
+        
         tracked_stracks = np.array(self.tracked_stracks)
         is_activated = np.array([track.is_activated for track in tracked_stracks])
         output_stracks = tracked_stracks[is_activated].tolist()
-        output_stracks_values = [t.values for t in output_stracks]
+        output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
         output_stracks_means = [t.mean for t in output_stracks]
         output_track_ids = [t.track_id for t in output_stracks]
         return output_stracks_values, output_stracks_means, output_track_ids

@@ -164,7 +164,7 @@ class BYTETracker(object):
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         # Predict the current location with KF
         if len(strack_pool) > 0:
-            multi_mean = np.asarray([st.mean.copy() for st in strack_pool])
+            multi_mean = np.asarray([st for st in strack_pool_means])
             multi_covariance = np.asarray([st.covariance for st in strack_pool])
             for i in range(len(strack_pool)):
                 st = strack_pool[i]
@@ -176,7 +176,7 @@ class BYTETracker(object):
                 strack_pool_means[i] = multi_mean[i]
                 strack_pool[i].covariance = multi_covariance[i]
         
-        atlbrs = [tlbr_np(values, track.mean) for values, track in zip(strack_pool_values, strack_pool)]
+        atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
         bmeans = detections_means
         btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
         dists = iou_distance(atlbrs, btlbrs)
@@ -191,7 +191,7 @@ class BYTETracker(object):
             det_values = det_values_arr[idx]
             det_mean = detections_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
-            track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, det_xyah)
+            track.mean, track.covariance = track.kalman_filter.update(mean, track.covariance, det_xyah)
             track.frame_id = self.frame_id
             if track.state == TrackState.Tracked:
                 track.tracklet_len += 1
@@ -233,7 +233,7 @@ class BYTETracker(object):
             d_mean = det_means[idet]
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
-            track.mean, track.covariance = track.kalman_filter.update(track.mean, track.covariance, xyah)
+            track.mean, track.covariance = track.kalman_filter.update(mean, track.covariance, xyah)
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
             t_val = tuple(t_val)

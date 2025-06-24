@@ -337,6 +337,10 @@ class BYTETracker(object):
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
 
+        activated_stracks_means = [t.mean for t in activated_stracks]
+        valid_means = [t.mean for t in valid_tracks]
+        activated_stracks_means.extend(valid_means)
+
         activated_stracks_values.extend(valid_values)
         activated_stracks.extend(valid_tracks)
 
@@ -357,7 +361,6 @@ class BYTETracker(object):
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
-        activated_stracks_means = [t.mean for t in activated_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
@@ -927,3 +930,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+

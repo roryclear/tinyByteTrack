@@ -91,6 +91,7 @@ class BYTETracker(object):
 
         self.removed_stracks_means = []
         self.tracked_stracks_means = []
+        self.lost_stracks_means = []
 
         self.frame_id = 0
         self.args = args
@@ -102,7 +103,6 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         
         self.frame_id += 1
         activated_stracks = []
@@ -116,6 +116,7 @@ class BYTETracker(object):
         lost_stracks_values = []
         removed_stracks = []
         removed_stracks_values = []
+        removed_stracks_means = []
 
         classes = output_results[:, 5]
         scores = output_results[:, 4]
@@ -326,10 +327,12 @@ class BYTETracker(object):
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         values = np.fromiter((unconfirmed_values[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
+        means = np.fromiter((unconfirmed_means[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         if tracks.size > 0:
             np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
             removed_stracks_values.extend(values.tolist())
+            removed_stracks_means.extend(means.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -419,7 +422,6 @@ class BYTETracker(object):
         
         self.removed_stracks.extend(removed_stracks)
 
-        
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
         start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
@@ -437,12 +439,15 @@ class BYTETracker(object):
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         
+
+
         is_activated = np.array([track.is_activated for track in self.tracked_stracks])
         output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()
         output_stracks_means = np.array(self.tracked_stracks_means)[is_activated].tolist()
         output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
         output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = [t.track_id for t in output_stracks]
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         return output_stracks_values, output_stracks_means, output_track_ids
 
 

@@ -142,11 +142,12 @@ class BYTETracker(object):
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
+
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
             mean = self.tracked_stracks_means[i]
-            if not track.is_activated:
+            if not self.tracked_stracks_bools[i]:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
                 unconfirmed_means.append(mean)

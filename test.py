@@ -415,9 +415,9 @@ class BYTETracker(object):
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
-
+                
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
-        self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in self.removed_stracks_means)]
+        self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         
         self.removed_stracks.extend(removed_stracks)
@@ -438,8 +438,8 @@ class BYTETracker(object):
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
+        self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
         
-
 
         is_activated = np.array([track.is_activated for track in self.tracked_stracks])
         output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()

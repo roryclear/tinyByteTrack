@@ -357,6 +357,8 @@ class BYTETracker(object):
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
 
+        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
+
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
@@ -366,9 +368,13 @@ class BYTETracker(object):
         self.tracked_stracks = np.array(self.tracked_stracks)[mask].tolist()
         self.tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
         self.tracked_stracks_means = np.array(self.tracked_stracks_means)[mask]
+        self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask]
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
+
+        activated_stracks_bools = [t.is_activated for t in activated_stracks]
+        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
@@ -378,8 +384,6 @@ class BYTETracker(object):
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
-
-        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [refind_stracks_means[i] for i in keep_refind]

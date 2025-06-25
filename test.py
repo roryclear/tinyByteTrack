@@ -36,14 +36,8 @@ class STrack():
     start_frame = 0
     frame_id = 0
     time_since_update = 0
-    
-    # multi-camera
     location = (np.inf, np.inf)
-
-    shared_kalman = KalmanFilter()
     def __init__(self):
-        # wait activate
-        self.kalman_filter = None
         self.covariance = None
         self.is_activated = False
 
@@ -178,7 +172,7 @@ class BYTETracker(object):
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
 
-            multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
+            multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool[i].covariance = multi_covariance[i]
@@ -194,7 +188,7 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
-            x, strack_pool[itracked].covariance = strack_pool[itracked].kalman_filter.update(strack_pool_means[itracked], strack_pool[itracked].covariance, det_xyah)
+            x, strack_pool[itracked].covariance = self.kalman_filter.update(strack_pool_means[itracked], strack_pool[itracked].covariance, det_xyah)
             strack_pool_means[itracked][:] = x
             strack_pool[itracked].frame_id = self.frame_id
             if strack_pool[itracked].state == TrackState.Tracked:
@@ -240,7 +234,7 @@ class BYTETracker(object):
             d_mean = det_means[idet]
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
-            r_tracked_stracks_means[itracked][:], track.covariance = track.kalman_filter.update(mean, track.covariance, xyah)
+            r_tracked_stracks_means[itracked][:], track.covariance = self.kalman_filter.update(mean, track.covariance, xyah)
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
             t_val = tuple(t_val)
@@ -297,12 +291,10 @@ class BYTETracker(object):
             det_values = dets_score_classes_second[idet_arr]
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
-
-            kf = tracks[0].kalman_filter
             updated_covs = []
 
             for mean, cov, tlwh in zip(means, covariances, tlwhs):
-                new_mean, new_cov = kf.update(mean, cov, tlwh_to_xyah(tlwh))
+                new_mean, new_cov = self.kalman_filter.update(mean, cov, tlwh_to_xyah(tlwh))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
             
@@ -345,9 +337,8 @@ class BYTETracker(object):
 
         # Batch activation
         for i, (track, vals, mean) in enumerate(zip(valid_tracks, valid_values, valid_means)):
-            track.kalman_filter = self.kalman_filter
             track.track_id = STrack._count = STrack._count + 1
-            valid_means[i], track.covariance = track.kalman_filter.initiate(
+            valid_means[i], track.covariance = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
             track.tracklet_len = 0
             track.state = TrackState.Tracked

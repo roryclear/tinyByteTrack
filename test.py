@@ -103,7 +103,7 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
-        
+        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -169,6 +169,7 @@ class BYTETracker(object):
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
+
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st for st in strack_pool_means])
@@ -177,12 +178,13 @@ class BYTETracker(object):
                 st = strack_pool[i]
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
+            
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
-                strack_pool[i].mean = multi_mean[i]
+                strack_pool[i].mean[:] = multi_mean[i]
                 strack_pool_means[i] = multi_mean[i]
                 strack_pool[i].covariance = multi_covariance[i]
-        
+
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
         bmeans = detections_means
         btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
@@ -198,7 +200,10 @@ class BYTETracker(object):
             det_values = det_values_arr[idx]
             det_mean = detections_means[idx]
             det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
-            track.mean, track.covariance = track.kalman_filter.update(mean, track.covariance, det_xyah)
+            x, track.covariance = track.kalman_filter.update(mean, track.covariance, det_xyah)
+            track.mean[:] = x
+            strack_pool_means[itracked] = x
+            lsm = [t.mean for t in self.lost_stracks]
             track.frame_id = self.frame_id
             if track.state == TrackState.Tracked:
                 track.tracklet_len += 1
@@ -212,7 +217,6 @@ class BYTETracker(object):
                 refind_stracks.append(track)
                 refind_stracks_values.append(value)
                 refind_stracks_means.append(mean)
-
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -320,7 +324,7 @@ class BYTETracker(object):
                 track.is_activated = True
   
             activated_stracks.extend(tracks)
-
+        
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
 
@@ -439,7 +443,6 @@ class BYTETracker(object):
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
-        
 
         is_activated = np.array([track.is_activated for track in self.tracked_stracks])
         output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()
@@ -447,7 +450,6 @@ class BYTETracker(object):
         output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
         output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = [t.track_id for t in output_stracks]
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         return output_stracks_values, output_stracks_means, output_track_ids
 
 

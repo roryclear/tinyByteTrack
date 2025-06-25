@@ -352,7 +352,7 @@ class BYTETracker(object):
                 track.is_activated = True
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
-            
+ 
         activated_stracks_means.extend(valid_means)
 
         activated_stracks_values.extend(valid_values)
@@ -428,18 +428,22 @@ class BYTETracker(object):
             self.tracked_stracks_values, self.tracked_stracks_means, frame_id_a, start_frame_a,
             self.lost_stracks_values, self.lost_stracks_means, frame_id_b, start_frame_b
         )
+
+        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
+
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
         self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
+        self.tracked_stracks_bools = [t for t, keep in zip(self.tracked_stracks_bools, keep_a) if keep]
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
 
-        is_activated = np.array([track.is_activated for track in self.tracked_stracks])
-        output_stracks = np.array(self.tracked_stracks)[is_activated].tolist()
-        output_stracks_means = np.array(self.tracked_stracks_means)[is_activated].tolist()
-        output_stracks_values = np.array(self.tracked_stracks_values)[is_activated].tolist()
+        
+        output_stracks = np.array(self.tracked_stracks)[self.tracked_stracks_bools].tolist()
+        output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools].tolist()
+        output_stracks_values = np.array(self.tracked_stracks_values)[self.tracked_stracks_bools].tolist()
         output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = [t.track_id for t in output_stracks]
 

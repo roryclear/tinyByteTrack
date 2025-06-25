@@ -280,11 +280,15 @@ class BYTETracker(object):
 
         updated_means = []
         tracks_values = []
+        updated_bools = []
+        tracks = []
+        activated_stracks_bools = [t.is_activated for t in activated_stracks]
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
             tracks = [unconfirmed[i] for i in itracked_arr]
+            updated_bools = [unconfirmed[i].is_activated for i in itracked_arr]
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
@@ -313,8 +317,8 @@ class BYTETracker(object):
                 track.state = TrackState.Tracked
                 track.is_activated = True
   
-            activated_stracks.extend(tracks)  
-
+        activated_stracks.extend(tracks)  
+        activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
 
@@ -352,7 +356,6 @@ class BYTETracker(object):
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
 
-        activated_stracks_bools = [t.is_activated for t in activated_stracks]
 
         activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)

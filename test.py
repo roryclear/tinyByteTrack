@@ -335,9 +335,9 @@ class BYTETracker(object):
         valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
         valid_means = [detections_means[i] for i in valid_indices]
+        valid_bools = [detections[i].is_activated for i in valid_indices]
 
-        # Batch activation
-        for i, (track, vals, mean) in enumerate(zip(valid_tracks, valid_values, valid_means)):
+        for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
             track.track_id = STrack._count = STrack._count + 1
             valid_means[i], track.covariance = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
@@ -345,11 +345,11 @@ class BYTETracker(object):
             track.state = TrackState.Tracked
             if self.frame_id == 1:
                 track.is_activated = True
+                valid_bools[i] = True
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
 
         activated_stracks_bools = [t.is_activated for t in activated_stracks]
-        valid_bools = [t.is_activated for t in valid_tracks]
 
         activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)

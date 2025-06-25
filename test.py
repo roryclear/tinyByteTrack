@@ -108,6 +108,7 @@ class BYTETracker(object):
         refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
+        refind_stracks_bools = []
         lost_stracks = []
         lost_stracks_means = []
         lost_stracks_values = []
@@ -208,6 +209,7 @@ class BYTETracker(object):
                 refind_stracks.append(strack_pool[itracked])
                 refind_stracks_values.append(strack_pool_values[itracked])
                 refind_stracks_means.append(strack_pool_means[itracked])
+                refind_stracks_bools.append(True)
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -256,6 +258,7 @@ class BYTETracker(object):
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
                 refind_stracks_means.append(mean)
+                refind_stracks_bools.append(True)
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -384,9 +387,12 @@ class BYTETracker(object):
         ids_refind = np.array([t.track_id for t in refind_stracks])
         keep_tracked, keep_refind = joint_stracks_indices(ids_tracked, ids_refind)
 
+        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
+
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [refind_stracks_means[i] for i in keep_refind]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
+        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [refind_stracks_bools[i] for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
@@ -428,8 +434,6 @@ class BYTETracker(object):
             self.tracked_stracks_values, self.tracked_stracks_means, frame_id_a, start_frame_a,
             self.lost_stracks_values, self.lost_stracks_means, frame_id_b, start_frame_b
         )
-
-        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
 
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
@@ -954,6 +958,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+
 
 
 

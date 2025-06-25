@@ -44,7 +44,6 @@ class STrack():
     def __init__(self):
         # wait activate
         self.kalman_filter = None
-        self.mean = None
         self.covariance = None
         self.is_activated = False
 
@@ -102,7 +101,6 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     def update(self, output_results, img_info, img_size):
-        #self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -181,7 +179,6 @@ class BYTETracker(object):
 
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
-                #strack_pool[i].mean[:] = multi_mean[i].astype(np.float32)
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool[i].covariance = multi_covariance[i]
 
@@ -197,7 +194,6 @@ class BYTETracker(object):
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
             x, strack_pool[itracked].covariance = strack_pool[itracked].kalman_filter.update(strack_pool_means[itracked], strack_pool[itracked].covariance, det_xyah)
-            #strack_pool[itracked].mean[:] = x
             strack_pool_means[itracked][:] = x
             strack_pool[itracked].frame_id = self.frame_id
             if strack_pool[itracked].state == TrackState.Tracked:
@@ -240,33 +236,14 @@ class BYTETracker(object):
             t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]
             d_mean = det_means[idet]
-            '''
-            tsm = [t.mean for t in self.tracked_stracks]
-            for x,y in zip(tsm,self.tracked_stracks_means):
-              if list(x) != list(y):
-                  print(x,y)
-                  print(x.dtype,y.dtype)
-                  print("BEFORE")
-                  exit()
-            '''
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
             r_tracked_stracks_means[itracked][:], track.covariance = track.kalman_filter.update(mean, track.covariance, xyah)
-            # = track.mean
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
             t_val = tuple(t_val)
             track.frame_id = self.frame_id
-            
-            '''
-            tsm = [t.mean for t in self.tracked_stracks]
-            for x,y in zip(tsm,self.tracked_stracks_means):
-              if list(x) != list(y):
-                  print(x,y)
-                  print(x.dtype,y.dtype)
-                  print("AFTER")
-                  exit()
-            '''
+
             if track.state == TrackState.Tracked:
                 track.tracklet_len += 1
                 activated_stracks.append(track)
@@ -329,7 +306,6 @@ class BYTETracker(object):
             updated_scores = scores
             frame_id_val = self.frame_id
             for track, mean, cov, score, values in zip(tracks, updated_means, updated_covs, updated_scores, tracks_values):
-                track.mean = mean
                 track.covariance = cov
                 values = list(values)
                 values[4] = score

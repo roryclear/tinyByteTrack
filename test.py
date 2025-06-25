@@ -347,11 +347,14 @@ class BYTETracker(object):
                 track.is_activated = True
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
- 
-        activated_stracks_means.extend(valid_means)
 
+        activated_stracks_bools = [t.is_activated for t in activated_stracks]
+        valid_bools = [t.is_activated for t in valid_tracks]
+
+        activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)
         activated_stracks.extend(valid_tracks)
+        activated_stracks_bools.extend(valid_bools)
         
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
@@ -373,7 +376,6 @@ class BYTETracker(object):
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
-        activated_stracks_bools = [t.is_activated for t in activated_stracks]
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]

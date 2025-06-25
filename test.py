@@ -134,6 +134,7 @@ class BYTETracker(object):
         dets_score_classes_second = dets_score_classes_second.numpy()
         detections = [STrack() for _ in dets_score_classes]
         detections_means = [None for _ in dets_score_classes]
+        detections_bools = [False for _ in dets_score_classes_second]
         
 
         unconfirmed = []
@@ -264,8 +265,6 @@ class BYTETracker(object):
                 lost_stracks.append(track)
                 lost_stracks_values.append(values)
                 lost_stracks_means.append(mean)
-
-        detections_bools = [t.is_activated for t in detections]
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]

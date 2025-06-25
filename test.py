@@ -103,7 +103,6 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.tracked_stracks_means = [t.mean for t in self.tracked_stracks]
-        self.lost_stracks_means = [t.mean for t in self.lost_stracks]
         self.frame_id += 1
         activated_stracks = []
         activated_stracks_values = []
@@ -143,6 +142,7 @@ class BYTETracker(object):
         detections = [STrack() for _ in dets_score_classes]
         detections_means = [None for _ in dets_score_classes]
         
+
         unconfirmed = []
         unconfirmed_values = []
         unconfirmed_means = []
@@ -178,11 +178,11 @@ class BYTETracker(object):
                 st = strack_pool[i]
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
-            
+
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
-                strack_pool[i].mean[:] = multi_mean[i]
-                strack_pool_means[i] = multi_mean[i]
+                strack_pool[i].mean[:] = multi_mean[i].astype(np.float32)
+                strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool[i].covariance = multi_covariance[i]
 
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
@@ -191,36 +191,31 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
+      
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
-            track = strack_pool[itracked]
-            mean = strack_pool_means[itracked]
-            value = strack_pool_values[itracked]
-            det_values = det_values_arr[idx]
-            det_mean = detections_means[idx]
-            det_xyah = tlwh_to_xyah(tlwh_np(det_values, det_mean))
-            x, track.covariance = track.kalman_filter.update(mean, track.covariance, det_xyah)
-            track.mean[:] = x
-            strack_pool_means[itracked] = x
-            lsm = [t.mean for t in self.lost_stracks]
-            track.frame_id = self.frame_id
-            if track.state == TrackState.Tracked:
-                track.tracklet_len += 1
-                activated_stracks.append(track)
-                activated_stracks_values.append(value)
-                activated_stracks_means.append(mean)
+            det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
+            x, strack_pool[itracked].covariance = strack_pool[itracked].kalman_filter.update(strack_pool_means[itracked], strack_pool[itracked].covariance, det_xyah)
+            strack_pool[itracked].mean[:] = x
+            strack_pool_means[itracked][:] = x
+            strack_pool[itracked].frame_id = self.frame_id
+            if strack_pool[itracked].state == TrackState.Tracked:
+                strack_pool[itracked].tracklet_len += 1
+                activated_stracks.append(strack_pool[itracked])
+                activated_stracks_values.append(strack_pool_values[itracked])
+                activated_stracks_means.append(strack_pool_means[itracked])
             else:
-                track.tracklet_len = 0
-                track.state = TrackState.Tracked
-                track.is_activated = True
-                refind_stracks.append(track)
-                refind_stracks_values.append(value)
-                refind_stracks_means.append(mean)
+                strack_pool[itracked].tracklet_len = 0
+                strack_pool[itracked].state = TrackState.Tracked
+                strack_pool[itracked].is_activated = True
+                refind_stracks.append(strack_pool[itracked])
+                refind_stracks_values.append(strack_pool_values[itracked])
+                refind_stracks_means.append(strack_pool_means[itracked])
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
-
+                
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
@@ -323,8 +318,8 @@ class BYTETracker(object):
                 track.state = TrackState.Tracked
                 track.is_activated = True
   
-            activated_stracks.extend(tracks)
-        
+            activated_stracks.extend(tracks)  
+
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
 
@@ -384,7 +379,6 @@ class BYTETracker(object):
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
-
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [activated_stracks_means[i] for i in keep_activated]
@@ -403,6 +397,7 @@ class BYTETracker(object):
         new_lost_stracks = []
         new_lost_stracks_values = []
         new_lost_stracks_means = []
+
 
         for t, v, m in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means):
             if tuple(v) not in tracked_values_set:
@@ -423,6 +418,7 @@ class BYTETracker(object):
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
+
         
         self.removed_stracks.extend(removed_stracks)
 
@@ -957,4 +953,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+
+
 

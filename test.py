@@ -175,10 +175,12 @@ class BYTETracker(object):
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
 
+        strack_pool_covs = [t.covariance for t in strack_pool]
+
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st for st in strack_pool_means])
-            multi_covariance = np.asarray([st.covariance for st in strack_pool])
+            multi_covariance = np.asarray([st for st in strack_pool_covs])
             for i in range(len(strack_pool)):
                 st = strack_pool[i]
                 if st.state != TrackState.Tracked:
@@ -188,6 +190,7 @@ class BYTETracker(object):
             for i in range(len(strack_pool)):
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool[i].covariance = multi_covariance[i]
+                strack_pool_covs[i] = multi_covariance[i]
 
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
         bmeans = detections_means
@@ -200,7 +203,7 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
-            x, strack_pool[itracked].covariance = self.kalman_filter.update(strack_pool_means[itracked], strack_pool[itracked].covariance, det_xyah)
+            x, strack_pool[itracked].covariance = self.kalman_filter.update(strack_pool_means[itracked], strack_pool_covs[itracked], det_xyah)
             strack_pool_means[itracked][:] = x
             strack_pool[itracked].frame_id = self.frame_id
             if strack_pool[itracked].state == TrackState.Tracked:

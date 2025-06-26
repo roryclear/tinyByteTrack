@@ -253,11 +253,15 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+        refind_stracks_ids = [t.track_id for t in refind_stracks]
+        r_tracked_stracks_ids = [t.track_id for t in r_tracked_stracks]
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
             bool = r_tracked_stracks_bools[itracked]
             cov = r_tracked_stracks_covs[itracked]
+            id = r_tracked_stracks_ids[itracked]
             values = r_tracked_stracks_values[itracked]
             t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]
@@ -284,6 +288,7 @@ class BYTETracker(object):
                 track.state = TrackState.Tracked
                 r_tracked_stracks_bools[itracked] = True
                 refind_stracks.append(track)
+                refind_stracks_ids.append(id)
                 refind_stracks_values.append(values)
                 refind_stracks_means.append(mean)
                 refind_stracks_bools.append(True)
@@ -440,7 +445,6 @@ class BYTETracker(object):
         self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [activated_stracks_covs[i] for i in keep_activated]
         self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [activated_stracks_ids[i] for i in keep_activated]
 
-        refind_stracks_ids = [t.track_id for t in refind_stracks]
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]

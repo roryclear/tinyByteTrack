@@ -296,10 +296,13 @@ class BYTETracker(object):
                 lost_stracks_means.append(mean)
                 lost_stracks_bools.append(bool)
 
+        detections_cov = [d.covariance for d in detections]
+
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
         detections_bools = np.array(detections_bools)[u_detection_np]
         detections_means = np.array(detections_means)[u_detection_np]
+        detections_cov = np.array(detections_cov)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
       
         atlbrs = [tlbr_np(unconfirmed_values[i], mean) for i, mean in enumerate(unconfirmed_means)]
@@ -375,11 +378,12 @@ class BYTETracker(object):
         valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
 
         # Get tracks using proper list indexing
+
         valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
         valid_means = [detections_means[i] for i in valid_indices]
         valid_bools = [detections_bools[i] for i in valid_indices]
-        valid_covs = [d.covariance for d in valid_tracks]
+        valid_covs = [detections_cov[i] for i in valid_indices]
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
             track.track_id = STrack._count = STrack._count + 1

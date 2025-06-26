@@ -149,6 +149,7 @@ class BYTETracker(object):
         unconfirmed_means = []
         unconfirmed_bools = []
         unconfirmed_covs = []
+        unconfirmed_ids = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
@@ -169,7 +170,7 @@ class BYTETracker(object):
                 unconfirmed_means.append(mean)
                 unconfirmed_bools.append(bool)
                 unconfirmed_covs.append(cov)
-                #unconfirmed_ids.append(id)
+                unconfirmed_ids.append(id)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
@@ -336,11 +337,13 @@ class BYTETracker(object):
         updated_bools = []
         tracks = []
         updated_covs = []
+        updated_ids = []
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
             tracks = [unconfirmed[i] for i in itracked_arr]
+            ids = [unconfirmed_ids[i] for i in itracked_arr]
             updated_bools = [unconfirmed_bools[i] for i in itracked_arr]
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
@@ -352,10 +355,11 @@ class BYTETracker(object):
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
 
-            for mean, cov, tlwh in zip(means, covariances, tlwhs):
+            for mean, cov, tlwh, id in zip(means, covariances, tlwhs, ids):
                 new_mean, new_cov = self.kalman_filter.update(mean, cov, tlwh_to_xyah(tlwh))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
+                updated_ids.append(id)
 
             updated_scores = scores
             frame_id_val = self.frame_id
@@ -372,13 +376,14 @@ class BYTETracker(object):
                   idx = self.tracked_stracks.index(track)
                   self.tracked_stracks_bools[idx] = True
 
+        activated_stracks_ids = [t.track_id for t in activated_stracks]
+
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
         activated_stracks_covs.extend(updated_covs)
-
-        activated_stracks_ids = [t.track_id for t in activated_stracks]
+        activated_stracks_ids.extend(updated_ids)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
 

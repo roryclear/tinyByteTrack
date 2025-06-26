@@ -230,11 +230,15 @@ class BYTETracker(object):
                 refind_stracks_means.append(strack_pool_means[itracked])
                 refind_stracks_bools.append(True)
                 refind_stracks_covs.append(strack_pool_covs[itracked])
+
+        strack_pool_ids = [t.track_id for t in strack_pool]
+
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
         r_tracked_stracks_bools = []
         r_tracked_stracks_covs = []
+        r_tracked_stracks_ids = []
 
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
@@ -243,6 +247,7 @@ class BYTETracker(object):
                 r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
                 r_tracked_stracks_bools.append(strack_pool_bools[u_track[i]])
                 r_tracked_stracks_covs.append(strack_pool_covs[u_track[i]])
+                r_tracked_stracks_ids.append(strack_pool_ids[u_track[i]])
 
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
@@ -254,7 +259,6 @@ class BYTETracker(object):
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
         refind_stracks_ids = [t.track_id for t in refind_stracks]
-        r_tracked_stracks_ids = [t.track_id for t in r_tracked_stracks]
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]

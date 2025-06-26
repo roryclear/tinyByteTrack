@@ -149,6 +149,7 @@ class BYTETracker(object):
         self.tracked_stracks_covs = [t.covariance for t in self.tracked_stracks]
         self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
 
+
         unconfirmed = []
         unconfirmed_values = []
         unconfirmed_means = []
@@ -220,7 +221,9 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
-            x, strack_pool[itracked].covariance = self.kalman_filter.update(strack_pool_means[itracked], strack_pool_covs[itracked], det_xyah)
+            x, y = self.kalman_filter.update(strack_pool_means[itracked], strack_pool_covs[itracked], det_xyah)
+            strack_pool[itracked].covariance = y
+            strack_pool_covs[itracked][:] = y
             strack_pool_means[itracked][:] = x
             strack_pool[itracked].frame_id = self.frame_id
             if strack_pool[itracked].state == TrackState.Tracked:

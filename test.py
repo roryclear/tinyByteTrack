@@ -170,12 +170,14 @@ class BYTETracker(object):
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
 
+        tracked_stracks_covs = [t.covariance for t in tracked_stracks]
+        self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
+
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
-
-        strack_pool_covs = [t.covariance for t in strack_pool]
+        strack_pool_covs = [tracked_stracks_covs[i] for i in keep_a] + [self.lost_stracks_covs[i] for i in keep_b]
 
         # Predict the current location with KF
         if len(strack_pool) > 0:

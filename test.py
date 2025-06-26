@@ -141,6 +141,7 @@ class BYTETracker(object):
         detections = [STrack() for _ in dets_score_classes]
         detections_means = [None for _ in dets_score_classes]
         detections_bools = [False for _ in dets_score_classes_second]
+        detections_cov = [None for _ in dets_score_classes]
         
         self.tracked_stracks_covs = [t.covariance for t in self.tracked_stracks]
 
@@ -295,8 +296,6 @@ class BYTETracker(object):
                 lost_stracks_values.append(values)
                 lost_stracks_means.append(mean)
                 lost_stracks_bools.append(bool)
-
-        detections_cov = [d.covariance for d in detections]
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]

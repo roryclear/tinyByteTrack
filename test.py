@@ -84,6 +84,7 @@ class BYTETracker(object):
         self.removed_stracks_means = []
         self.tracked_stracks_means = []
         self.tracked_stracks_bools = []
+        self.tracked_stracks_covs = []
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
 
@@ -408,8 +409,6 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
-
-        self.tracked_stracks_covs = [t.covariance for t in self.tracked_stracks]
 
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()

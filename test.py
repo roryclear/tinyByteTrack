@@ -98,6 +98,7 @@ class BYTETracker(object):
         activated_stracks_means = []
         activated_stracks_bools = []
         activated_stracks_covs = []
+        activated_stracks_ids = []
         refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
@@ -215,7 +216,6 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
@@ -230,6 +230,7 @@ class BYTETracker(object):
                 activated_stracks_means.append(strack_pool_means[itracked])
                 activated_stracks_bools.append(strack_pool_bools[itracked])
                 activated_stracks_covs.append(strack_pool_covs[itracked])
+                activated_stracks_ids.append(strack_pool_ids[itracked])
             else:
                 strack_pool[itracked].tracklet_len = 0
                 strack_pool[itracked].state = TrackState.Tracked
@@ -266,6 +267,7 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
@@ -293,6 +295,7 @@ class BYTETracker(object):
                 activated_stracks_means.append(mean)
                 activated_stracks_bools.append(bool)
                 activated_stracks_covs.append(cov)
+                activated_stracks_ids.append(id)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
@@ -375,8 +378,6 @@ class BYTETracker(object):
                 if track in self.tracked_stracks:
                   idx = self.tracked_stracks.index(track)
                   self.tracked_stracks_bools[idx] = True
-
-        activated_stracks_ids = [t.track_id for t in activated_stracks]
 
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)

@@ -243,12 +243,15 @@ class BYTETracker(object):
                 refind_stracks_covs.append(strack_pool_covs[itracked])
                 refind_stracks_ids.append(strack_pool_ids[itracked])
 
+        strack_pool_startframes = [t.start_frame for t in strack_pool]
+
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
         r_tracked_stracks_bools = []
         r_tracked_stracks_covs = []
         r_tracked_stracks_ids = []
+        r_tracked_stracks_startframes = []
 
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
@@ -258,6 +261,7 @@ class BYTETracker(object):
                 r_tracked_stracks_bools.append(strack_pool_bools[u_track[i]])
                 r_tracked_stracks_covs.append(strack_pool_covs[u_track[i]])
                 r_tracked_stracks_ids.append(strack_pool_ids[u_track[i]])
+                r_tracked_stracks_startframes.append(strack_pool_startframes[u_track[i]])
 
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
@@ -268,11 +272,14 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+        refind_stracks_startframes = [t.start_frame for t in refind_stracks]
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
             bool = r_tracked_stracks_bools[itracked]
             cov = r_tracked_stracks_covs[itracked]
+            startframe = r_tracked_stracks_startframes[itracked]
             id = r_tracked_stracks_ids[itracked]
             values = r_tracked_stracks_values[itracked]
             t_val = r_tracked_stracks_values[itracked]
@@ -306,6 +313,7 @@ class BYTETracker(object):
                 refind_stracks_means.append(mean)
                 refind_stracks_bools.append(True)
                 refind_stracks_covs.append(cov)
+                refind_stracks_startframes.append(startframe)
         
 
         for i in range(len(u_track)):
@@ -465,7 +473,6 @@ class BYTETracker(object):
 
         self.tracked_stracks_startframes = [track.start_frame for track in self.tracked_stracks]
         activated_stracks_startframes = [track.start_frame for track in activated_stracks]
-        refind_stracks_startframes = [t.start_frame for t in refind_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]

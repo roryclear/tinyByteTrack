@@ -276,7 +276,9 @@ class BYTETracker(object):
             d_mean = det_means[idet]
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
-            r_tracked_stracks_means[itracked][:], track.covariance = self.kalman_filter.update(mean, track.covariance, xyah)
+            r_tracked_stracks_means[itracked][:], x = self.kalman_filter.update(mean, track.covariance, xyah)
+            track.covariance[:] = x
+            cov[:] = x
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
             t_val = tuple(t_val)
@@ -349,11 +351,12 @@ class BYTETracker(object):
                 new_mean, new_cov = self.kalman_filter.update(mean, cov, tlwh_to_xyah(tlwh))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
-            
+
             updated_scores = scores
             frame_id_val = self.frame_id
-            for track, mean, cov, score, values in zip(tracks, updated_means, updated_covs, updated_scores, tracks_values):
-                track.covariance = cov
+            for i, (track, mean, cov, score, values) in enumerate(zip(tracks, updated_means, updated_covs, updated_scores, tracks_values)):
+                track.covariance[:] = cov
+                covariances[i][:] = cov
                 values = list(values)
                 values[4] = score
                 values = tuple(values)
@@ -515,6 +518,7 @@ class BYTETracker(object):
         output_stracks_values = np.array(self.tracked_stracks_values)[self.tracked_stracks_bools].tolist()
         output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = [t.track_id for t in output_stracks]
+
 
         return output_stracks_values, output_stracks_means, output_track_ids
 

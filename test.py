@@ -102,6 +102,7 @@ class BYTETracker(object):
         activated_stracks_values = []
         activated_stracks_means = []
         activated_stracks_bools = []
+        activated_stracks_covs = []
         refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
@@ -207,7 +208,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
-        
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
@@ -221,6 +221,7 @@ class BYTETracker(object):
                 activated_stracks_values.append(strack_pool_values[itracked])
                 activated_stracks_means.append(strack_pool_means[itracked])
                 activated_stracks_bools.append(strack_pool_bools[itracked])
+                activated_stracks_covs.append(strack_pool_covs[itracked])
             else:
                 strack_pool[itracked].tracklet_len = 0
                 strack_pool[itracked].state = TrackState.Tracked
@@ -252,8 +253,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
-
-        activated_stracks_covs = [t.covariance for t in activated_stracks]
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]

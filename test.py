@@ -378,6 +378,8 @@ class BYTETracker(object):
         activated_stracks_means.extend(updated_means)
         activated_stracks_covs.extend(updated_covs)
 
+        activated_stracks_ids = [t.track_id for t in activated_stracks]
+
         u_unconfirmed_np = np.asarray(u_unconfirmed)
 
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
@@ -405,9 +407,12 @@ class BYTETracker(object):
         valid_means = [detections_means[i] for i in valid_indices]
         valid_bools = [detections_bools[i] for i in valid_indices]
         valid_covs = [detections_cov[i] for i in valid_indices]
+        valid_ids = [t.track_id for t in valid_tracks]
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
-            track.track_id = STrack._count = STrack._count + 1
+            y = STrack._count = STrack._count + 1
+            track.track_id = y
+            valid_ids[i] = y
             valid_means[i], x = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
             valid_covs[i] = x
@@ -423,6 +428,7 @@ class BYTETracker(object):
         activated_stracks.extend(valid_tracks)
         activated_stracks_bools.extend(valid_bools)
         activated_stracks_covs.extend(valid_covs)
+        activated_stracks_ids.extend(valid_ids)
 
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
@@ -443,7 +449,6 @@ class BYTETracker(object):
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[mask]
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
 
-        activated_stracks_ids = [t.track_id for t in activated_stracks]
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]

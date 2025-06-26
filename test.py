@@ -315,6 +315,7 @@ class BYTETracker(object):
         tracks_values = []
         updated_bools = []
         tracks = []
+        updated_covs = []
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
@@ -330,7 +331,6 @@ class BYTETracker(object):
             det_values = dets_score_classes_second[idet_arr]
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
-            updated_covs = []
 
             for mean, cov, tlwh in zip(means, covariances, tlwhs):
                 new_mean, new_cov = self.kalman_filter.update(mean, cov, tlwh_to_xyah(tlwh))
@@ -352,10 +352,13 @@ class BYTETracker(object):
                   idx = self.tracked_stracks.index(track)
                   self.tracked_stracks_bools[idx] = True
 
+        activated_stracks_covs = [t.covariance for t in activated_stracks]
+
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
+        activated_stracks_covs.extend(updated_covs)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
 
@@ -397,8 +400,6 @@ class BYTETracker(object):
                 valid_bools[i] = True
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
-
-        activated_stracks_covs = [t.covariance for t in activated_stracks]
 
         activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)

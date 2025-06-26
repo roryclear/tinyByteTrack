@@ -87,6 +87,7 @@ class BYTETracker(object):
         self.tracked_stracks_covs = []
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
+        self.lost_stracks_covs = []
 
         self.frame_id = 0
         self.args = args
@@ -146,6 +147,7 @@ class BYTETracker(object):
         detections_cov = [None for _ in dets_score_classes]
         
         self.tracked_stracks_covs = [t.covariance for t in self.tracked_stracks]
+        self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
 
         unconfirmed = []
         unconfirmed_values = []
@@ -199,8 +201,14 @@ class BYTETracker(object):
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
             for i in range(len(strack_pool)):
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
-                strack_pool[i].covariance = multi_covariance[i]
                 strack_pool_covs[i] = multi_covariance[i]
+                strack_pool[i].covariance = multi_covariance[i]
+            
+            for i, t in enumerate(self.tracked_stracks):
+              for j, p in enumerate(strack_pool):
+                  if t is p:
+                      self.tracked_stracks_covs[i] = strack_pool_covs[j]
+
 
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
         bmeans = detections_means
@@ -468,8 +476,6 @@ class BYTETracker(object):
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
                 self.lost_stracks_bools.append(b)
-        
-        self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
                 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]

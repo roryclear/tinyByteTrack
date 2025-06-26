@@ -39,7 +39,6 @@ class STrack():
     location = (np.inf, np.inf)
     def __init__(self):
         self.covariance = None
-        self.is_activated = False
 
 def tlbr_np(values, mean):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
@@ -213,7 +212,6 @@ class BYTETracker(object):
             else:
                 strack_pool[itracked].tracklet_len = 0
                 strack_pool[itracked].state = TrackState.Tracked
-                strack_pool[itracked].is_activated = True
                 strack_pool_bools[itracked] = True
                 refind_stracks.append(strack_pool[itracked])
                 refind_stracks_values.append(strack_pool_values[itracked])
@@ -266,7 +264,6 @@ class BYTETracker(object):
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
-                track.is_activated = True
                 r_tracked_stracks_bools[itracked] = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
@@ -333,8 +330,11 @@ class BYTETracker(object):
                 track.frame_id = frame_id_val
                 track.tracklet_len += 1
                 track.state = TrackState.Tracked
-                track.is_activated = True
-  
+            
+                if track in self.tracked_stracks:
+                  idx = self.tracked_stracks.index(track)
+                  self.tracked_stracks_bools[idx] = True
+
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
@@ -358,7 +358,6 @@ class BYTETracker(object):
         valid_mask = track_scores >= self.det_thresh
         valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
 
-
         # Get tracks using proper list indexing
         valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
@@ -372,7 +371,6 @@ class BYTETracker(object):
             track.tracklet_len = 0
             track.state = TrackState.Tracked
             if self.frame_id == 1:
-                track.is_activated = True
                 valid_bools[i] = True
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
@@ -386,8 +384,6 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
-
-        self.tracked_stracks_bools = [t.is_activated for t in self.tracked_stracks]
 
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
@@ -425,8 +421,6 @@ class BYTETracker(object):
         new_lost_stracks_values = []
         new_lost_stracks_means = []
         new_lost_stracks_bools = []
-
-
         for t, v, m, b in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools):
             if tuple(v) not in tracked_values_set:
                 new_lost_stracks.append(t)

@@ -326,7 +326,7 @@ class BYTETracker(object):
 
             dets = [detections[i] for i in idet_arr]
 
-            covariances = [t.covariance for t in tracks]
+            covariances = [unconfirmed_covs[i] for i in itracked_arr]
             det_values = dets_score_classes_second[idet_arr]
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]

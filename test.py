@@ -253,6 +253,8 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
+        activated_stracks_covs = [t.covariance for t in activated_stracks]
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
@@ -276,6 +278,7 @@ class BYTETracker(object):
                 activated_stracks_values.append(values)
                 activated_stracks_means.append(mean)
                 activated_stracks_bools.append(bool)
+                activated_stracks_covs.append(cov)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
@@ -351,8 +354,6 @@ class BYTETracker(object):
                 if track in self.tracked_stracks:
                   idx = self.tracked_stracks.index(track)
                   self.tracked_stracks_bools[idx] = True
-
-        activated_stracks_covs = [t.covariance for t in activated_stracks]
 
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)

@@ -82,6 +82,7 @@ class BYTETracker(object):
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
         self.lost_stracks_covs = []
+        self.lost_stracks_ids = []
 
         self.frame_id = 0
         self.args = args
@@ -177,14 +178,15 @@ class BYTETracker(object):
                 tracked_stracks_covs.append(cov)
                 tracked_stracks_ids.append(id)
 
-        ids_lost = np.array([t.track_id for t in self.lost_stracks])
-        keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, ids_lost)
+        self.lost_stracks_ids = [t.track_id for t in self.lost_stracks]
+        keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
 
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
         strack_pool_covs = [tracked_stracks_covs[i] for i in keep_a] + [self.lost_stracks_covs[i] for i in keep_b]
+        strack_pool_ids = [tracked_stracks_ids[i] for i in keep_a] + [self.lost_stracks_ids[i] for i in keep_b]
 
         # Predict the current location with KF
         if len(strack_pool) > 0:
@@ -212,7 +214,6 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        strack_pool_ids = [t.track_id for t in strack_pool]
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):

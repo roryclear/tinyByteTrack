@@ -104,6 +104,7 @@ class BYTETracker(object):
         refind_stracks_bools = []
         refind_stracks_covs = []
         refind_stracks_ids = []
+        refind_stracks_startframes = []
         lost_stracks = []
         lost_stracks_means = []
         lost_stracks_bools = []
@@ -217,7 +218,6 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        refind_stracks_startframes = [t.start_frame for t in refind_stracks]
         strack_pool_startframes = [t.start_frame for t in strack_pool]
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]

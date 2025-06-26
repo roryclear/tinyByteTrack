@@ -153,6 +153,7 @@ class BYTETracker(object):
         tracked_stracks_values = []
         tracked_stracks_bools = []
         tracked_stracks_covs = []
+        tracked_stracks_ids = []
 
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
@@ -160,22 +161,24 @@ class BYTETracker(object):
             mean = self.tracked_stracks_means[i]
             bool = self.tracked_stracks_bools[i]
             cov = self.tracked_stracks_covs[i]
+            id = self.tracked_stracks_ids[i]
             if not self.tracked_stracks_bools[i]:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
                 unconfirmed_means.append(mean)
                 unconfirmed_bools.append(bool)
                 unconfirmed_covs.append(cov)
+                #unconfirmed_ids.append(id)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
                 tracked_stracks_means.append(mean)
                 tracked_stracks_bools.append(bool)
                 tracked_stracks_covs.append(cov)
+                tracked_stracks_ids.append(id)
 
-        ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
-        keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
+        keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, ids_lost)
 
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]

@@ -115,6 +115,7 @@ class BYTETracker(object):
         removed_stracks_means = []
         removed_stracks_covs = []
         removed_stracks_bools = []
+        removed_stracks_ids = []
 
         classes = output_results[:, 5]
         scores = output_results[:, 4]
@@ -397,6 +398,7 @@ class BYTETracker(object):
         means = np.fromiter((unconfirmed_means[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         bools = np.fromiter((unconfirmed_bools[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         covs = np.fromiter((unconfirmed_covs[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
+        ids = np.fromiter((unconfirmed_ids[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         if tracks.size > 0:
             np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
@@ -404,6 +406,7 @@ class BYTETracker(object):
             removed_stracks_means.extend(means.tolist())
             removed_stracks_bools.extend(bools.tolist())
             removed_stracks_covs.extend(covs.tolist())
+            removed_stracks_ids.extend(ids.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -460,11 +463,6 @@ class BYTETracker(object):
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[mask]
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
 
-
-        if [t.track_id for t in self.lost_stracks] != self.lost_stracks_ids:
-           print("crashed before")
-           exit()
-
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
@@ -517,8 +515,6 @@ class BYTETracker(object):
                 self.lost_stracks_bools.append(b)
                 self.lost_stracks_covs.append(c)
                 self.lost_stracks_ids.append(id)
-
-        removed_stracks_ids = [t.track_id for t in removed_stracks]
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]

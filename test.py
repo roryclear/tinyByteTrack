@@ -306,7 +306,7 @@ class BYTETracker(object):
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
             tracks = [unconfirmed[i] for i in itracked_arr]
-            updated_bools = [unconfirmed[i].is_activated for i in itracked_arr]
+            updated_bools = [unconfirmed_bools[i] for i in itracked_arr]
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
@@ -404,11 +404,10 @@ class BYTETracker(object):
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
 
-        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
-
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [activated_stracks_means[i] for i in keep_activated]
+        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
 
 
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])

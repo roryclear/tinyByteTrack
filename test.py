@@ -112,6 +112,7 @@ class BYTETracker(object):
         removed_stracks = []
         removed_stracks_values = []
         removed_stracks_means = []
+        removed_stracks_covs = []
         removed_stracks_bools = []
 
         classes = output_results[:, 5]
@@ -348,16 +349,21 @@ class BYTETracker(object):
         activated_stracks_bools.extend(updated_bools)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
+
+        unconfirmed_covs = [t.covariance for t in unconfirmed]
+
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         values = np.fromiter((unconfirmed_values[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         means = np.fromiter((unconfirmed_means[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         bools = np.fromiter((unconfirmed_bools[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
+        covs = np.fromiter((unconfirmed_covs[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         if tracks.size > 0:
             np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
             removed_stracks_values.extend(values.tolist())
             removed_stracks_means.extend(means.tolist())
             removed_stracks_bools.extend(bools.tolist())
+            removed_stracks_covs.extend(covs.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -446,7 +452,6 @@ class BYTETracker(object):
                 self.lost_stracks_means.append(m)
                 self.lost_stracks_bools.append(b)
         
-        removed_stracks_covs = [t.covariance for t in removed_stracks]
         self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
                 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]

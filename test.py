@@ -142,6 +142,7 @@ class BYTETracker(object):
         detections_means = [None for _ in dets_score_classes]
         detections_bools = [False for _ in dets_score_classes_second]
         detections_cov = [None for _ in dets_score_classes]
+        detections_ids = [None for _ in dets_score_classes]
         
         #self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
 
@@ -323,6 +324,7 @@ class BYTETracker(object):
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
+        detections_ids = np.array(detections_ids)[u_detection_np]
         detections_bools = np.array(detections_bools)[u_detection_np]
         detections_means = np.array(detections_means)[u_detection_np]
         detections_cov = np.array(detections_cov)[u_detection_np]
@@ -413,7 +415,7 @@ class BYTETracker(object):
         valid_means = [detections_means[i] for i in valid_indices]
         valid_bools = [detections_bools[i] for i in valid_indices]
         valid_covs = [detections_cov[i] for i in valid_indices]
-        valid_ids = [t.track_id for t in valid_tracks]
+        valid_ids = [detections_ids[i] for i in valid_indices]
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
             y = STrack._count = STrack._count + 1

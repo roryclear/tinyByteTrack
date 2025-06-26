@@ -463,12 +463,17 @@ class BYTETracker(object):
 
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
+        self.tracked_stracks_startframes = [track.start_frame for track in self.tracked_stracks]
+        activated_stracks_startframes = [track.start_frame for track in activated_stracks]
+        refind_stracks_startframes = [t.start_frame for t in refind_stracks]
+
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [activated_stracks_means[i] for i in keep_activated]
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
         self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [activated_stracks_covs[i] for i in keep_activated]
         self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [activated_stracks_ids[i] for i in keep_activated]
+        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [activated_stracks_startframes for i in keep_activated]
 
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
 
@@ -478,6 +483,7 @@ class BYTETracker(object):
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [refind_stracks_bools[i] for i in keep_refind]
         self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [refind_stracks_covs[i] for i in keep_refind]
         self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [refind_stracks_ids[i] for i in keep_refind]
+        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [refind_stracks_startframes[i] for i in keep_refind]
         
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
@@ -522,14 +528,13 @@ class BYTETracker(object):
         self.removed_stracks.extend(removed_stracks)
 
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
-        start_frame_a = [track.start_frame for track in self.tracked_stracks]
 
         frame_id_b = [track.frame_id for track in self.lost_stracks]
-        start_frame_b = [track.start_frame for track in self.lost_stracks]
+        self.lost_stracks_startframes = [track.start_frame for track in self.lost_stracks]
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks,
-            self.tracked_stracks_values, self.tracked_stracks_means, frame_id_a, start_frame_a,
-            self.lost_stracks_values, self.lost_stracks_means, frame_id_b, start_frame_b
+            self.tracked_stracks_values, self.tracked_stracks_means, frame_id_a, self.tracked_stracks_startframes,
+            self.lost_stracks_values, self.lost_stracks_means, frame_id_b, self.lost_stracks_startframes
         )
 
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]

@@ -84,7 +84,9 @@ class BYTETracker(object):
 
         self.removed_stracks_means = []
         self.tracked_stracks_means = []
+        self.tracked_stracks_bools = []
         self.lost_stracks_means = []
+        self.lost_stracks_bools = []
 
         self.frame_id = 0
         self.args = args
@@ -99,16 +101,19 @@ class BYTETracker(object):
         activated_stracks = []
         activated_stracks_values = []
         activated_stracks_means = []
+        activated_stracks_bools = []
         refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
         refind_stracks_bools = []
         lost_stracks = []
         lost_stracks_means = []
+        lost_stracks_bools = []
         lost_stracks_values = []
         removed_stracks = []
         removed_stracks_values = []
         removed_stracks_means = []
+        removed_stracks_bools = []
 
         classes = output_results[:, 5]
         scores = output_results[:, 4]
@@ -140,22 +145,27 @@ class BYTETracker(object):
         unconfirmed = []
         unconfirmed_values = []
         unconfirmed_means = []
+        unconfirmed_bools = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
+        tracked_stracks_bools = []
 
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
             mean = self.tracked_stracks_means[i]
+            bool = self.tracked_stracks_bools[i]
             if not self.tracked_stracks_bools[i]:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
                 unconfirmed_means.append(mean)
+                unconfirmed_bools.append(bool)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
                 tracked_stracks_means.append(mean)
+                tracked_stracks_bools.append(bool)
 
         ids_tracked = np.array([t.track_id for t in tracked_stracks])
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
@@ -164,6 +174,7 @@ class BYTETracker(object):
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
+        strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
 
         # Predict the current location with KF
         if len(strack_pool) > 0:
@@ -185,7 +196,7 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
-      
+        
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
@@ -198,10 +209,12 @@ class BYTETracker(object):
                 activated_stracks.append(strack_pool[itracked])
                 activated_stracks_values.append(strack_pool_values[itracked])
                 activated_stracks_means.append(strack_pool_means[itracked])
+                activated_stracks_bools.append(strack_pool_bools[itracked])
             else:
                 strack_pool[itracked].tracklet_len = 0
                 strack_pool[itracked].state = TrackState.Tracked
                 strack_pool[itracked].is_activated = True
+                strack_pool_bools[itracked] = True
                 refind_stracks.append(strack_pool[itracked])
                 refind_stracks_values.append(strack_pool_values[itracked])
                 refind_stracks_means.append(strack_pool_means[itracked])
@@ -209,13 +222,14 @@ class BYTETracker(object):
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
-                
+        r_tracked_stracks_bools = []
 
         for i in range(len(u_track)):
             if strack_pool[u_track[i]].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
                 r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
                 r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
+                r_tracked_stracks_bools.append(strack_pool_bools[u_track[i]])
 
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
@@ -230,6 +244,7 @@ class BYTETracker(object):
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
+            bool = r_tracked_stracks_bools[itracked]
             values = r_tracked_stracks_values[itracked]
             t_val = r_tracked_stracks_values[itracked]
             d_val = det_values[idet]
@@ -247,10 +262,12 @@ class BYTETracker(object):
                 activated_stracks.append(track)
                 activated_stracks_values.append(values)
                 activated_stracks_means.append(mean)
+                activated_stracks_bools.append(bool)
             else:
                 track.tracklet_len = 0
                 track.state = TrackState.Tracked
                 track.is_activated = True
+                r_tracked_stracks_bools[itracked] = True
                 refind_stracks.append(track)
                 refind_stracks_values.append(values)
                 refind_stracks_means.append(mean)
@@ -260,11 +277,13 @@ class BYTETracker(object):
             track = r_tracked_stracks[u_track[i]]
             values = tuple(r_tracked_stracks_values[u_track[i]])
             mean = r_tracked_stracks_means[u_track[i]]
+            bool = r_tracked_stracks_bools[u_track[i]]
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
                 lost_stracks_values.append(values)
                 lost_stracks_means.append(mean)
+                lost_stracks_bools.append(bool)
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
@@ -282,7 +301,6 @@ class BYTETracker(object):
         tracks_values = []
         updated_bools = []
         tracks = []
-        activated_stracks_bools = [t.is_activated for t in activated_stracks]
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
@@ -321,16 +339,19 @@ class BYTETracker(object):
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
+        activated_stracks_bools.extend(updated_bools)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         values = np.fromiter((unconfirmed_values[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         means = np.fromiter((unconfirmed_means[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
+        bools = np.fromiter((unconfirmed_bools[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)
         if tracks.size > 0:
             np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
             removed_stracks_values.extend(values.tolist())
             removed_stracks_means.extend(means.tolist())
+            removed_stracks_bools.extend(bools.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -371,6 +392,7 @@ class BYTETracker(object):
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
+        self.lost_stracks_bools = np.array(self.lost_stracks_bools)[~remove_mask]
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
         states = np.array([t.state for t in self.tracked_stracks], dtype=int)
         mask = states == TrackState.Tracked
@@ -403,27 +425,32 @@ class BYTETracker(object):
         new_lost_stracks = []
         new_lost_stracks_values = []
         new_lost_stracks_means = []
+        new_lost_stracks_bools = []
 
 
-        for t, v, m in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means):
+        for t, v, m, b in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools):
             if tuple(v) not in tracked_values_set:
                 new_lost_stracks.append(t)
                 new_lost_stracks_values.append(v)
                 new_lost_stracks_means.append(m)
+                new_lost_stracks_bools.append(b)
 
         self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
         self.lost_stracks_means = new_lost_stracks_means
+        self.lost_stracks_bools = new_lost_stracks_bools
 
-        for s, v, m in zip(lost_stracks, lost_stracks_values, lost_stracks_means):
+        for s, v, m, b in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools):
             if s not in self.tracked_stracks:
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
+                self.lost_stracks_bools.append(b)
                 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
+        self.lost_stracks_bools = [t for t in self.lost_stracks_bools if t not in removed_stracks_bools]
 
         
         self.removed_stracks.extend(removed_stracks)
@@ -447,6 +474,7 @@ class BYTETracker(object):
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
+        self.lost_stracks_bools = [b for b, keep in zip(self.lost_stracks_bools,keep_b) if keep]
 
         
         output_stracks = np.array(self.tracked_stracks)[self.tracked_stracks_bools].tolist()
@@ -962,8 +990,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
-
-
-
-
-

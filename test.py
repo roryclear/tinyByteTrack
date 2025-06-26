@@ -26,7 +26,6 @@ class TrackState(object):
 
 class STrack():
     _count = 0
-    track_id = 0
     state = TrackState.New
     start_frame = 0
     frame_id = 0
@@ -110,6 +109,7 @@ class BYTETracker(object):
         lost_stracks_bools = []
         lost_stracks_covs = []
         lost_stracks_values = []
+        lost_stracks_ids = []
         removed_stracks = []
         removed_stracks_values = []
         removed_stracks_means = []
@@ -307,7 +307,6 @@ class BYTETracker(object):
                 refind_stracks_bools.append(True)
                 refind_stracks_covs.append(cov)
         
-        lost_stracks_ids = [t.track_id for t in self.lost_stracks]
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -424,7 +423,6 @@ class BYTETracker(object):
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
             y = STrack._count = STrack._count + 1
-            track.track_id = y
             valid_ids[i] = y
             valid_means[i], x = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
@@ -504,8 +502,6 @@ class BYTETracker(object):
         self.lost_stracks_bools = new_lost_stracks_bools
         self.lost_stracks_covs = new_lost_stracks_covs
         self.lost_stracks_ids = new_lost_stracks_ids
-
-        lost_stracks_ids = [t.track_id for t in lost_stracks]
 
         for s, v, m, b, c, id in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids):
             if s not in self.tracked_stracks:

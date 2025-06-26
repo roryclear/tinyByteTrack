@@ -353,7 +353,6 @@ class BYTETracker(object):
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
-        activated_stracks_bools.extend(updated_bools)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
 
@@ -380,11 +379,14 @@ class BYTETracker(object):
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
         valid_means = [detections_means[i] for i in valid_indices]
         valid_bools = [detections_bools[i] for i in valid_indices]
+        valid_covs = [d.covariance for d in valid_tracks]
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
             track.track_id = STrack._count = STrack._count + 1
-            valid_means[i], track.covariance = self.kalman_filter.initiate(
+            valid_means[i], x = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
+            track.covariance = x
+            valid_covs[i] = x
             track.tracklet_len = 0
             track.state = TrackState.Tracked
             if self.frame_id == 1:
@@ -392,11 +394,13 @@ class BYTETracker(object):
             track.frame_id = self.frame_id
             track.start_frame = self.frame_id
 
+        activated_stracks_covs = [t.covariance for t in activated_stracks]
 
         activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)
         activated_stracks.extend(valid_tracks)
         activated_stracks_bools.extend(valid_bools)
+        activated_stracks_covs.extend(valid_covs)
         
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
@@ -419,8 +423,6 @@ class BYTETracker(object):
         ids_tracked = np.array([t.track_id for t in self.tracked_stracks])
         ids_activated = np.array([t.track_id for t in activated_stracks])
         keep_tracked, keep_activated = joint_stracks_indices(ids_tracked, ids_activated)
-
-        activated_stracks_covs = [t.covariance for t in activated_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]

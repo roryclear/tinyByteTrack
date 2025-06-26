@@ -147,6 +147,7 @@ class BYTETracker(object):
         unconfirmed_values = []
         unconfirmed_means = []
         unconfirmed_bools = []
+        unconfirmed_covs = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
@@ -164,6 +165,7 @@ class BYTETracker(object):
                 unconfirmed_values.append(value)
                 unconfirmed_means.append(mean)
                 unconfirmed_bools.append(bool)
+                unconfirmed_covs.append(cov)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
@@ -349,8 +351,6 @@ class BYTETracker(object):
         activated_stracks_bools.extend(updated_bools)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
-
-        unconfirmed_covs = [t.covariance for t in unconfirmed]
 
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         values = np.fromiter((unconfirmed_values[key] for key in np.asarray(u_unconfirmed_np)), dtype=object)

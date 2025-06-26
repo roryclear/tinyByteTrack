@@ -174,8 +174,6 @@ class BYTETracker(object):
         ids_lost = np.array([t.track_id for t in self.lost_stracks])
         keep_a, keep_b = joint_stracks_indices(ids_tracked, ids_lost)
 
-        self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
-
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
@@ -447,13 +445,16 @@ class BYTETracker(object):
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
                 self.lost_stracks_bools.append(b)
+        
+        removed_stracks_covs = [t.covariance for t in removed_stracks]
+        self.lost_stracks_covs = [t.covariance for t in self.lost_stracks]
                 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]
         self.lost_stracks = [t for t in self.lost_stracks if t not in self.removed_stracks]
         self.lost_stracks_bools = [t for t in self.lost_stracks_bools if t not in removed_stracks_bools]
+        self.lost_stracks_covs = [t for t in self.lost_stracks_covs if all(t is not r for r in removed_stracks_covs)]
 
-        
         self.removed_stracks.extend(removed_stracks)
 
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
@@ -476,7 +477,7 @@ class BYTETracker(object):
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
         self.lost_stracks_bools = [b for b, keep in zip(self.lost_stracks_bools,keep_b) if keep]
-
+        self.lost_stracks_covs = [b for b, keep in zip(self.lost_stracks_covs,keep_b) if keep]
         
         output_stracks = np.array(self.tracked_stracks)[self.tracked_stracks_bools].tolist()
         output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools].tolist()

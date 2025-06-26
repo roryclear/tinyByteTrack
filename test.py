@@ -105,6 +105,7 @@ class BYTETracker(object):
         refind_stracks_values = []
         refind_stracks_means = []
         refind_stracks_bools = []
+        refind_stracks_covs = []
         lost_stracks = []
         lost_stracks_means = []
         lost_stracks_bools = []
@@ -226,6 +227,7 @@ class BYTETracker(object):
                 refind_stracks_values.append(strack_pool_values[itracked])
                 refind_stracks_means.append(strack_pool_means[itracked])
                 refind_stracks_bools.append(True)
+                refind_stracks_covs.append(strack_pool_covs[itracked])
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -247,7 +249,6 @@ class BYTETracker(object):
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
-        refind_stracks_covs = [t.covariance for t in refind_stracks]
         r_tracked_stracks_covs = [t.covariance for t in r_tracked_stracks]
 
         for itracked, idet in matches:

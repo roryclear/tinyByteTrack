@@ -78,6 +78,7 @@ class BYTETracker(object):
         self.tracked_stracks_bools = []
         self.tracked_stracks_covs = []
         self.tracked_stracks_ids = []
+        self.tracked_stracks_startframes = []
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
         self.lost_stracks_covs = []
@@ -121,6 +122,8 @@ class BYTETracker(object):
         classes = output_results[:, 5]
         scores = output_results[:, 4]
         bboxes = output_results[:, :4]
+
+        self.tracked_stracks_startframes = [track.start_frame for track in self.tracked_stracks]
         
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
@@ -452,7 +455,7 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
-
+          
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
@@ -468,10 +471,10 @@ class BYTETracker(object):
         self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask]
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[mask]
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
+        self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[mask]
 
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
-        self.tracked_stracks_startframes = [track.start_frame for track in self.tracked_stracks]
         activated_stracks_startframes = [track.start_frame for track in activated_stracks]
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]

@@ -176,7 +176,7 @@ class BYTETracker(object):
         tracked_stracks_ids = []
         tracked_stracks_fids = []
         tracked_stracks_startframes = []
-        
+
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
@@ -204,6 +204,7 @@ class BYTETracker(object):
                 tracked_stracks_ids.append(id)
                 tracked_stracks_fids.append(fid)
                 tracked_stracks_startframes.append(startframe)
+
         keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
 
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
@@ -214,6 +215,7 @@ class BYTETracker(object):
         strack_pool_ids = [tracked_stracks_ids[i] for i in keep_a] + [self.lost_stracks_ids[i] for i in keep_b]
         strack_pool_fids = [tracked_stracks_fids[i] for i in keep_a] + [self.lost_stracks_fids[i] for i in keep_b]
         strack_pool_startframes = [tracked_stracks_startframes[i] for i in keep_a] + [self.lost_stracks_startframes[i] for i in keep_b]
+
         # Predict the current location with KF
         if len(strack_pool) > 0:
             multi_mean = np.asarray([st for st in strack_pool_means])
@@ -232,14 +234,14 @@ class BYTETracker(object):
               for j, p in enumerate(strack_pool):
                   if t is p:
                       self.tracked_stracks_covs[i] = strack_pool_covs[j]
-        
+
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
         bmeans = detections_means
         btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
-        
+
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
@@ -248,13 +250,7 @@ class BYTETracker(object):
             strack_pool_means[itracked][:] = x
             strack_pool[itracked].frame_id = self.frame_id
             strack_pool_fids[itracked] = self.frame_id
-
-            if itracked < len(keep_a):
-                for i, t in enumerate(self.tracked_stracks):
-                  if t is strack_pool[itracked]:
-                      self.tracked_stracks_fids[i] = self.frame_id
-                      break
-            else:
+            if itracked >= len(keep_a):  # TODO hack remove
                 lost_idx = keep_b[itracked - len(keep_a)]
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
@@ -280,6 +276,7 @@ class BYTETracker(object):
                 refind_stracks_ids.append(strack_pool_ids[itracked])
                 refind_stracks_fids.append(strack_pool_fids[itracked])
                 refind_stracks_startframes.append(strack_pool_startframes[itracked])
+
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -299,12 +296,14 @@ class BYTETracker(object):
                 r_tracked_stracks_ids.append(strack_pool_ids[u_track[i]])
                 r_tracked_stracks_fids.append(strack_pool_fids[u_track[i]])
                 r_tracked_stracks_startframes.append(strack_pool_startframes[u_track[i]])
+
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
 
         atlbrs = [tlbr_np(v, m) for v, m in zip(r_tracked_stracks_values, r_tracked_stracks_means)]
         btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]
         dists = iou_distance(atlbrs, btlbrs)
+
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
 
         for itracked, idet in matches:
@@ -326,6 +325,7 @@ class BYTETracker(object):
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
             t_val = tuple(t_val)
+            track.frame_id = self.frame_id
             fid = self.frame_id
 
 
@@ -431,6 +431,7 @@ class BYTETracker(object):
                 values = list(values)
                 values[4] = score
                 values = tuple(values)
+                track.frame_id = frame_id_val
                 updated_fids[i] = frame_id_val
                 track.tracklet_len += 1
                 track.state = TrackState.Tracked
@@ -492,6 +493,7 @@ class BYTETracker(object):
             track.state = TrackState.Tracked
             if self.frame_id == 1:
                 valid_bools[i] = True
+            track.frame_id = self.frame_id
             valid_fids[i] = self.frame_id
 
         activated_stracks_means.extend(valid_means)
@@ -598,6 +600,8 @@ class BYTETracker(object):
         self.lost_stracks_covs = [self.lost_stracks_covs[i] for i in keep]
         self.lost_stracks_ids = [self.lost_stracks_ids[i] for i in keep]
         self.lost_stracks_fids = [self.lost_stracks_fids[i] for i in keep]
+
+        self.tracked_stracks_fids = [track.frame_id for track in self.tracked_stracks]
         
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks,

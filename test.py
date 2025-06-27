@@ -153,7 +153,7 @@ class BYTETracker(object):
         detections_ids = [None for _ in dets_score_classes]
         detections_fids = [None for _ in dets_score_classes]
         detections_startframes = [0 for _ in dets_score_classes]
-        detections_states = [0 for _ in dets_score_classes]
+        detections_states = [TrackState.New for _ in dets_score_classes]
         
         unconfirmed = []
         unconfirmed_values = []
@@ -260,7 +260,7 @@ class BYTETracker(object):
                 lost_idx = keep_b[itracked - len(keep_a)]
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
-            if strack_pool[itracked].state == TrackState.Tracked:
+            if strack_pool_states[itracked] == TrackState.Tracked:
                 activated_stracks.append(strack_pool[itracked])
                 activated_stracks_values.append(strack_pool_values[itracked])
                 activated_stracks_means.append(strack_pool_means[itracked])
@@ -272,6 +272,7 @@ class BYTETracker(object):
                 activated_stracks_states.append(strack_pool_states[itracked])
             else:
                 strack_pool[itracked].state = TrackState.Tracked
+                strack_pool_states[itracked] = TrackState.Tracked
                 strack_pool_bools[itracked] = True
                 refind_stracks.append(strack_pool[itracked])
                 refind_stracks_values.append(strack_pool_values[itracked])
@@ -294,7 +295,7 @@ class BYTETracker(object):
         r_tracked_stracks_states = []
 
         for i in range(len(u_track)):
-            if strack_pool[u_track[i]].state == TrackState.Tracked:
+            if strack_pool_states[u_track[i]] == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
                 r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
                 r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
@@ -346,7 +347,7 @@ class BYTETracker(object):
                     self.tracked_stracks_states[i] = TrackState.Tracked
                     break
 
-            if track.state == TrackState.Tracked:
+            if state == TrackState.Tracked:
                 activated_stracks.append(track)
                 activated_stracks_values.append(r_tracked_stracks_values[itracked])
                 activated_stracks_means.append(r_tracked_stracks_means[itracked])
@@ -355,7 +356,7 @@ class BYTETracker(object):
                 activated_stracks_ids.append(id_val)
                 activated_stracks_fids.append(self.frame_id)
                 activated_stracks_startframes.append(startframe)
-                activated_stracks_states.append(TrackState.Tracked)
+                activated_stracks_states.append(state)
             else:
                 track.state = TrackState.Tracked
                 r_tracked_stracks_bools[itracked] = True
@@ -368,7 +369,7 @@ class BYTETracker(object):
                 refind_stracks_ids.append(id_val)
                 refind_stracks_fids.append(self.frame_id)
                 refind_stracks_startframes.append(startframe)
-                refind_stracks_states.append(TrackState.Tracked)
+                refind_stracks_states.append(state)
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -1161,5 +1162,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
-
-

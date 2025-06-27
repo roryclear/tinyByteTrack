@@ -477,7 +477,6 @@ class BYTETracker(object):
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
         if tracks.size > 0:
-            np.vectorize(lambda t: setattr(t, 'state', TrackState.Removed))(tracks)
             removed_stracks.extend(tracks.tolist())
 
         u_detection = np.asarray(u_detection)

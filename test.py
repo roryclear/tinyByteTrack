@@ -122,8 +122,6 @@ class BYTETracker(object):
         classes = output_results[:, 5]
         scores = output_results[:, 4]
         bboxes = output_results[:, :4]
-
-        self.tracked_stracks_startframes = [track.start_frame for track in self.tracked_stracks]
         
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
@@ -192,8 +190,6 @@ class BYTETracker(object):
                 tracked_stracks_startframes.append(startframe)
 
         keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
-
-        self.lost_stracks_startframes = [t.start_frame for t in self.lost_stracks]
 
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
@@ -323,7 +319,6 @@ class BYTETracker(object):
                 refind_stracks_bools.append(True)
                 refind_stracks_covs.append(cov)
                 refind_stracks_startframes.append(startframe)
-        
 
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
@@ -461,7 +456,9 @@ class BYTETracker(object):
         frame_ids = np.array([t.frame_id for t in self.lost_stracks], dtype=int)
         remove_mask = (self.frame_id - frame_ids) > self.max_time_lost
         removed_stracks.extend(np.array(self.lost_stracks)[remove_mask].tolist())
-          
+
+        self.tracked_stracks_startframes = [t.start_frame for t in self.tracked_stracks]
+
         for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
@@ -479,6 +476,7 @@ class BYTETracker(object):
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
         self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[mask]
 
+
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
         activated_stracks_startframes = [track.start_frame for track in activated_stracks]
@@ -489,8 +487,8 @@ class BYTETracker(object):
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
         self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [activated_stracks_covs[i] for i in keep_activated]
         self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [activated_stracks_ids[i] for i in keep_activated]
-        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [activated_stracks_startframes for i in keep_activated]
-
+        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [activated_stracks_startframes[i] for i in keep_activated]
+        
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
 
         self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
@@ -500,7 +498,7 @@ class BYTETracker(object):
         self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [refind_stracks_covs[i] for i in keep_refind]
         self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [refind_stracks_ids[i] for i in keep_refind]
         self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [refind_stracks_startframes[i] for i in keep_refind]
-        
+
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
         new_lost_stracks = []
@@ -524,6 +522,7 @@ class BYTETracker(object):
         self.lost_stracks_bools = new_lost_stracks_bools
         self.lost_stracks_covs = new_lost_stracks_covs
         self.lost_stracks_ids = new_lost_stracks_ids
+
 
         for s, v, m, b, c, id in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids):
             if s not in self.tracked_stracks:
@@ -559,6 +558,7 @@ class BYTETracker(object):
         self.tracked_stracks_bools = [t for t, keep in zip(self.tracked_stracks_bools, keep_a) if keep]
         self.tracked_stracks_covs = [t for t, keep in zip(self.tracked_stracks_covs, keep_a) if keep]
         self.tracked_stracks_ids = [t for t, keep in zip(self.tracked_stracks_ids, keep_a) if keep]
+        self.tracked_stracks_startframes = [t for t, keep in zip(self.tracked_stracks_startframes, keep_a) if keep]
 
 
         self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
@@ -566,6 +566,7 @@ class BYTETracker(object):
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
         self.lost_stracks_bools = [b for b, keep in zip(self.lost_stracks_bools,keep_b) if keep]
         self.lost_stracks_covs = [b for b, keep in zip(self.lost_stracks_covs,keep_b) if keep]
+        self.lost_stracks_startframes = [b for b, keep in zip(self.lost_stracks_startframes, keep_b) if keep]
       
         output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools].tolist()
         output_stracks_values = np.array(self.tracked_stracks_values)[self.tracked_stracks_bools].tolist()

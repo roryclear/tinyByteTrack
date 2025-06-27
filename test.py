@@ -111,6 +111,7 @@ class BYTETracker(object):
         lost_stracks_bools = []
         lost_stracks_covs = []
         lost_stracks_values = []
+        lost_stracks_startframes = []
         lost_stracks_ids = []
         removed_stracks = []
         removed_stracks_values = []
@@ -327,6 +328,7 @@ class BYTETracker(object):
             bool = r_tracked_stracks_bools[u_track[i]]
             cov = r_tracked_stracks_covs[u_track[i]]
             id = r_tracked_stracks_ids[u_track[i]]
+            startframe = r_tracked_stracks_startframes[u_track[i]]
             if not track.state == TrackState.Lost:
                 track.state = TrackState.Lost
                 lost_stracks.append(track)
@@ -335,6 +337,7 @@ class BYTETracker(object):
                 lost_stracks_bools.append(bool)
                 lost_stracks_covs.append(cov)
                 lost_stracks_ids.append(id)
+                lost_stracks_startframes.append(startframe)     
 
         u_detection_np = np.array(u_detection)
         detections = np.array(detections)[u_detection_np]
@@ -501,13 +504,16 @@ class BYTETracker(object):
 
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
+        self.lost_stracks_startframes = [track.start_frame for track in self.lost_stracks]
+
         new_lost_stracks = []
         new_lost_stracks_values = []
         new_lost_stracks_means = []
         new_lost_stracks_bools = []
         new_lost_stracks_covs = []
         new_lost_stracks_ids = []
-        for t, v, m, b, c, id in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools, self.lost_stracks_covs, self.lost_stracks_ids):
+        new_lost_stracks_startframes = []
+        for t, v, m, b, c, id, sf in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools, self.lost_stracks_covs, self.lost_stracks_ids, self.lost_stracks_startframes):
             if tuple(v) not in tracked_values_set:
                 new_lost_stracks.append(t)
                 new_lost_stracks_values.append(v)
@@ -515,6 +521,7 @@ class BYTETracker(object):
                 new_lost_stracks_bools.append(b)
                 new_lost_stracks_covs.append(c)
                 new_lost_stracks_ids.append(id)
+                new_lost_stracks_startframes.append(sf)
 
         self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
@@ -522,9 +529,9 @@ class BYTETracker(object):
         self.lost_stracks_bools = new_lost_stracks_bools
         self.lost_stracks_covs = new_lost_stracks_covs
         self.lost_stracks_ids = new_lost_stracks_ids
+        self.lost_stracks_startframes = new_lost_stracks_startframes
 
-
-        for s, v, m, b, c, id in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids):
+        for s, v, m, b, c, id, sf in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes):
             if s not in self.tracked_stracks:
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
@@ -532,6 +539,7 @@ class BYTETracker(object):
                 self.lost_stracks_bools.append(b)
                 self.lost_stracks_covs.append(c)
                 self.lost_stracks_ids.append(id)
+                self.lost_stracks_startframes.append(sf)
 
         self.lost_stracks_values = [t for t in self.lost_stracks_values if t not in removed_stracks_values]
         self.lost_stracks_means = [t for t in self.lost_stracks_means if not any(np.array_equal(t, r) for r in removed_stracks_means)]
@@ -545,7 +553,7 @@ class BYTETracker(object):
         frame_id_a = [track.frame_id for track in self.tracked_stracks]
 
         frame_id_b = [track.frame_id for track in self.lost_stracks]
-        self.lost_stracks_startframes = [track.start_frame for track in self.lost_stracks]
+        
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks,
             self.tracked_stracks_values, self.tracked_stracks_means, frame_id_a, self.tracked_stracks_startframes,

@@ -283,7 +283,7 @@ class BYTETracker(object):
                 refind_stracks_fids.append(strack_pool_fids[itracked])
                 refind_stracks_startframes.append(strack_pool_startframes[itracked])
                 refind_stracks_states.append(strack_pool_states[itracked])
-        
+
         r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -293,7 +293,7 @@ class BYTETracker(object):
         r_tracked_stracks_fids = []
         r_tracked_stracks_startframes = []
         r_tracked_stracks_states = []
-
+        
         for i in range(len(u_track)):
             if strack_pool_states[u_track[i]] == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[u_track[i]])
@@ -370,7 +370,7 @@ class BYTETracker(object):
                 refind_stracks_fids.append(self.frame_id)
                 refind_stracks_startframes.append(startframe)
                 refind_stracks_states.append(state)
-
+        
         for i in range(len(u_track)):
             track = r_tracked_stracks[u_track[i]]
             values = r_tracked_stracks_values[u_track[i]]
@@ -407,7 +407,6 @@ class BYTETracker(object):
         detections_startframes = np.array(detections_startframes)[u_detection_np]
         detections_states = np.array(detections_states)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
-    
 
         atlbrs = [tlbr_np(unconfirmed_values[i], mean) for i, mean in enumerate(unconfirmed_means)]
         btlbrs = [tlbr_np(dets_score_classes_second[i], mean) for i, mean in enumerate(detections_means)]
@@ -424,6 +423,7 @@ class BYTETracker(object):
         updated_fids = []
         updated_startframes = []
         updated_states = []
+
         if len(matches) > 0:
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
@@ -462,12 +462,12 @@ class BYTETracker(object):
                 values = tuple(values)
                 updated_fids[i] = frame_id_val
                 track.state = TrackState.Tracked
-            
+                updated_states[i] = TrackState.Tracked
+
                 if track in self.tracked_stracks:
                   idx = self.tracked_stracks.index(track)
                   self.tracked_stracks_bools[idx] = True
-        
-        self.tracked_stracks_states = [t.state for t in self.tracked_stracks]
+                  self.tracked_stracks_states[idx] = TrackState.Tracked
 
         activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)

@@ -26,7 +26,6 @@ class TrackState(object):
     Replaced = 4
 
 class STrack():
-    _count = 0
     state = TrackState.New
     def __init__(self):
         self.x = None
@@ -65,6 +64,7 @@ def tlwh_to_xyah(tlwh):
 
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
+        self._count = 0
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
@@ -260,7 +260,6 @@ class BYTETracker(object):
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
             if strack_pool[itracked].state == TrackState.Tracked:
-                strack_pool[itracked].tracklet_len += 1
                 activated_stracks.append(strack_pool[itracked])
                 activated_stracks_values.append(strack_pool_values[itracked])
                 activated_stracks_means.append(strack_pool_means[itracked])
@@ -270,7 +269,6 @@ class BYTETracker(object):
                 activated_stracks_fids.append(strack_pool_fids[itracked])
                 activated_stracks_startframes.append(strack_pool_startframes[itracked])
             else:
-                strack_pool[itracked].tracklet_len = 0
                 strack_pool[itracked].state = TrackState.Tracked
                 strack_pool_bools[itracked] = True
                 refind_stracks.append(strack_pool[itracked])
@@ -339,7 +337,6 @@ class BYTETracker(object):
 
 
             if track.state == TrackState.Tracked:
-                track.tracklet_len += 1
                 activated_stracks.append(track)
                 activated_stracks_values.append(values)
                 activated_stracks_means.append(mean)
@@ -349,7 +346,6 @@ class BYTETracker(object):
                 activated_stracks_fids.append(fid)
                 activated_stracks_startframes.append(startframe)
             else:
-                track.tracklet_len = 0
                 track.state = TrackState.Tracked
                 r_tracked_stracks_bools[itracked] = True
                 refind_stracks.append(track)
@@ -441,7 +437,6 @@ class BYTETracker(object):
                 values[4] = score
                 values = tuple(values)
                 updated_fids[i] = frame_id_val
-                track.tracklet_len += 1
                 track.state = TrackState.Tracked
             
                 if track in self.tracked_stracks:
@@ -492,12 +487,11 @@ class BYTETracker(object):
         valid_startframes = [detections_startframes[i] for i in valid_indices]
 
         for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
-            y = STrack._count = STrack._count + 1
+            y = self._count = self._count + 1
             valid_ids[i] = y
             valid_means[i], x = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
             valid_covs[i] = x
-            track.tracklet_len = 0
             track.state = TrackState.Tracked
             if self.frame_id == 1:
                 valid_bools[i] = True

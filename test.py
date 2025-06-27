@@ -221,8 +221,7 @@ class BYTETracker(object):
             multi_mean = np.asarray([st for st in strack_pool_means])
             multi_covariance = np.asarray([st for st in strack_pool_covs])
             for i in range(len(strack_pool)):
-                st = strack_pool[i]
-                if st.state != TrackState.Tracked:
+                if strack_pool_states[i] != TrackState.Tracked:
                     multi_mean[i][7] = 0
 
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
@@ -271,7 +270,6 @@ class BYTETracker(object):
                 activated_stracks_startframes.append(strack_pool_startframes[itracked])
                 activated_stracks_states.append(strack_pool_states[itracked])
             else:
-                strack_pool[itracked].state = TrackState.Tracked
                 strack_pool_states[itracked] = TrackState.Tracked
                 strack_pool_bools[itracked] = True
                 refind_stracks.append(strack_pool[itracked])
@@ -358,7 +356,6 @@ class BYTETracker(object):
                 activated_stracks_startframes.append(startframe)
                 activated_stracks_states.append(state)
             else:
-                track.state = TrackState.Tracked
                 r_tracked_stracks_bools[itracked] = True
                 r_tracked_stracks_states[itracked] = TrackState.Tracked
                 refind_stracks.append(track)
@@ -381,8 +378,7 @@ class BYTETracker(object):
             fid = r_tracked_stracks_fids[u_track[i]]
             startframe = r_tracked_stracks_startframes[u_track[i]]
             state = r_tracked_stracks_states[u_track[i]]
-            if track.state != TrackState.Lost:
-                track.state = TrackState.Lost
+            if state != TrackState.Lost:
                 for j, t in enumerate(self.tracked_stracks):
                     if t is track:
                         self.tracked_stracks_states[j] = TrackState.Lost
@@ -461,7 +457,6 @@ class BYTETracker(object):
                 values[4] = score
                 values = tuple(values)
                 updated_fids[i] = frame_id_val
-                track.state = TrackState.Tracked
                 updated_states[i] = TrackState.Tracked
 
                 if track in self.tracked_stracks:
@@ -508,7 +503,6 @@ class BYTETracker(object):
             valid_means[i], x = self.kalman_filter.initiate(
                 tlwh_to_xyah(vals[:4]))
             valid_covs[i] = x
-            track.state = TrackState.Tracked
             if self.frame_id == 1:
                 valid_bools[i] = True
             valid_fids[i] = self.frame_id
@@ -524,7 +518,7 @@ class BYTETracker(object):
         activated_stracks_states.extend(valid_states)
 
         remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
-        for t in np.array(self.lost_stracks)[remove_mask]: t.state = TrackState.Removed
+        for t in np.array(self.lost_stracks_states)[remove_mask]: t = TrackState.Removed
         self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
         self.lost_stracks_bools = np.array(self.lost_stracks_bools)[~remove_mask]

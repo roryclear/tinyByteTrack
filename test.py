@@ -157,12 +157,14 @@ class BYTETracker(object):
         unconfirmed_bools = []
         unconfirmed_covs = []
         unconfirmed_ids = []
+        unconfirmed_startframes = []
         tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
         tracked_stracks_bools = []
         tracked_stracks_covs = []
         tracked_stracks_ids = []
+        tracked_stracks_startframes = []
 
         for i in range(len(self.tracked_stracks)):
             track = self.tracked_stracks[i]
@@ -171,6 +173,7 @@ class BYTETracker(object):
             bool = self.tracked_stracks_bools[i]
             cov = self.tracked_stracks_covs[i]
             id = self.tracked_stracks_ids[i]
+            startframe = self.tracked_stracks_startframes[i]
             if not self.tracked_stracks_bools[i]:
                 unconfirmed.append(track)
                 unconfirmed_values.append(value)
@@ -178,6 +181,7 @@ class BYTETracker(object):
                 unconfirmed_bools.append(bool)
                 unconfirmed_covs.append(cov)
                 unconfirmed_ids.append(id)
+                unconfirmed_startframes.append(startframe)
             else:
                 tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
@@ -185,8 +189,11 @@ class BYTETracker(object):
                 tracked_stracks_bools.append(bool)
                 tracked_stracks_covs.append(cov)
                 tracked_stracks_ids.append(id)
+                tracked_stracks_startframes.append(startframe)
 
         keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
+
+        self.lost_stracks_startframes = [t.start_frame for t in self.lost_stracks]
 
         strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
@@ -194,6 +201,7 @@ class BYTETracker(object):
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
         strack_pool_covs = [tracked_stracks_covs[i] for i in keep_a] + [self.lost_stracks_covs[i] for i in keep_b]
         strack_pool_ids = [tracked_stracks_ids[i] for i in keep_a] + [self.lost_stracks_ids[i] for i in keep_b]
+        strack_pool_startframes = [tracked_stracks_startframes[i] for i in keep_a] + [self.lost_stracks_startframes[i] for i in keep_b]
 
         # Predict the current location with KF
         if len(strack_pool) > 0:
@@ -220,8 +228,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
-
-        strack_pool_startframes = [t.start_frame for t in strack_pool]
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         for idx, (itracked, idet) in enumerate(matches):

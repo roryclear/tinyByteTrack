@@ -67,7 +67,6 @@ class BYTETracker(object):
         self._count = 0
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
-        self.removed_stracks = []  # type: list[STrack]
 
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
@@ -123,7 +122,7 @@ class BYTETracker(object):
         lost_stracks_states = []
         lost_stracks_ids = []
         lost_stracks_fids = []
-        removed_stracks = []
+        removed_stracks_ids = []
 
         classes = output_results[:, 5]
         scores = output_results[:, 4]
@@ -475,9 +474,9 @@ class BYTETracker(object):
         activated_stracks_states.extend(updated_states)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
-        tracks = np.fromiter((unconfirmed[key] for key in u_unconfirmed_np), dtype=object)
-        if tracks.size > 0:
-            removed_stracks.extend(tracks.tolist())
+        ids = np.fromiter((unconfirmed_ids[key] for key in u_unconfirmed_np), dtype=object)
+        if ids.size > 0:
+            removed_stracks_ids.extend(ids.tolist())
 
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
@@ -598,7 +597,7 @@ class BYTETracker(object):
 
 
         for s, v, m, b, c, id, sf, fid, state in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes, lost_stracks_fids, lost_stracks_states):
-            if s not in self.tracked_stracks:
+            if id not in self.tracked_stracks_ids:
                 self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
@@ -609,7 +608,7 @@ class BYTETracker(object):
                 self.lost_stracks_startframes.append(sf)
                 self.lost_stracks_states.append(state)
 
-        keep = [i for i, t in enumerate(self.lost_stracks) if t not in removed_stracks]
+        keep = [i for i, t in enumerate(self.lost_stracks_ids) if t not in removed_stracks_ids]
         self.lost_stracks = [self.lost_stracks[i] for i in keep]
         self.lost_stracks_values = [self.lost_stracks_values[i] for i in keep]
         self.lost_stracks_means = [self.lost_stracks_means[i] for i in keep]

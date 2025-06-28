@@ -619,7 +619,6 @@ class BYTETracker(object):
         self.lost_stracks_fids = [self.lost_stracks_fids[i] for i in keep]
         
         keep_a, keep_b = remove_duplicate_stracks(
-            self.tracked_stracks, self.lost_stracks,
             self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,
             self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_fids, self.lost_stracks_startframes
         )
@@ -676,8 +675,7 @@ def iou_distance(atlbrs, btlbrs):
     cost_matrix = 1 - _ious
     return cost_matrix
 
-def remove_duplicate_stracks(stracksa, stracksb, 
-                            values_a, mean_a, frame_id_a, start_frame_a,
+def remove_duplicate_stracks(values_a, mean_a, frame_id_a, start_frame_a,
                             values_b, mean_b, frame_id_b, start_frame_b):
     """
     Args:
@@ -696,7 +694,7 @@ def remove_duplicate_stracks(stracksa, stracksb,
     pairs = np.where(pdist < 0.15)
     
     if pairs[0].size == 0: 
-        return np.ones(len(stracksa), dtype=bool), np.ones(len(stracksb), dtype=bool)
+        return np.ones(len(values_a), dtype=bool), np.ones(len(values_b), dtype=bool)
         
     p_idx, q_idx = pairs[0], pairs[1]
     timep = np.array([frame_id_a[i] - start_frame_a[i] for i in p_idx])
@@ -707,11 +705,10 @@ def remove_duplicate_stracks(stracksa, stracksb,
     dupa = p_idx[~keep_p]
     dupb = q_idx[~keep_q]
     
-    mask_a = np.ones(len(stracksa), dtype=bool)
+    mask_a = np.ones(len(values_a), dtype=bool)
     mask_a[dupa] = False
-    mask_b = np.ones(len(stracksb), dtype=bool)
+    mask_b = np.ones(len(values_b), dtype=bool)
     mask_b[dupb] = False
-    
     return mask_a, mask_b
 
 def fuse_score(cost_matrix, det_values):

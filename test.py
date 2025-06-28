@@ -15,11 +15,10 @@ from tinygrad import TinyJit
 import lap
 from collections import OrderedDict
 from cython_bbox import bbox_overlaps as bbox_ious
-import scipy.linalg
 
 class KalmanFilter(object):
     def __init__(self):
-        ndim, dt = 4, 1.
+        ndim, dt = 4, 1.  
         self._motion_mat = np.eye(2 * ndim, 2 * ndim)
         for i in range(ndim):
             self._motion_mat[i, ndim + i] = dt
@@ -84,13 +83,10 @@ class KalmanFilter(object):
     def update(self, mean, covariance, measurement):
         projected_mean, projected_cov = self.project(mean, covariance)
 
-        chol_factor, lower = scipy.linalg.cho_factor(
-            projected_cov, lower=True, check_finite=False)
-        kalman_gain = scipy.linalg.cho_solve(
-            (chol_factor, lower), np.dot(covariance, self._update_mat.T).T,
-            check_finite=False).T
+        chol_factor = np.linalg.cholesky(projected_cov)
+        y = np.linalg.solve(chol_factor, np.dot(covariance, self._update_mat.T).T)
+        kalman_gain = np.linalg.solve(chol_factor.T, y).T
         innovation = measurement - projected_mean
-
         new_mean = mean + np.dot(innovation, kalman_gain.T)
         new_covariance = covariance - np.linalg.multi_dot((
             kalman_gain, projected_cov, kalman_gain.T))

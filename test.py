@@ -698,6 +698,16 @@ class BYTETracker(object):
             self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,
             self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_fids, self.lost_stracks_startframes
         )
+        keep_a_tg = Tensor(keep_a)
+        self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools).unsqueeze(-1)
+        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
+        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
+        self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
+
+        self.tracked_stracks_bools_tg *= keep_a_tg.unsqueeze(-1)
+        self.tracked_stracks_means_tg *= keep_a_tg.unsqueeze(-1)
+        self.tracked_stracks_ids_tg *= keep_a_tg
+        self.tracked_stracks_values_tg *= keep_a_tg.unsqueeze(-1)
 
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
@@ -717,18 +727,16 @@ class BYTETracker(object):
         self.lost_stracks_states = [b for b, keep in zip(self.lost_stracks_states, keep_b) if keep]
         self.lost_stracks_fids = [b for b, keep in zip(self.lost_stracks_fids, keep_b) if keep]
         
-        self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools).unsqueeze(-1)
-
-        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
-        self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
-
-
         output_stracks_means_tg = self.tracked_stracks_means_tg * self.tracked_stracks_bools_tg
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools_tg
-        output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg.squeeze(-1)      
-
-        return output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
+        output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg.squeeze(-1)
+        
+        v,m,i = output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
+        zeros = i != 0
+        i = i[zeros]
+        m = m[zeros]
+        v = v[zeros]
+        return v,m,i
 
 
 def ious(atlbrs, btlbrs):
@@ -1233,3 +1241,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

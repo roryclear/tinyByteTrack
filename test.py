@@ -335,8 +335,8 @@ class BYTETracker(object):
             r_tracked_stracks_fids[itracked] = self.frame_id
 
             # Update tracked_stracks attributes if track exists in tracked_stracks
-            for i, t in enumerate(self.tracked_stracks):
-                if t is track:
+            for i, t in enumerate(self.tracked_stracks_ids):
+                if t is id_val:
                     self.tracked_stracks_fids[i] = self.frame_id
                     self.tracked_stracks_values[i] = tuple(t_val)
                     self.tracked_stracks_means[i] = r_tracked_stracks_means[itracked]
@@ -378,8 +378,8 @@ class BYTETracker(object):
             startframe = r_tracked_stracks_startframes[u_track[i]]
             state = r_tracked_stracks_states[u_track[i]]
             if state != TrackState.Lost:
-                for j, t in enumerate(self.tracked_stracks):
-                    if t is track:
+                for j, t in enumerate(self.tracked_stracks_ids):
+                    if t is id_val:
                         self.tracked_stracks_states[j] = TrackState.Lost
                         break
                 lost_stracks.append(track)

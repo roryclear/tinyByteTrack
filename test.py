@@ -111,6 +111,19 @@ def tlbr_np(values, mean):
     ret[2:] += ret[:2]
     return ret
 
+def tlbr_np_batch(strack_pool_values, strack_pool_means):
+    ret = np.empty((len(strack_pool_values), 4))
+    use_mean = np.array([m is not None for m in strack_pool_means], dtype=bool)
+    if np.any(use_mean):
+        means = np.array([m for m in strack_pool_means if m is not None])
+        ret[use_mean, :] = means[:, :4].copy()
+        ret[use_mean, 2] *= ret[use_mean, 3]
+        ret[use_mean, :2] -= ret[use_mean, 2:] / 2
+    if not np.all(use_mean):
+        ret[~use_mean, :] = strack_pool_values[~use_mean, :4].copy()
+    ret[:, 2:] += ret[:, :2]
+    return ret
+
 def tlwh_np(values,mean):
     """Get current position in bounding box format `(top left x, top left y,
             width, height)`.
@@ -323,8 +336,8 @@ class BYTETracker(object):
                   if t is p:
                       self.tracked_stracks_covs[i] = strack_pool_covs[j]
 
-        atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
-        btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,detections_means)]
+        atlbrs = tlbr_np_batch(strack_pool_values, strack_pool_means)
+        btlbrs = tlbr_np_batch(dets_score_classes,detections_means)
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
@@ -391,8 +404,8 @@ class BYTETracker(object):
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
 
-        atlbrs = [tlbr_np(v, m) for v, m in zip(r_tracked_stracks_values, r_tracked_stracks_means)]
-        btlbrs = [tlbr_np(v, m) for v, m in zip(det_values, det_means)]
+        atlbrs = tlbr_np_batch(r_tracked_stracks_values, r_tracked_stracks_means)
+        btlbrs = tlbr_np_batch(det_values, det_means)
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
@@ -481,9 +494,9 @@ class BYTETracker(object):
         detections_startframes = np.array(detections_startframes)[u_detection_np]
         detections_states = np.array(detections_states)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
-
-        atlbrs = [tlbr_np(unconfirmed_values[i], mean) for i, mean in enumerate(unconfirmed_means)]
-        btlbrs = [tlbr_np(dets_score_classes_second[i], mean) for i, mean in enumerate(detections_means)]
+        
+        atlbrs = tlbr_np_batch(unconfirmed_values, unconfirmed_means)
+        btlbrs = tlbr_np_batch(dets_score_classes_second, detections_means)
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
@@ -749,8 +762,8 @@ def remove_duplicate_stracks(values_a, mean_a, frame_id_a, start_frame_a,
         keep_a: Boolean mask of which tracks to keep from stracksa
         keep_b: Boolean mask of which tracks to keep from stracksb
     """
-    atlbrs = [tlbr_np(values, mean) for values, mean in zip(values_a, mean_a)]
-    btlbrs = [tlbr_np(values, mean) for values, mean in zip(values_b, mean_b)]
+    atlbrs = tlbr_np_batch(values_a, mean_a)
+    btlbrs = tlbr_np_batch(values_b, mean_b)
     pdist = iou_distance(atlbrs, btlbrs)
     pairs = np.where(pdist < 0.15)
     

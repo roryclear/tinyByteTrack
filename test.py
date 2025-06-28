@@ -686,14 +686,6 @@ class BYTETracker(object):
                 self.lost_stracks_startframes.append(sf)
                 self.lost_stracks_states.append(state)
 
-        keep = [i for i, t in enumerate(self.lost_stracks_ids) if t not in removed_stracks_ids]
-        self.lost_stracks_values = [self.lost_stracks_values[i] for i in keep]
-        self.lost_stracks_means = [self.lost_stracks_means[i] for i in keep]
-        self.lost_stracks_bools = [self.lost_stracks_bools[i] for i in keep]
-        self.lost_stracks_covs = [self.lost_stracks_covs[i] for i in keep]
-        self.lost_stracks_ids = [self.lost_stracks_ids[i] for i in keep]
-        self.lost_stracks_fids = [self.lost_stracks_fids[i] for i in keep]
-        
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,
             self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_fids, self.lost_stracks_startframes
@@ -718,14 +710,6 @@ class BYTETracker(object):
         self.tracked_stracks_startframes = [t for t, keep in zip(self.tracked_stracks_startframes, keep_a) if keep]
         self.tracked_stracks_states = [t for t, keep in zip(self.tracked_stracks_states, keep_a) if keep]
 
-
-        self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
-        self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
-        self.lost_stracks_bools = [b for b, keep in zip(self.lost_stracks_bools,keep_b) if keep]
-        self.lost_stracks_covs = [b for b, keep in zip(self.lost_stracks_covs,keep_b) if keep]
-        self.lost_stracks_startframes = [b for b, keep in zip(self.lost_stracks_startframes, keep_b) if keep]
-        self.lost_stracks_states = [b for b, keep in zip(self.lost_stracks_states, keep_b) if keep]
-        self.lost_stracks_fids = [b for b, keep in zip(self.lost_stracks_fids, keep_b) if keep]
         
         output_stracks_means_tg = self.tracked_stracks_means_tg * self.tracked_stracks_bools_tg
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools_tg
@@ -766,17 +750,6 @@ def iou_distance(atlbrs, btlbrs):
 
 def remove_duplicate_stracks(values_a, mean_a, frame_id_a, start_frame_a,
                             values_b, mean_b, frame_id_b, start_frame_b):
-    """
-    Args:
-        stracksa, stracksb: Lists of objects (kept for length reference)
-        values_a, values_b: List of values properties for each track
-        mean_a, mean_b: List of mean properties for each track
-        frame_id_a, frame_id_b: List of frame_id properties
-        start_frame_a, start_frame_b: List of start_frame properties
-    Returns:
-        keep_a: Boolean mask of which tracks to keep from stracksa
-        keep_b: Boolean mask of which tracks to keep from stracksb
-    """
     atlbrs = tlbr_np_batch(values_a, mean_a)
     btlbrs = tlbr_np_batch(values_b, mean_b)
     pdist = iou_distance(atlbrs, btlbrs)

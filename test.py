@@ -324,8 +324,7 @@ class BYTETracker(object):
                       self.tracked_stracks_covs[i] = strack_pool_covs[j]
 
         atlbrs = [tlbr_np(values, mean) for values, mean in zip(strack_pool_values, strack_pool_means)]
-        bmeans = detections_means
-        btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,bmeans)]
+        btlbrs = [tlbr_np(value,mean) for value,mean in zip(dets_score_classes,detections_means)]
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
@@ -1212,5 +1211,5 @@ if __name__ == '__main__':
   out_writer.release()
   print(f"Saved processed video to {out_path}")
 
-#https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4
-#https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4
+#https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
+#https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173

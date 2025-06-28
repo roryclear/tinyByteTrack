@@ -174,7 +174,7 @@ class BYTETracker(object):
         tracked_stracks_startframes = []
         tracked_stracks_states = []
 
-        for i in range(len(self.tracked_stracks)):
+        for i in range(len(self.tracked_stracks_ids)):
             track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
             mean = self.tracked_stracks_means[i]
@@ -217,15 +217,15 @@ class BYTETracker(object):
         strack_pool_states = [tracked_stracks_states[i] for i in keep_a] + [self.lost_stracks_states[i] for i in keep_b]
 
         # Predict the current location with KF
-        if len(strack_pool) > 0:
+        if len(strack_pool_ids) > 0:
             multi_mean = np.asarray([st for st in strack_pool_means])
             multi_covariance = np.asarray([st for st in strack_pool_covs])
-            for i in range(len(strack_pool)):
+            for i in range(len(strack_pool_ids)):
                 if strack_pool_states[i] != TrackState.Tracked:
                     multi_mean[i][7] = 0
 
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
-            for i in range(len(strack_pool)):
+            for i in range(len(strack_pool_ids)):
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool_covs[i][:] = multi_covariance[i]
             

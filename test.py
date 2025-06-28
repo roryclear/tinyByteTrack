@@ -228,8 +228,8 @@ class BYTETracker(object):
                 strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
                 strack_pool_covs[i][:] = multi_covariance[i]
             
-            for i, t in enumerate(self.tracked_stracks):
-              for j, p in enumerate(strack_pool):
+            for i, t in enumerate(self.tracked_stracks_covs):
+              for j, p in enumerate(strack_pool_covs):
                   if t is p:
                       self.tracked_stracks_covs[i] = strack_pool_covs[j]
 
@@ -249,8 +249,8 @@ class BYTETracker(object):
             strack_pool_means[itracked][:] = x
             strack_pool_fids[itracked] = self.frame_id
 
-            for i, t in enumerate(self.tracked_stracks):
-                if t is strack_pool[itracked]:
+            for i, t in enumerate(self.tracked_stracks_ids):
+                if t is strack_pool_ids[itracked]:
                     self.tracked_stracks_fids[i] = self.frame_id
                     break
 

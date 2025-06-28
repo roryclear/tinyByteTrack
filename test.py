@@ -717,10 +717,18 @@ class BYTETracker(object):
         self.lost_stracks_states = [b for b, keep in zip(self.lost_stracks_states, keep_b) if keep]
         self.lost_stracks_fids = [b for b, keep in zip(self.lost_stracks_fids, keep_b) if keep]
         
-        output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools]
-        output_stracks_values = np.array(self.tracked_stracks_values)[self.tracked_stracks_bools].tolist()
-        output_track_ids = np.array(self.tracked_stracks_ids)[self.tracked_stracks_bools].tolist()
-        return output_stracks_values, output_stracks_means, output_track_ids
+        self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools).unsqueeze(-1)
+
+        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
+        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
+        self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
+
+
+        output_stracks_means_tg = self.tracked_stracks_means_tg * self.tracked_stracks_bools_tg
+        output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools_tg
+        output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg.squeeze(-1)      
+
+        return output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
 
 
 def ious(atlbrs, btlbrs):
@@ -1202,7 +1210,7 @@ if __name__ == '__main__':
 
     # sanity check print people
     for v,tid in zip(values,track_ids):
-      if v[5] == 0: 
+      if v[5] == 0 and tid != 0: 
         people.add(tid)
     
     pred_track = scale_boxes(pre_processed.shape[2:], pred_track, frame.shape)

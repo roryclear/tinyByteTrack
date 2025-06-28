@@ -676,15 +676,14 @@ class BYTETracker(object):
 
 
         for v, m, b, c, id, sf, fid, state in zip(lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes, lost_stracks_fids, lost_stracks_states):
-            if id not in self.tracked_stracks_ids:
-                self.lost_stracks_values.append(v)
-                self.lost_stracks_means.append(m)
-                self.lost_stracks_bools.append(b)
-                self.lost_stracks_covs.append(c)
-                self.lost_stracks_ids.append(id)
-                self.lost_stracks_fids.append(fid)
-                self.lost_stracks_startframes.append(sf)
-                self.lost_stracks_states.append(state)
+            self.lost_stracks_values.append(v)
+            self.lost_stracks_means.append(m)
+            self.lost_stracks_bools.append(b)
+            self.lost_stracks_covs.append(c)
+            self.lost_stracks_ids.append(id)
+            self.lost_stracks_fids.append(fid)
+            self.lost_stracks_startframes.append(sf)
+            self.lost_stracks_states.append(state)
 
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,

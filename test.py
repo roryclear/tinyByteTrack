@@ -25,11 +25,6 @@ class TrackState(object):
     Removed = 3
     Replaced = 4
 
-class STrack():
-    state = TrackState.New
-    def __init__(self):
-        self.x = None
-
 def tlbr_np(values, mean):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
     `(top left, bottom right)`."""
@@ -65,8 +60,6 @@ def tlwh_to_xyah(tlwh):
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self._count = 0
-        self.tracked_stracks = []  # type: list[STrack]
-        self.lost_stracks = []  # type: list[STrack]
 
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
@@ -95,7 +88,6 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.frame_id += 1
-        activated_stracks = []
         activated_stracks_values = []
         activated_stracks_means = []
         activated_stracks_bools = []
@@ -104,7 +96,6 @@ class BYTETracker(object):
         activated_stracks_fids = []
         activated_stracks_startframes = []
         activated_stracks_states = []
-        refind_stracks = []
         refind_stracks_values = []
         refind_stracks_means = []
         refind_stracks_bools = []
@@ -113,7 +104,6 @@ class BYTETracker(object):
         refind_stracks_fids = []
         refind_stracks_startframes = []
         refind_stracks_states = []
-        lost_stracks = []
         lost_stracks_means = []
         lost_stracks_bools = []
         lost_stracks_covs = []
@@ -145,7 +135,6 @@ class BYTETracker(object):
         dets_score_classes = dets_score_classes.numpy()
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
-        detections = [STrack() for _ in dets_score_classes]
         detections_means = [None for _ in dets_score_classes]
         detections_bools = [False for _ in dets_score_classes_second]
         detections_cov = [None for _ in dets_score_classes]
@@ -154,7 +143,6 @@ class BYTETracker(object):
         detections_startframes = [0 for _ in dets_score_classes]
         detections_states = [TrackState.New for _ in dets_score_classes]
         
-        unconfirmed = []
         unconfirmed_values = []
         unconfirmed_means = []
         unconfirmed_bools = []
@@ -163,7 +151,6 @@ class BYTETracker(object):
         unconfirmed_fids = []
         unconfirmed_startframes = []
         unconfirmed_states = []
-        tracked_stracks = []  # type: list[STrack]
         tracked_stracks_means = []
         tracked_stracks_values = []
         tracked_stracks_bools = []
@@ -174,7 +161,6 @@ class BYTETracker(object):
         tracked_stracks_states = []
 
         for i in range(len(self.tracked_stracks_ids)):
-            track = self.tracked_stracks[i]
             value = self.tracked_stracks_values[i]
             mean = self.tracked_stracks_means[i]
             bool = self.tracked_stracks_bools[i]
@@ -184,7 +170,7 @@ class BYTETracker(object):
             startframe = self.tracked_stracks_startframes[i]
             state = self.tracked_stracks_states[i]
             if not self.tracked_stracks_bools[i]:
-                unconfirmed.append(track)
+
                 unconfirmed_values.append(value)
                 unconfirmed_means.append(mean)
                 unconfirmed_bools.append(bool)
@@ -194,7 +180,6 @@ class BYTETracker(object):
                 unconfirmed_startframes.append(startframe)
                 unconfirmed_states.append(state)
             else:
-                tracked_stracks.append(track)
                 tracked_stracks_values.append(value)
                 tracked_stracks_means.append(mean)
                 tracked_stracks_bools.append(bool)
@@ -205,7 +190,6 @@ class BYTETracker(object):
                 tracked_stracks_states.append(state)
 
         keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
-        strack_pool = [tracked_stracks[i] for i in keep_a] + [self.lost_stracks[i] for i in keep_b]
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
@@ -259,7 +243,6 @@ class BYTETracker(object):
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
             if strack_pool_states[itracked] == TrackState.Tracked:
-                activated_stracks.append(strack_pool[itracked])
                 activated_stracks_values.append(strack_pool_values[itracked])
                 activated_stracks_means.append(strack_pool_means[itracked])
                 activated_stracks_bools.append(strack_pool_bools[itracked])
@@ -271,7 +254,6 @@ class BYTETracker(object):
             else:
                 strack_pool_states[itracked] = TrackState.Tracked
                 strack_pool_bools[itracked] = True
-                refind_stracks.append(strack_pool[itracked])
                 refind_stracks_values.append(strack_pool_values[itracked])
                 refind_stracks_means.append(strack_pool_means[itracked])
                 refind_stracks_bools.append(True)
@@ -281,7 +263,6 @@ class BYTETracker(object):
                 refind_stracks_startframes.append(strack_pool_startframes[itracked])
                 refind_stracks_states.append(strack_pool_states[itracked])
 
-        r_tracked_stracks = []
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
         r_tracked_stracks_bools = []
@@ -293,7 +274,6 @@ class BYTETracker(object):
         
         for i in range(len(u_track)):
             if strack_pool_states[u_track[i]] == TrackState.Tracked:
-                r_tracked_stracks.append(strack_pool[u_track[i]])
                 r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
                 r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
                 r_tracked_stracks_bools.append(strack_pool_bools[u_track[i]])
@@ -313,7 +293,6 @@ class BYTETracker(object):
         matches, u_track, _ = linear_assignment(dists, thresh=0.5)
         
         for itracked, idet in matches:
-            track = r_tracked_stracks[itracked]
             mean = r_tracked_stracks_means[itracked]
             bool_val = r_tracked_stracks_bools[itracked]
             cov = r_tracked_stracks_covs[itracked]
@@ -345,7 +324,6 @@ class BYTETracker(object):
                     break
 
             if state == TrackState.Tracked:
-                activated_stracks.append(track)
                 activated_stracks_values.append(r_tracked_stracks_values[itracked])
                 activated_stracks_means.append(r_tracked_stracks_means[itracked])
                 activated_stracks_bools.append(bool_val)
@@ -357,7 +335,6 @@ class BYTETracker(object):
             else:
                 r_tracked_stracks_bools[itracked] = True
                 r_tracked_stracks_states[itracked] = TrackState.Tracked
-                refind_stracks.append(track)
                 refind_stracks_values.append(r_tracked_stracks_values[itracked])
                 refind_stracks_means.append(r_tracked_stracks_means[itracked])
                 refind_stracks_bools.append(True)
@@ -368,7 +345,6 @@ class BYTETracker(object):
                 refind_stracks_states.append(state)
         
         for i in range(len(u_track)):
-            track = r_tracked_stracks[u_track[i]]
             values = r_tracked_stracks_values[u_track[i]]
             mean = r_tracked_stracks_means[u_track[i]]
             bool_val = r_tracked_stracks_bools[u_track[i]]
@@ -382,7 +358,6 @@ class BYTETracker(object):
                     if t is id_val:
                         self.tracked_stracks_states[j] = TrackState.Lost
                         break
-                lost_stracks.append(track)
                 lost_stracks_values.append(values)
                 lost_stracks_means.append(mean)
                 lost_stracks_bools.append(bool_val)
@@ -393,7 +368,6 @@ class BYTETracker(object):
                 lost_stracks_states.append(TrackState.Lost)
                 
         u_detection_np = np.array(u_detection)
-        detections = np.array(detections)[u_detection_np]
         detections_ids = np.array(detections_ids)[u_detection_np]
         detections_fids = np.array(detections_fids)[u_detection_np]
         detections_bools = np.array(detections_bools)[u_detection_np]
@@ -412,7 +386,6 @@ class BYTETracker(object):
         updated_means = []
         tracks_values = []
         updated_bools = []
-        tracks = []
         updated_covs = []
         updated_ids = []
         updated_fids = []
@@ -423,7 +396,6 @@ class BYTETracker(object):
             matches_arr = np.array(matches)
             itracked_arr = matches_arr[:, 0]
             idet_arr = matches_arr[:, 1]
-            tracks = [unconfirmed[i] for i in itracked_arr]
             ids = [unconfirmed_ids[i] for i in itracked_arr]
             fids = [unconfirmed_fids[i] for i in itracked_arr]
             startframes = [unconfirmed_startframes[i] for i in itracked_arr]
@@ -432,7 +404,6 @@ class BYTETracker(object):
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
-            dets = [detections[i] for i in idet_arr]
 
             covariances = [unconfirmed_covs[i] for i in itracked_arr]
             det_values = dets_score_classes_second[idet_arr]
@@ -450,7 +421,7 @@ class BYTETracker(object):
 
             updated_scores = scores
             frame_id_val = self.frame_id
-            for i, (track, mean, cov, score, values, fids) in enumerate(zip(tracks, updated_means, updated_covs, updated_scores, tracks_values, updated_fids)):
+            for i, (mean, cov, score, values, fids, id) in enumerate(zip(updated_means, updated_covs, updated_scores, tracks_values, updated_fids, updated_ids)):
                 covariances[i][:] = cov
                 values = list(values)
                 values[4] = score
@@ -458,12 +429,11 @@ class BYTETracker(object):
                 updated_fids[i] = frame_id_val
                 updated_states[i] = TrackState.Tracked
 
-                if track in self.tracked_stracks:
-                  idx = self.tracked_stracks.index(track)
+                if id in self.tracked_stracks_ids:
+                  idx = self.tracked_stracks_ids.index(id)
                   self.tracked_stracks_bools[idx] = True
                   self.tracked_stracks_states[idx] = TrackState.Tracked
 
-        activated_stracks.extend(tracks)  
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)
@@ -485,7 +455,6 @@ class BYTETracker(object):
 
         # Get tracks using proper list indexing
         
-        valid_tracks = [detections[i] for i in valid_indices]  # Now works correctly
         valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
         valid_means = [detections_means[i] for i in valid_indices]
         valid_bools = [detections_bools[i] for i in valid_indices]
@@ -495,7 +464,7 @@ class BYTETracker(object):
         valid_startframes = [detections_startframes[i] for i in valid_indices]
         valid_states = [detections_states[i] for i in valid_indices]
 
-        for i, (track, vals, mean, bool) in enumerate(zip(valid_tracks, valid_values, valid_means, valid_bools)):
+        for i, (vals, mean, bool) in enumerate(zip(valid_values, valid_means, valid_bools)):
             y = self._count = self._count + 1
             valid_ids[i] = y
             valid_means[i], x = self.kalman_filter.initiate(
@@ -507,7 +476,6 @@ class BYTETracker(object):
 
         activated_stracks_means.extend(valid_means)
         activated_stracks_values.extend(valid_values)
-        activated_stracks.extend(valid_tracks)
         activated_stracks_bools.extend(valid_bools)
         activated_stracks_covs.extend(valid_covs)
         activated_stracks_ids.extend(valid_ids)
@@ -517,7 +485,6 @@ class BYTETracker(object):
 
         remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
         for t in np.array(self.lost_stracks_states)[remove_mask]: t = TrackState.Removed
-        self.lost_stracks = np.array(self.lost_stracks)[~remove_mask].tolist()
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
         self.lost_stracks_bools = np.array(self.lost_stracks_bools)[~remove_mask]
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask]).tolist()
@@ -527,7 +494,6 @@ class BYTETracker(object):
         self.lost_stracks_startframes = np.array(self.lost_stracks_startframes)[~remove_mask].tolist()
         self.lost_stracks_states = np.array(self.lost_stracks_states)[~remove_mask].tolist()
         mask = np.array(self.tracked_stracks_states) == TrackState.Tracked
-        self.tracked_stracks = np.array(self.tracked_stracks)[mask].tolist()
         self.tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
         self.tracked_stracks_means = np.array(self.tracked_stracks_means)[mask]
         self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask]
@@ -539,7 +505,6 @@ class BYTETracker(object):
 
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
-        self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [activated_stracks[i] for i in keep_activated]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [activated_stracks_means[i] for i in keep_activated]
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
@@ -551,7 +516,6 @@ class BYTETracker(object):
 
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
 
-        self.tracked_stracks = [self.tracked_stracks[i] for i in keep_tracked] + [refind_stracks[i] for i in keep_refind]
         self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [refind_stracks_means[i] for i in keep_refind]
         self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
         self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [refind_stracks_bools[i] for i in keep_refind]
@@ -564,7 +528,6 @@ class BYTETracker(object):
 
         tracked_values_set = set(tuple(t) for t in self.tracked_stracks_values)
 
-        new_lost_stracks = []
         new_lost_stracks_values = []
         new_lost_stracks_means = []
         new_lost_stracks_bools = []
@@ -573,9 +536,8 @@ class BYTETracker(object):
         new_lost_stracks_fids = []
         new_lost_stracks_startframes = []
         new_lost_stracks_states = []
-        for t, v, m, b, c, id, sf, fid, state in zip(self.lost_stracks, self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools, self.lost_stracks_covs, self.lost_stracks_ids, self.lost_stracks_startframes, self.lost_stracks_fids, self.lost_stracks_states):
+        for v, m, b, c, id, sf, fid, state in zip(self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_bools, self.lost_stracks_covs, self.lost_stracks_ids, self.lost_stracks_startframes, self.lost_stracks_fids, self.lost_stracks_states):
             if tuple(v) not in tracked_values_set:
-                new_lost_stracks.append(t)
                 new_lost_stracks_values.append(v)
                 new_lost_stracks_means.append(m)
                 new_lost_stracks_bools.append(b)
@@ -585,7 +547,6 @@ class BYTETracker(object):
                 new_lost_stracks_startframes.append(sf)
                 new_lost_stracks_states.append(state)
 
-        self.lost_stracks = new_lost_stracks
         self.lost_stracks_values = new_lost_stracks_values
         self.lost_stracks_means = new_lost_stracks_means
         self.lost_stracks_bools = new_lost_stracks_bools
@@ -596,9 +557,8 @@ class BYTETracker(object):
         self.lost_stracks_states = new_lost_stracks_states
 
 
-        for s, v, m, b, c, id, sf, fid, state in zip(lost_stracks, lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes, lost_stracks_fids, lost_stracks_states):
+        for v, m, b, c, id, sf, fid, state in zip(lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes, lost_stracks_fids, lost_stracks_states):
             if id not in self.tracked_stracks_ids:
-                self.lost_stracks.append(s)
                 self.lost_stracks_values.append(v)
                 self.lost_stracks_means.append(m)
                 self.lost_stracks_bools.append(b)
@@ -609,7 +569,6 @@ class BYTETracker(object):
                 self.lost_stracks_states.append(state)
 
         keep = [i for i, t in enumerate(self.lost_stracks_ids) if t not in removed_stracks_ids]
-        self.lost_stracks = [self.lost_stracks[i] for i in keep]
         self.lost_stracks_values = [self.lost_stracks_values[i] for i in keep]
         self.lost_stracks_means = [self.lost_stracks_means[i] for i in keep]
         self.lost_stracks_bools = [self.lost_stracks_bools[i] for i in keep]
@@ -624,7 +583,6 @@ class BYTETracker(object):
 
         self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
         self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
-        self.tracked_stracks = [track for track, keep in zip(self.tracked_stracks, keep_a) if keep]
         self.tracked_stracks_bools = [t for t, keep in zip(self.tracked_stracks_bools, keep_a) if keep]
         self.tracked_stracks_covs = [t for t, keep in zip(self.tracked_stracks_covs, keep_a) if keep]
         self.tracked_stracks_ids = [t for t, keep in zip(self.tracked_stracks_ids, keep_a) if keep]
@@ -633,7 +591,6 @@ class BYTETracker(object):
         self.tracked_stracks_states = [t for t, keep in zip(self.tracked_stracks_states, keep_a) if keep]
 
 
-        self.lost_stracks = [track for track, keep in zip(self.lost_stracks, keep_b) if keep]
         self.lost_stracks_values = [value for value, keep in zip(self.lost_stracks_values,keep_b) if keep]
         self.lost_stracks_means = [mean for mean, keep in zip(self.lost_stracks_means, keep_b) if keep]
         self.lost_stracks_bools = [b for b, keep in zip(self.lost_stracks_bools,keep_b) if keep]

@@ -716,10 +716,9 @@ class BYTETracker(object):
         self.lost_stracks_startframes = [b for b, keep in zip(self.lost_stracks_startframes, keep_b) if keep]
         self.lost_stracks_states = [b for b, keep in zip(self.lost_stracks_states, keep_b) if keep]
         self.lost_stracks_fids = [b for b, keep in zip(self.lost_stracks_fids, keep_b) if keep]
-      
-        output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools].tolist()
+        
+        output_stracks_means = np.array(self.tracked_stracks_means)[self.tracked_stracks_bools]
         output_stracks_values = np.array(self.tracked_stracks_values)[self.tracked_stracks_bools].tolist()
-        output_stracks_means = [np.array(m) for m in output_stracks_means]
         output_track_ids = np.array(self.tracked_stracks_ids)[self.tracked_stracks_bools].tolist()
         return output_stracks_values, output_stracks_means, output_track_ids
 

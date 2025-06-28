@@ -674,16 +674,50 @@ class BYTETracker(object):
         self.lost_stracks_startframes = new_lost_stracks_startframes
         self.lost_stracks_states = new_lost_stracks_states
 
+        self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
+        lost_stracks_values_tg = Tensor(lost_stracks_values)
+        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
+        lost_stracks_means_tg = Tensor(lost_stracks_means)
+        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
+        lost_stracks_bools_tg = Tensor(lost_stracks_bools)
+        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
+        lost_stracks_covs_tg = Tensor(lost_stracks_covs)
+        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
+        lost_stracks_ids_tg = Tensor(lost_stracks_ids)
+        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
+        lost_stracks_fids_tg = Tensor(lost_stracks_fids)
+        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
+        lost_stracks_startframes_tg = Tensor(lost_stracks_startframes)
+        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
+        lost_stracks_states_tg = Tensor(lost_stracks_states)
+        if self.lost_stracks_values_tg.shape[0] == 0:
+            self.lost_stracks_values_tg = lost_stracks_values_tg
+            self.lost_stracks_means_tg = lost_stracks_means_tg
+            self.lost_stracks_bools_tg = lost_stracks_bools_tg
+            self.lost_stracks_covs_tg = lost_stracks_covs_tg
+            self.lost_stracks_ids_tg = lost_stracks_ids_tg
+            self.lost_stracks_fids_tg = lost_stracks_fids_tg
+            self.lost_stracks_startframes_tg = lost_stracks_startframes_tg
+            self.lost_stracks_states_tg = lost_stracks_states_tg
+            self.lost_stracks_states_tg = lost_stracks_states_tg
+        elif lost_stracks_values_tg.shape[0] != 0:
+            self.lost_stracks_values_tg = self.lost_stracks_values_tg.cat(lost_stracks_values_tg)
+            self.lost_stracks_means_tg = self.lost_stracks_means_tg.cat(lost_stracks_means_tg)
+            self.lost_stracks_bools_tg = self.lost_stracks_bools_tg.cat(lost_stracks_bools_tg)
+            self.lost_stracks_covs_tg = self.lost_stracks_covs_tg.cat(lost_stracks_covs_tg)
+            self.lost_stracks_ids_tg = self.lost_stracks_ids_tg.cat(lost_stracks_ids_tg)
+            self.lost_stracks_fids_tg = self.lost_stracks_fids_tg.cat(lost_stracks_fids_tg)
+            self.lost_stracks_startframes_tg = self.lost_stracks_startframes_tg.cat(lost_stracks_startframes_tg)
+            self.lost_stracks_states_tg = self.lost_stracks_states_tg.cat(lost_stracks_states_tg)
 
-        for v, m, b, c, id, sf, fid, state in zip(lost_stracks_values, lost_stracks_means, lost_stracks_bools, lost_stracks_covs, lost_stracks_ids, lost_stracks_startframes, lost_stracks_fids, lost_stracks_states):
-            self.lost_stracks_values.append(v)
-            self.lost_stracks_means.append(m)
-            self.lost_stracks_bools.append(b)
-            self.lost_stracks_covs.append(c)
-            self.lost_stracks_ids.append(id)
-            self.lost_stracks_fids.append(fid)
-            self.lost_stracks_startframes.append(sf)
-            self.lost_stracks_states.append(state)
+        self.lost_stracks_values = self.lost_stracks_values_tg.numpy()
+        self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
+        self.lost_stracks_bools = self.lost_stracks_bools_tg.numpy()
+        self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
+        self.lost_stracks_ids = self.lost_stracks_ids_tg.numpy()
+        self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
+        self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
+        self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
         keep_a, keep_b = remove_duplicate_stracks(
             self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,
@@ -1213,4 +1247,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-

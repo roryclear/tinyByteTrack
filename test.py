@@ -704,10 +704,22 @@ class BYTETracker(object):
         self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
         self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
-        keep_a, keep_b = remove_duplicate_stracks(
-            self.tracked_stracks_values, self.tracked_stracks_means, self.tracked_stracks_fids, self.tracked_stracks_startframes,
-            self.lost_stracks_values, self.lost_stracks_means, self.lost_stracks_fids, self.lost_stracks_startframes
-        )
+        atlbrs = tlbr_np_batch(self.tracked_stracks_values, self.tracked_stracks_means)
+        btlbrs = tlbr_np_batch(self.lost_stracks_values, self.lost_stracks_means)
+        pdist = iou_distance(atlbrs, btlbrs)
+        pairs = np.where(pdist < 0.15)
+        
+        if pairs[0].size == 0: 
+            keep_a = np.ones(len(self.tracked_stracks_values), dtype=bool)
+        else:
+            p_idx, q_idx = pairs[0], pairs[1]
+            timep = np.array([self.tracked_stracks_fids[i] - self.tracked_stracks_startframes[i] for i in p_idx])
+            timeq = np.array([self.lost_stracks_fids[i] - self.lost_stracks_startframes[i] for i in q_idx])
+            keep_p = timep <= timeq
+            dupa = p_idx[~keep_p]
+            keep_a = np.ones(len(self.tracked_stracks_values), dtype=bool)
+            keep_a[dupa] = False
+
         keep_a_tg = Tensor(keep_a)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools).unsqueeze(-1)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
@@ -772,31 +784,6 @@ def iou_distance(atlbrs, btlbrs):
     _ious = ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
     return cost_matrix
-
-def remove_duplicate_stracks(values_a, mean_a, frame_id_a, start_frame_a,
-                            values_b, mean_b, frame_id_b, start_frame_b):
-    atlbrs = tlbr_np_batch(values_a, mean_a)
-    btlbrs = tlbr_np_batch(values_b, mean_b)
-    pdist = iou_distance(atlbrs, btlbrs)
-    pairs = np.where(pdist < 0.15)
-    
-    if pairs[0].size == 0: 
-        return np.ones(len(values_a), dtype=bool), np.ones(len(values_b), dtype=bool)
-        
-    p_idx, q_idx = pairs[0], pairs[1]
-    timep = np.array([frame_id_a[i] - start_frame_a[i] for i in p_idx])
-    timeq = np.array([frame_id_b[i] - start_frame_b[i] for i in q_idx])
-    
-    keep_p = timep <= timeq
-    keep_q = ~keep_p
-    dupa = p_idx[~keep_p]
-    dupb = q_idx[~keep_q]
-    
-    mask_a = np.ones(len(values_a), dtype=bool)
-    mask_a[dupa] = False
-    mask_b = np.ones(len(values_b), dtype=bool)
-    mask_b[dupb] = False
-    return mask_a, mask_b
 
 def fuse_score(cost_matrix, det_values):
     if cost_matrix.size == 0:

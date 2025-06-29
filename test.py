@@ -663,9 +663,15 @@ class BYTETracker(object):
         self.lost_stracks_startframes_tg *= mask_tg
         self.lost_stracks_states_tg *= mask_tg
         self.lost_stracks_bools_tg *= mask_tg
-        self.lost_stracks_values_tg = self.lost_stracks_values_tg * mask_tg.view(-1, 1)
-        self.lost_stracks_means_tg = self.lost_stracks_means_tg * mask_tg.view(-1, 1)
-        self.lost_stracks_covs_tg = self.lost_stracks_covs_tg * mask_tg.view(-1, 1, 1)
+
+        if mask_tg.shape[0] > 0:
+          self.lost_stracks_values_tg *= mask_tg.unsqueeze(-1)
+          self.lost_stracks_means_tg *= mask_tg.unsqueeze(-1)
+          self.lost_stracks_covs_tg *= mask_tg.unsqueeze(-1).unsqueeze(-1)
+        else:
+           self.lost_stracks_values_tg = Tensor.zeros_like(self.lost_stracks_values_tg)
+           self.lost_stracks_means_tg = Tensor.zeros_like(self.lost_stracks_means_tg)
+           self.lost_stracks_covs_tg = Tensor.zeros_like(self.lost_stracks_covs_tg)
 
         lost_stracks_values_tg = Tensor(lost_stracks_values)
         lost_stracks_means_tg = Tensor(lost_stracks_means)

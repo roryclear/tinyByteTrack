@@ -630,7 +630,7 @@ class BYTETracker(object):
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
         activated_stracks_states_tg = Tensor(activated_stracks_states,dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes,dtype=dtypes.int)
-        activated_stracks_startframes_tg = Tensor(activated_stracks_startframes,dtype=dtypes.int)
+        activated_stracks_startframes_tg = Tensor(activated_stracks_startframes)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools,dtype=dtypes.bool)
         activated_stracks_bools_tg = Tensor(activated_stracks_bools,dtype=dtypes.bool)
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values,dtype=dtypes.float32)
@@ -656,23 +656,31 @@ class BYTETracker(object):
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
-        self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
-        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
-        self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
-        self.tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy()
         self.tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
         self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
 
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
+        keep_tracked_tg, keep_refind_tg = Tensor(keep_tracked), Tensor(keep_refind)
+        refind_stracks_fids_tg = Tensor(refind_stracks_fids)
+        refind_stracks_bools_tg = Tensor(refind_stracks_bools)
+        refind_stracks_states_tg = Tensor(refind_stracks_states,dtype=dtypes.int)
+        refind_stracks_startframes_tg = Tensor(refind_stracks_startframes)
+
+        self.tracked_stracks_fids_tg = (self.tracked_stracks_fids_tg[keep_tracked_tg]).cat(refind_stracks_fids_tg[keep_refind_tg])
+        self.tracked_stracks_bools_tg = (self.tracked_stracks_bools_tg[keep_tracked_tg]).cat(refind_stracks_bools_tg[keep_refind_tg])
+        self.tracked_stracks_states_tg = (self.tracked_stracks_states_tg[keep_tracked_tg]).cat(refind_stracks_states_tg[keep_refind_tg])
+        self.tracked_stracks_startframes_tg = (self.tracked_stracks_startframes_tg[keep_tracked_tg]).cat(refind_stracks_startframes_tg[keep_refind_tg])
+        
         self.tracked_stracks_means = np.array(self.tracked_stracks_means)[keep_tracked].tolist() + np.array(refind_stracks_means)[keep_refind].tolist()
         self.tracked_stracks_values = np.array(self.tracked_stracks_values)[keep_tracked].tolist() + np.array(refind_stracks_values)[keep_refind].tolist()
-        self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[keep_tracked].tolist() + np.array(refind_stracks_bools)[keep_refind].tolist()
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[keep_tracked].tolist() + np.array(refind_stracks_covs)[keep_refind].tolist()
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[keep_tracked].tolist() + np.array(refind_stracks_ids)[keep_refind].tolist()
-        self.tracked_stracks_fids = np.array(self.tracked_stracks_fids)[keep_tracked].tolist() + np.array(refind_stracks_fids)[keep_refind].tolist()
-        self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[keep_tracked].tolist() + np.array(refind_stracks_startframes)[keep_refind].tolist()
-        self.tracked_stracks_states = np.array(self.tracked_stracks_states)[keep_tracked].tolist() + np.array(refind_stracks_states)[keep_refind].tolist()
+
+        self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
+        self.tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy()
+        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
+        self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
 
         mask = ~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids)
         mask_tg = Tensor(mask)
@@ -1223,3 +1231,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

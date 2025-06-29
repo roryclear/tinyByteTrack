@@ -704,41 +704,10 @@ class BYTETracker(object):
         self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
         self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
-        atlbrs = tlbr_np_batch(self.tracked_stracks_values, self.tracked_stracks_means)
-        btlbrs = tlbr_np_batch(self.lost_stracks_values, self.lost_stracks_means)
-        pdist = iou_distance(atlbrs, btlbrs)
-        pairs = np.where(pdist < 0.15)
-        
-        if pairs[0].size == 0: 
-            keep_a = np.ones(len(self.tracked_stracks_values), dtype=bool)
-        else:
-            p_idx, q_idx = pairs[0], pairs[1]
-            timep = np.array([self.tracked_stracks_fids[i] - self.tracked_stracks_startframes[i] for i in p_idx])
-            timeq = np.array([self.lost_stracks_fids[i] - self.lost_stracks_startframes[i] for i in q_idx])
-            keep_p = timep <= timeq
-            dupa = p_idx[~keep_p]
-            keep_a = np.ones(len(self.tracked_stracks_values), dtype=bool)
-            keep_a[dupa] = False
-
-        keep_a_tg = Tensor(keep_a)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools).unsqueeze(-1)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
-
-        self.tracked_stracks_bools_tg *= keep_a_tg.unsqueeze(-1)
-        self.tracked_stracks_means_tg *= keep_a_tg.unsqueeze(-1)
-        self.tracked_stracks_ids_tg *= keep_a_tg
-        self.tracked_stracks_values_tg *= keep_a_tg.unsqueeze(-1)
-
-        self.tracked_stracks_values = [value for value, keep in zip(self.tracked_stracks_values, keep_a) if keep]
-        self.tracked_stracks_means = [t for t, keep in zip(self.tracked_stracks_means, keep_a) if keep]
-        self.tracked_stracks_bools = [t for t, keep in zip(self.tracked_stracks_bools, keep_a) if keep]
-        self.tracked_stracks_covs = [t for t, keep in zip(self.tracked_stracks_covs, keep_a) if keep]
-        self.tracked_stracks_ids = [t for t, keep in zip(self.tracked_stracks_ids, keep_a) if keep]
-        self.tracked_stracks_fids = [t for t, keep in zip(self.tracked_stracks_fids, keep_a) if keep]
-        self.tracked_stracks_startframes = [t for t, keep in zip(self.tracked_stracks_startframes, keep_a) if keep]
-        self.tracked_stracks_states = [t for t, keep in zip(self.tracked_stracks_states, keep_a) if keep]
 
         
         output_stracks_means_tg = self.tracked_stracks_means_tg * self.tracked_stracks_bools_tg
@@ -753,10 +722,6 @@ class BYTETracker(object):
         self.lost_stracks_bools = self.lost_stracks_bools[zeros]
 
         v,m,i = output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
-        zeros = i != 0
-        i = i[zeros]
-        m = m[zeros]
-        v = v[zeros]
         return v,m,i
 
 

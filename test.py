@@ -644,31 +644,36 @@ class BYTETracker(object):
 
 
         mask = ~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids)
+        mask_tg = Tensor(mask)
+
+        #todo covs means values
+
+        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
+        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
+        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
+        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
+        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
+
+        self.lost_stracks_ids_tg *= mask_tg
+        self.lost_stracks_fids_tg *= mask_tg
+        self.lost_stracks_startframes_tg *= mask_tg
+        self.lost_stracks_states_tg *= mask_tg
+        self.lost_stracks_bools_tg *= mask_tg
 
         self.lost_stracks_values = np.asarray(self.lost_stracks_values)[mask]
         self.lost_stracks_means = np.asarray(self.lost_stracks_means)[mask]
-        self.lost_stracks_bools = np.asarray(self.lost_stracks_bools)[mask]
         self.lost_stracks_covs = np.asarray(self.lost_stracks_covs)[mask]
-        self.lost_stracks_ids = np.asarray(self.lost_stracks_ids)[mask]
-        self.lost_stracks_fids = np.asarray(self.lost_stracks_fids)[mask]
-        self.lost_stracks_startframes = np.asarray(self.lost_stracks_startframes)[mask]
-        self.lost_stracks_states = np.asarray(self.lost_stracks_states)[mask]
 
         self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
         lost_stracks_values_tg = Tensor(lost_stracks_values)
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
         lost_stracks_means_tg = Tensor(lost_stracks_means)
-        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
         lost_stracks_bools_tg = Tensor(lost_stracks_bools)
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
         lost_stracks_covs_tg = Tensor(lost_stracks_covs)
-        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
         lost_stracks_ids_tg = Tensor(lost_stracks_ids)
-        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         lost_stracks_fids_tg = Tensor(lost_stracks_fids)
-        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
         lost_stracks_startframes_tg = Tensor(lost_stracks_startframes)
-        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
         lost_stracks_states_tg = Tensor(lost_stracks_states)
         if self.lost_stracks_values_tg.shape[0] == 0:
             self.lost_stracks_values_tg = lost_stracks_values_tg
@@ -728,6 +733,13 @@ class BYTETracker(object):
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools_tg
         output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg.squeeze(-1)
         
+        zeros = self.lost_stracks_ids != 0
+        self.lost_stracks_ids = self.lost_stracks_ids[zeros]
+        self.lost_stracks_fids = self.lost_stracks_fids[zeros]
+        self.lost_stracks_startframes = self.lost_stracks_startframes[zeros]
+        self.lost_stracks_states = self.lost_stracks_states[zeros]
+        self.lost_stracks_bools = self.lost_stracks_bools[zeros]
+
         v,m,i = output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
         zeros = i != 0
         i = i[zeros]
@@ -1227,4 +1239,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-

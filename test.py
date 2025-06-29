@@ -622,31 +622,27 @@ class BYTETracker(object):
         
         keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
 
-        self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(activated_stracks_values[i]) for i in keep_activated]
-        self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [activated_stracks_means[i] for i in keep_activated]
-        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [activated_stracks_bools[i] for i in keep_activated]
-        self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [activated_stracks_covs[i] for i in keep_activated]
-        self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [activated_stracks_ids[i] for i in keep_activated]
-        self.tracked_stracks_fids = [self.tracked_stracks_fids[i] for i in keep_tracked] + [activated_stracks_fids[i] for i in keep_activated]
-        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [activated_stracks_startframes[i] for i in keep_activated]
-        self.tracked_stracks_states = [self.tracked_stracks_states[i] for i in keep_tracked] + [activated_stracks_states[i] for i in keep_activated]
+        self.tracked_stracks_values = np.array(self.tracked_stracks_values)[keep_tracked].tolist() + np.array(activated_stracks_values)[keep_activated].tolist()
+        self.tracked_stracks_means = np.array(self.tracked_stracks_means)[keep_tracked].tolist() + np.array(activated_stracks_means)[keep_activated].tolist()
+        self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[keep_tracked].tolist() + np.array(activated_stracks_bools)[keep_activated].tolist()
+        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[keep_tracked].tolist() + np.array(activated_stracks_covs)[keep_activated].tolist()
+        self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[keep_tracked].tolist() + np.array(activated_stracks_ids)[keep_activated].tolist()
+        self.tracked_stracks_fids = np.array(self.tracked_stracks_fids)[keep_tracked].tolist() + np.array(activated_stracks_fids)[keep_activated].tolist()
+        self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[keep_tracked].tolist() + np.array(activated_stracks_startframes)[keep_activated].tolist()
+        self.tracked_stracks_states = np.array(self.tracked_stracks_states)[keep_tracked].tolist() + np.array(activated_stracks_states)[keep_activated].tolist()
 
         keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
-
-        self.tracked_stracks_means = [self.tracked_stracks_means[i] for i in keep_tracked] + [refind_stracks_means[i] for i in keep_refind]
-        self.tracked_stracks_values = [tuple(self.tracked_stracks_values[i]) for i in keep_tracked] + [tuple(refind_stracks_values[i]) for i in keep_refind]
-        self.tracked_stracks_bools = [self.tracked_stracks_bools[i] for i in keep_tracked] + [refind_stracks_bools[i] for i in keep_refind]
-        self.tracked_stracks_covs = [self.tracked_stracks_covs[i] for i in keep_tracked] + [refind_stracks_covs[i] for i in keep_refind]
-        self.tracked_stracks_ids = [self.tracked_stracks_ids[i] for i in keep_tracked] + [refind_stracks_ids[i] for i in keep_refind]
-        self.tracked_stracks_fids = [self.tracked_stracks_fids[i] for i in keep_tracked] + [refind_stracks_fids[i] for i in keep_refind]
-        self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [refind_stracks_startframes[i] for i in keep_refind]
-        self.tracked_stracks_states = [self.tracked_stracks_states[i] for i in keep_tracked] + [refind_stracks_states[i] for i in keep_refind]
-
+        self.tracked_stracks_means = np.array(self.tracked_stracks_means)[keep_tracked].tolist() + np.array(refind_stracks_means)[keep_refind].tolist()
+        self.tracked_stracks_values = np.array(self.tracked_stracks_values)[keep_tracked].tolist() + np.array(refind_stracks_values)[keep_refind].tolist()
+        self.tracked_stracks_bools = np.array(self.tracked_stracks_bools)[keep_tracked].tolist() + np.array(refind_stracks_bools)[keep_refind].tolist()
+        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[keep_tracked].tolist() + np.array(refind_stracks_covs)[keep_refind].tolist()
+        self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[keep_tracked].tolist() + np.array(refind_stracks_ids)[keep_refind].tolist()
+        self.tracked_stracks_fids = np.array(self.tracked_stracks_fids)[keep_tracked].tolist() + np.array(refind_stracks_fids)[keep_refind].tolist()
+        self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[keep_tracked].tolist() + np.array(refind_stracks_startframes)[keep_refind].tolist()
+        self.tracked_stracks_states = np.array(self.tracked_stracks_states)[keep_tracked].tolist() + np.array(refind_stracks_states)[keep_refind].tolist()
 
         mask = ~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids)
         mask_tg = Tensor(mask)
-
-        #todo covs means values
 
         self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
@@ -663,15 +659,9 @@ class BYTETracker(object):
         self.lost_stracks_startframes_tg *= mask_tg
         self.lost_stracks_states_tg *= mask_tg
         self.lost_stracks_bools_tg *= mask_tg
-
-        if mask_tg.shape[0] > 0:
-          self.lost_stracks_values_tg *= mask_tg.unsqueeze(-1)
-          self.lost_stracks_means_tg *= mask_tg.unsqueeze(-1)
-          self.lost_stracks_covs_tg *= mask_tg.unsqueeze(-1).unsqueeze(-1)
-        else:
-           self.lost_stracks_values_tg = Tensor.zeros_like(self.lost_stracks_values_tg)
-           self.lost_stracks_means_tg = Tensor.zeros_like(self.lost_stracks_means_tg)
-           self.lost_stracks_covs_tg = Tensor.zeros_like(self.lost_stracks_covs_tg)
+        self.lost_stracks_values_tg = self.lost_stracks_values_tg * mask_tg.view(-1, 1)
+        self.lost_stracks_means_tg = self.lost_stracks_means_tg * mask_tg.view(-1, 1)
+        self.lost_stracks_covs_tg = self.lost_stracks_covs_tg * mask_tg.view(-1, 1, 1)
 
         lost_stracks_values_tg = Tensor(lost_stracks_values)
         lost_stracks_means_tg = Tensor(lost_stracks_means)

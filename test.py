@@ -642,20 +642,10 @@ class BYTETracker(object):
         self.tracked_stracks_startframes = [self.tracked_stracks_startframes[i] for i in keep_tracked] + [refind_stracks_startframes[i] for i in keep_refind]
         self.tracked_stracks_states = [self.tracked_stracks_states[i] for i in keep_tracked] + [refind_stracks_states[i] for i in keep_refind]
 
-        lost_values = np.asarray(self.lost_stracks_values)
-        tracked_values = np.asarray(self.tracked_stracks_values)
-        if len(tracked_values) == 0:
-            mask = np.ones(len(lost_values))
 
-        elif len(lost_values) == 0:
-            mask = np.array([],dtype=bool)
+        mask = ~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids)
 
-        else:
-            comparisons = (lost_values[:, None, :] == tracked_values[None, :, :])
-            matches = comparisons.all(axis=2)  # shape: (N_lost, N_tracked)
-            mask = ~matches.any(axis=1)        # shape: (N_lost,)
-
-        self.lost_stracks_values = lost_values[mask]
+        self.lost_stracks_values = np.asarray(self.lost_stracks_values)[mask]
         self.lost_stracks_means = np.asarray(self.lost_stracks_means)[mask]
         self.lost_stracks_bools = np.asarray(self.lost_stracks_bools)[mask]
         self.lost_stracks_covs = np.asarray(self.lost_stracks_covs)[mask]
@@ -1237,3 +1227,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

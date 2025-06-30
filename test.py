@@ -14,6 +14,7 @@ import json
 from tinygrad import TinyJit
 import lap
 from collections import OrderedDict
+import pickle
 
 
 class KalmanFilter(object):
@@ -314,7 +315,7 @@ class BYTETracker(object):
 
         strack_pool_values = tracked_stracks_values + np.array(self.lost_stracks_values).tolist()
         strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in keep_b]
-        strack_pool_bools = tracked_stracks_bools + [self.lost_stracks_bools[i] for i in keep_b]
+        strack_pool_bools = tracked_stracks_bools + np.array(self.lost_stracks_bools).tolist()
         strack_pool_covs = tracked_stracks_covs + [self.lost_stracks_covs[i] for i in keep_b]
         strack_pool_ids = tracked_stracks_ids + [self.lost_stracks_ids[i] for i in keep_b]
         strack_pool_fids = tracked_stracks_fids + [self.lost_stracks_fids[i] for i in keep_b]
@@ -1201,8 +1202,11 @@ if __name__ == '__main__':
   class_labels = fetch('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names').read_text().split("\n")
   color_dict = {label: tuple((((i+1) * 50) % 256, ((i+1) * 100) % 256, ((i+1) * 150) % 256)) for i, label in enumerate(class_labels)}
   
+  
   frame_count = 0
   people = set()
+  #outs = []
+  expected_values = pickle.load(open('values.pkl', 'rb'))
   while True:
     ret, frame = cap.read()
     if not ret:
@@ -1230,18 +1234,18 @@ if __name__ == '__main__':
     out_writer.write(frame)
     
 
-    excepted_counts = [8, 8, 9, 9, 9, 10, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 16, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28, 28, 29, 29, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 33, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 35, 35, 35, 35, 35, 35, 35, 35, 36, 37, 37, 37, 37, 37, 37, 37, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40]
-    if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4" and frame_count - 1 < len(excepted_counts):
-       if len(people) != excepted_counts[frame_count - 1]:
+    if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
+       if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
           exit()
-    
+       #outs.append(values)
 
 
     if frame_count % 10 == 0:
       print(f"Processed frame {frame_count}")
       print(len(people))
 
+  #pickle.dump(outs, open('values.pkl', 'wb'))
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")

@@ -310,7 +310,9 @@ class BYTETracker(object):
         tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask].tolist()
         unconfirmed_bools = np.array(self.tracked_stracks_bools)[~mask].tolist()
 
-        keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
+        keep_a = np.arange(len(tracked_stracks_ids))
+        keep_b = np.where(~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids))[0]
+
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]
         strack_pool_means = [tracked_stracks_means[i] for i in keep_a] + [self.lost_stracks_means[i] for i in keep_b]
         strack_pool_bools = [tracked_stracks_bools[i] for i in keep_a] + [self.lost_stracks_bools[i] for i in keep_b]
@@ -628,8 +630,10 @@ class BYTETracker(object):
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
         self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[mask]
         self.tracked_stracks_states = np.array(self.tracked_stracks_states)[mask]
-        
-        keep_tracked, keep_activated = joint_stracks_indices(self.tracked_stracks_ids, activated_stracks_ids)
+            
+        keep_tracked = np.arange(len(self.tracked_stracks_ids))
+        keep_activated = np.where(~np.isin(activated_stracks_ids, self.tracked_stracks_ids))[0]
+
         keep_tracked_tg, keep_activated_tg = Tensor(keep_tracked), Tensor(keep_activated)
 
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
@@ -667,7 +671,9 @@ class BYTETracker(object):
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
         self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
 
-        keep_tracked, keep_refind = joint_stracks_indices(self.tracked_stracks_ids, refind_stracks_ids)
+        keep_tracked = np.arange(len(self.tracked_stracks_ids))
+        keep_refind = np.where(~np.isin(refind_stracks_ids, self.tracked_stracks_ids))[0]
+
         keep_tracked_tg, keep_refind_tg = Tensor(keep_tracked), Tensor(keep_refind)
         refind_stracks_fids_tg = Tensor(refind_stracks_fids)
         refind_stracks_bools_tg = Tensor(refind_stracks_bools)
@@ -797,11 +803,6 @@ def ious(atlbrs, btlbrs):
     
     ious = bbox_ious(np.ascontiguousarray(atlbrs, dtype=np.float), np.ascontiguousarray(btlbrs, dtype=np.float))
     return ious
-
-
-def joint_stracks_indices(ids_a, ids_b):
-    mask_b = ~np.isin(ids_b, ids_a)
-    return np.arange(len(ids_a)), np.where(mask_b)[0]
 
 def iou_distance(atlbrs, btlbrs):
     _ious = ious(atlbrs, btlbrs)

@@ -263,37 +263,22 @@ class BYTETracker(object):
         detections_startframes = [0 for _ in dets_score_classes]
         detections_states = [TrackState.New for _ in dets_score_classes]
         
-        unconfirmed_values = []
-        unconfirmed_means = []
-        unconfirmed_bools = []
-        unconfirmed_covs = []
-        unconfirmed_ids = []
-        unconfirmed_fids = []
-        unconfirmed_startframes = []
-        unconfirmed_states = []
         tracked_stracks_means = []
-        tracked_stracks_values = []
-        tracked_stracks_bools = []
         tracked_stracks_covs = []
-        tracked_stracks_ids = []
-        tracked_stracks_fids = []
-        tracked_stracks_startframes = []
-        tracked_stracks_states = []
         
         mask = np.array(self.tracked_stracks_bools).astype(bool)
 
         for i in range(len(self.tracked_stracks_ids)):
             mean = self.tracked_stracks_means[i]
             cov = self.tracked_stracks_covs[i]  
-            if not self.tracked_stracks_bools[i]:
-                unconfirmed_covs.append(cov)
-            else:
+            if self.tracked_stracks_bools[i]:
                 tracked_stracks_means.append(mean)
                 tracked_stracks_covs.append(cov)
 
         tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
         unconfirmed_values = np.array(self.tracked_stracks_values)[~mask].tolist()
-
+        
+        unconfirmed_covs = np.array(self.tracked_stracks_covs)[~mask].tolist()
         unconfirmed_means = np.array(self.tracked_stracks_means)[~mask].tolist()
 
         tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask].tolist()

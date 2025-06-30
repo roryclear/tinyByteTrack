@@ -310,14 +310,16 @@ class BYTETracker(object):
         tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask].tolist()
         unconfirmed_bools = np.array(self.tracked_stracks_bools)[~mask].tolist()
 
-        strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in range(len(self.lost_stracks_means))] # why????
-        strack_pool_covs = tracked_stracks_covs + np.array(self.lost_stracks_covs).tolist()
+        keep_b = np.where(~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids))[0]
+
         strack_pool_values = tracked_stracks_values + np.array(self.lost_stracks_values).tolist()
-        strack_pool_bools = tracked_stracks_bools + np.array(self.lost_stracks_bools).tolist()
-        strack_pool_ids = tracked_stracks_ids + np.array(self.lost_stracks_ids).tolist()
-        strack_pool_fids = tracked_stracks_fids + np.array(self.lost_stracks_fids).tolist()
-        strack_pool_startframes = tracked_stracks_startframes + np.array(self.lost_stracks_startframes).tolist()
-        strack_pool_states = tracked_stracks_states + np.array(self.lost_stracks_states).tolist()
+        strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in keep_b]
+        strack_pool_bools = tracked_stracks_bools + [self.lost_stracks_bools[i] for i in keep_b]
+        strack_pool_covs = tracked_stracks_covs + [self.lost_stracks_covs[i] for i in keep_b]
+        strack_pool_ids = tracked_stracks_ids + [self.lost_stracks_ids[i] for i in keep_b]
+        strack_pool_fids = tracked_stracks_fids + [self.lost_stracks_fids[i] for i in keep_b]
+        strack_pool_startframes = tracked_stracks_startframes + [self.lost_stracks_startframes[i] for i in keep_b]
+        strack_pool_states = tracked_stracks_states + [self.lost_stracks_states[i] for i in keep_b]
 
         # Predict the current location with KF
         if len(strack_pool_ids) > 0:
@@ -1226,6 +1228,15 @@ if __name__ == '__main__':
     draw_predictions_on_frame(frame, pred_track, class_labels, color_dict)
 
     out_writer.write(frame)
+    
+
+    excepted_counts = [8, 8, 9, 9, 9, 10, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 16, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28, 28, 29, 29, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 33, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 35, 35, 35, 35, 35, 35, 35, 35, 36, 37, 37, 37, 37, 37, 37, 37, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40]
+    if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4" and frame_count - 1 < len(excepted_counts):
+       if len(people) != excepted_counts[frame_count - 1]:
+          print("wrong output")
+          exit()
+    
+
 
     if frame_count % 10 == 0:
       print(f"Processed frame {frame_count}")

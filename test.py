@@ -310,16 +310,14 @@ class BYTETracker(object):
         tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask].tolist()
         unconfirmed_bools = np.array(self.tracked_stracks_bools)[~mask].tolist()
 
-        keep_b = np.where(~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids))[0]
-
-        strack_pool_values = tracked_stracks_values + [self.lost_stracks_values[i] for i in keep_b]
-        strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in keep_b]
-        strack_pool_bools = tracked_stracks_bools + [self.lost_stracks_bools[i] for i in keep_b]
-        strack_pool_covs = tracked_stracks_covs + [self.lost_stracks_covs[i] for i in keep_b]
-        strack_pool_ids = tracked_stracks_ids + [self.lost_stracks_ids[i] for i in keep_b]
-        strack_pool_fids = tracked_stracks_fids + [self.lost_stracks_fids[i] for i in keep_b]
-        strack_pool_startframes = tracked_stracks_startframes + [self.lost_stracks_startframes[i] for i in keep_b]
-        strack_pool_states = tracked_stracks_states + [self.lost_stracks_states[i] for i in keep_b]
+        strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in range(len(self.lost_stracks_means))] # why????
+        strack_pool_covs = tracked_stracks_covs + np.array(self.lost_stracks_covs).tolist()
+        strack_pool_values = tracked_stracks_values + np.array(self.lost_stracks_values).tolist()
+        strack_pool_bools = tracked_stracks_bools + np.array(self.lost_stracks_bools).tolist()
+        strack_pool_ids = tracked_stracks_ids + np.array(self.lost_stracks_ids).tolist()
+        strack_pool_fids = tracked_stracks_fids + np.array(self.lost_stracks_fids).tolist()
+        strack_pool_startframes = tracked_stracks_startframes + np.array(self.lost_stracks_startframes).tolist()
+        strack_pool_states = tracked_stracks_states + np.array(self.lost_stracks_states).tolist()
 
         # Predict the current location with KF
         if len(strack_pool_ids) > 0:
@@ -360,7 +358,7 @@ class BYTETracker(object):
                     break
 
             if itracked >= len(tracked_stracks_ids):  # TODO hack remove
-                lost_idx = keep_b[itracked - len(tracked_stracks_ids)]
+                lost_idx = itracked - len(tracked_stracks_ids)
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
             if strack_pool_states[itracked] == TrackState.Tracked:

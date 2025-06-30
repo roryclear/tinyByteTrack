@@ -384,15 +384,7 @@ class BYTETracker(object):
             tracked_stracks_covs[itracked][:] = y
             tracked_stracks_means[itracked][:] = x
             tracked_stracks_fids[itracked] = self.frame_id
-
-            for i, t in enumerate(self.tracked_stracks_ids):
-                if t is tracked_stracks_ids[itracked]:
-                    self.tracked_stracks_fids[i] = self.frame_id
-                    break
-
-            if itracked >= len(tracked_stracks_ids):  # TODO hack remove
-                lost_idx = itracked - len(tracked_stracks_ids)
-                self.lost_stracks_fids[lost_idx] = self.frame_id
+            if itracked < len(self.tracked_stracks_fids): self.tracked_stracks_fids[itracked] = self.frame_id
 
             if tracked_stracks_states[itracked] == TrackState.Tracked:
                 activated_stracks_values.append(tracked_stracks_values[itracked])

@@ -666,6 +666,7 @@ class BYTETracker(object):
         refind_stracks_startframes_tg = Tensor(refind_stracks_startframes)
         refind_stracks_values_tg = Tensor(refind_stracks_values)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
+        refind_stracks_covs_tg = Tensor(refind_stracks_covs)
 
         self.tracked_stracks_fids_tg = (self.tracked_stracks_fids_tg[keep_tracked_tg]).cat(refind_stracks_fids_tg[keep_refind_tg])
         self.tracked_stracks_bools_tg = (self.tracked_stracks_bools_tg[keep_tracked_tg]).cat(refind_stracks_bools_tg[keep_refind_tg])
@@ -674,11 +675,12 @@ class BYTETracker(object):
         if refind_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg = (self.tracked_stracks_means_tg[keep_tracked_tg]).cat(refind_stracks_means_tg[keep_refind_tg])
             self.tracked_stracks_values_tg = (self.tracked_stracks_values_tg[keep_tracked_tg]).cat(refind_stracks_values_tg[keep_refind_tg])
+            self.tracked_stracks_covs_tg = (self.tracked_stracks_covs_tg[keep_tracked_tg]).cat(refind_stracks_covs_tg[keep_refind_tg])
         else:
             self.tracked_stracks_means_tg = self.tracked_stracks_means_tg[keep_tracked_tg]
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[keep_tracked_tg]
-        
-        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)[keep_tracked].tolist() + np.array(refind_stracks_covs)[keep_refind].tolist()
+            self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg[keep_tracked_tg]
+      
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[keep_tracked].tolist() + np.array(refind_stracks_ids)[keep_refind].tolist()
 
         self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
@@ -687,6 +689,7 @@ class BYTETracker(object):
         self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
         self.tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
+        self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
 
         mask = ~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids)
         mask_tg = Tensor(mask)

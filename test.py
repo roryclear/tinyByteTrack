@@ -112,16 +112,16 @@ def tlbr_np(values, mean):
     ret[2:] += ret[:2]
     return ret
 
-def tlbr_np_batch(strack_pool_values, strack_pool_means):
-    ret = np.empty((len(strack_pool_values), 4))
-    use_mean = np.array([m is not None for m in strack_pool_means], dtype=bool)
+def tlbr_np_batch(tracked_stracks_values, tracked_stracks_means):
+    ret = np.empty((len(tracked_stracks_values), 4))
+    use_mean = np.array([m is not None for m in tracked_stracks_means], dtype=bool)
     if np.any(use_mean):
-        means = np.array([m for m in strack_pool_means if m is not None])
+        means = np.array([m for m in tracked_stracks_means if m is not None])
         ret[use_mean, :] = means[:, :4].copy()
         ret[use_mean, 2] *= ret[use_mean, 3]
         ret[use_mean, :2] -= ret[use_mean, 2:] / 2
     if not np.all(use_mean):
-        ret[~use_mean, :] = strack_pool_values[~use_mean, :4].copy()
+        ret[~use_mean, :] = tracked_stracks_values[~use_mean, :4].copy()
     ret[:, 2:] += ret[:, :2]
     return ret
 
@@ -292,25 +292,24 @@ class BYTETracker(object):
         tracked_stracks_states_tg = self.tracked_stracks_states_tg * mask_tg
         tracked_stracks_values_tg = self.tracked_stracks_values_tg * mask_tg.view(-1,1)
 
-        tracked_stracks_ids = tracked_stracks_ids_tg.numpy()
+        tracked_stracks_ids = tracked_stracks_ids_tg.numpy() 
         id_mask = tracked_stracks_ids != 0
-        tracked_stracks_ids = tracked_stracks_ids[id_mask].tolist()
+        tracked_stracks_ids = tracked_stracks_ids[id_mask].tolist() + list(self.lost_stracks_ids)
 
-        
         tracked_stracks_fids = tracked_stracks_fids_tg.numpy()
-        tracked_stracks_fids = tracked_stracks_fids[id_mask].tolist()
+        tracked_stracks_fids = tracked_stracks_fids[id_mask].tolist() + list(self.lost_stracks_fids)
 
         tracked_stracks_bools = tracked_stracks_bools_tg.numpy()
-        tracked_stracks_bools = tracked_stracks_bools[id_mask].tolist()
+        tracked_stracks_bools = tracked_stracks_bools[id_mask].tolist() + list(self.lost_stracks_bools)
 
         tracked_stracks_startframes = tracked_stracks_startframes_tg.numpy()
-        tracked_stracks_startframes = tracked_stracks_startframes[id_mask].tolist()
+        tracked_stracks_startframes = tracked_stracks_startframes[id_mask].tolist() + list(self.lost_stracks_startframes)
         
         tracked_stracks_states = tracked_stracks_states_tg.numpy()
-        tracked_stracks_states = tracked_stracks_states[id_mask].tolist()
+        tracked_stracks_states = tracked_stracks_states[id_mask].tolist() + list(self.lost_stracks_states)
         
         tracked_stracks_values = tracked_stracks_values_tg.numpy()
-        tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
+        tracked_stracks_values = tracked_stracks_values[id_mask].tolist() + list(self.lost_stracks_values)
         
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
         unconfirmed_values_tg = self.tracked_stracks_values_tg * ~mask_tg.view(-1,1)
@@ -347,34 +346,28 @@ class BYTETracker(object):
         unconfirmed_startframes = unconfirmed_startframes[id_mask].tolist()
 
 
-        strack_pool_values = tracked_stracks_values + list(self.lost_stracks_values)
-        strack_pool_means = tracked_stracks_means + list(self.lost_stracks_means)
-        strack_pool_bools = tracked_stracks_bools + list(self.lost_stracks_bools)
-        strack_pool_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
-        strack_pool_ids = tracked_stracks_ids + list(self.lost_stracks_ids)
-        strack_pool_fids = tracked_stracks_fids + list(self.lost_stracks_fids)
-        strack_pool_startframes = tracked_stracks_startframes + list(self.lost_stracks_startframes)
-        strack_pool_states = tracked_stracks_states + list(self.lost_stracks_states)
+        tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
+        tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
 
         # Predict the current location with KF
-        if len(strack_pool_ids) > 0:
-            multi_mean = np.asarray([st for st in strack_pool_means])
-            multi_covariance = np.asarray([st for st in strack_pool_covs])
-            for i in range(len(strack_pool_ids)):
-                if strack_pool_states[i] != TrackState.Tracked:
+        if len(tracked_stracks_ids) > 0:
+            multi_mean = np.asarray([st for st in tracked_stracks_means])
+            multi_covariance = np.asarray([st for st in tracked_stracks_covs])
+            for i in range(len(tracked_stracks_ids)):
+                if tracked_stracks_states[i] != TrackState.Tracked:
                     multi_mean[i][7] = 0
 
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
-            for i in range(len(strack_pool_ids)):
-                strack_pool_means[i][:] = multi_mean[i].astype(np.float32)
-                strack_pool_covs[i][:] = multi_covariance[i]
+            for i in range(len(tracked_stracks_ids)):
+                tracked_stracks_means[i][:] = multi_mean[i].astype(np.float32)
+                tracked_stracks_covs[i][:] = multi_covariance[i]
             
             for i, t in enumerate(self.tracked_stracks_covs):
-              for j, p in enumerate(strack_pool_covs):
+              for j, p in enumerate(tracked_stracks_covs):
                   if t is p:
-                      self.tracked_stracks_covs[i] = strack_pool_covs[j]
+                      self.tracked_stracks_covs[i] = tracked_stracks_covs[j]
 
-        atlbrs = tlbr_np_batch(strack_pool_values, strack_pool_means)
+        atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
         btlbrs = tlbr_np_batch(dets_score_classes,detections_means)
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
@@ -384,13 +377,13 @@ class BYTETracker(object):
 
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
-            x, y = self.kalman_filter.update(strack_pool_means[itracked], strack_pool_covs[itracked], det_xyah)
-            strack_pool_covs[itracked][:] = y
-            strack_pool_means[itracked][:] = x
-            strack_pool_fids[itracked] = self.frame_id
+            x, y = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], det_xyah)
+            tracked_stracks_covs[itracked][:] = y
+            tracked_stracks_means[itracked][:] = x
+            tracked_stracks_fids[itracked] = self.frame_id
 
             for i, t in enumerate(self.tracked_stracks_ids):
-                if t is strack_pool_ids[itracked]:
+                if t is tracked_stracks_ids[itracked]:
                     self.tracked_stracks_fids[i] = self.frame_id
                     break
 
@@ -398,26 +391,26 @@ class BYTETracker(object):
                 lost_idx = itracked - len(tracked_stracks_ids)
                 self.lost_stracks_fids[lost_idx] = self.frame_id
 
-            if strack_pool_states[itracked] == TrackState.Tracked:
-                activated_stracks_values.append(strack_pool_values[itracked])
-                activated_stracks_means.append(strack_pool_means[itracked])
-                activated_stracks_bools.append(strack_pool_bools[itracked])
-                activated_stracks_covs.append(strack_pool_covs[itracked])
-                activated_stracks_ids.append(strack_pool_ids[itracked])
-                activated_stracks_fids.append(strack_pool_fids[itracked])
-                activated_stracks_startframes.append(strack_pool_startframes[itracked])
-                activated_stracks_states.append(strack_pool_states[itracked])
+            if tracked_stracks_states[itracked] == TrackState.Tracked:
+                activated_stracks_values.append(tracked_stracks_values[itracked])
+                activated_stracks_means.append(tracked_stracks_means[itracked])
+                activated_stracks_bools.append(tracked_stracks_bools[itracked])
+                activated_stracks_covs.append(tracked_stracks_covs[itracked])
+                activated_stracks_ids.append(tracked_stracks_ids[itracked])
+                activated_stracks_fids.append(tracked_stracks_fids[itracked])
+                activated_stracks_startframes.append(tracked_stracks_startframes[itracked])
+                activated_stracks_states.append(tracked_stracks_states[itracked])
             else:
-                strack_pool_states[itracked] = TrackState.Tracked
-                strack_pool_bools[itracked] = True
-                refind_stracks_values.append(strack_pool_values[itracked])
-                refind_stracks_means.append(strack_pool_means[itracked])
+                tracked_stracks_states[itracked] = TrackState.Tracked
+                tracked_stracks_bools[itracked] = True
+                refind_stracks_values.append(tracked_stracks_values[itracked])
+                refind_stracks_means.append(tracked_stracks_means[itracked])
                 refind_stracks_bools.append(True)
-                refind_stracks_covs.append(strack_pool_covs[itracked])
-                refind_stracks_ids.append(strack_pool_ids[itracked])
-                refind_stracks_fids.append(strack_pool_fids[itracked])
-                refind_stracks_startframes.append(strack_pool_startframes[itracked])
-                refind_stracks_states.append(strack_pool_states[itracked])
+                refind_stracks_covs.append(tracked_stracks_covs[itracked])
+                refind_stracks_ids.append(tracked_stracks_ids[itracked])
+                refind_stracks_fids.append(tracked_stracks_fids[itracked])
+                refind_stracks_startframes.append(tracked_stracks_startframes[itracked])
+                refind_stracks_states.append(tracked_stracks_states[itracked])
 
         r_tracked_stracks_values = []
         r_tracked_stracks_means = []
@@ -429,15 +422,15 @@ class BYTETracker(object):
         r_tracked_stracks_states = []
         
         for i in range(len(u_track)):
-            if strack_pool_states[u_track[i]] == TrackState.Tracked:
-                r_tracked_stracks_values.append(strack_pool_values[u_track[i]])
-                r_tracked_stracks_means.append(strack_pool_means[u_track[i]])
-                r_tracked_stracks_bools.append(strack_pool_bools[u_track[i]])
-                r_tracked_stracks_covs.append(strack_pool_covs[u_track[i]])
-                r_tracked_stracks_ids.append(strack_pool_ids[u_track[i]])
-                r_tracked_stracks_fids.append(strack_pool_fids[u_track[i]])
-                r_tracked_stracks_startframes.append(strack_pool_startframes[u_track[i]])
-                r_tracked_stracks_states.append(strack_pool_states[u_track[i]])
+            if tracked_stracks_states[u_track[i]] == TrackState.Tracked:
+                r_tracked_stracks_values.append(tracked_stracks_values[u_track[i]])
+                r_tracked_stracks_means.append(tracked_stracks_means[u_track[i]])
+                r_tracked_stracks_bools.append(tracked_stracks_bools[u_track[i]])
+                r_tracked_stracks_covs.append(tracked_stracks_covs[u_track[i]])
+                r_tracked_stracks_ids.append(tracked_stracks_ids[u_track[i]])
+                r_tracked_stracks_fids.append(tracked_stracks_fids[u_track[i]])
+                r_tracked_stracks_startframes.append(tracked_stracks_startframes[u_track[i]])
+                r_tracked_stracks_states.append(tracked_stracks_states[u_track[i]])
         
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially

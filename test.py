@@ -93,11 +93,11 @@ class KalmanFilter(object):
         return new_mean, new_covariance
 
 class TrackState(object):
-    New = 0
-    Tracked = 1
-    Lost = 2
-    Removed = 3
-    Replaced = 4
+    New = 1
+    Tracked = 2
+    Lost = 3
+    Removed = 4
+    Replaced = 5
 
 def tlbr_np(values, mean):
     """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,

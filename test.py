@@ -278,35 +278,37 @@ class BYTETracker(object):
         tracked_stracks_fids = []
         tracked_stracks_startframes = []
         tracked_stracks_states = []
+        
+        mask = np.array(self.tracked_stracks_bools).astype(bool)
 
         for i in range(len(self.tracked_stracks_ids)):
-            value = self.tracked_stracks_values[i]
             mean = self.tracked_stracks_means[i]
-            boolv = self.tracked_stracks_bools[i]
-            cov = self.tracked_stracks_covs[i]
-            id = self.tracked_stracks_ids[i]
-            fid = self.tracked_stracks_fids[i]
-            startframe = self.tracked_stracks_startframes[i]
-            state = self.tracked_stracks_states[i]
+            cov = self.tracked_stracks_covs[i]  
             if not self.tracked_stracks_bools[i]:
-
-                unconfirmed_values.append(value)
-                unconfirmed_means.append(mean)
-                unconfirmed_bools.append(boolv)
                 unconfirmed_covs.append(cov)
-                unconfirmed_ids.append(id)
-                unconfirmed_fids.append(fid)
-                unconfirmed_startframes.append(startframe)
-                unconfirmed_states.append(state)
             else:
-                tracked_stracks_values.append(value)
                 tracked_stracks_means.append(mean)
-                tracked_stracks_bools.append(boolv)
                 tracked_stracks_covs.append(cov)
-                tracked_stracks_ids.append(id)
-                tracked_stracks_fids.append(fid)
-                tracked_stracks_startframes.append(startframe)
-                tracked_stracks_states.append(state)
+
+        tracked_stracks_values = np.array(self.tracked_stracks_values)[mask].tolist()
+        unconfirmed_values = np.array(self.tracked_stracks_values)[~mask].tolist()
+
+        unconfirmed_means = np.array(self.tracked_stracks_means)[~mask].tolist()
+
+        tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask].tolist()
+        unconfirmed_ids = np.array(self.tracked_stracks_ids)[~mask].tolist()
+
+        tracked_stracks_fids = np.array(self.tracked_stracks_fids)[mask].tolist()
+        unconfirmed_fids = np.array(self.tracked_stracks_fids)[~mask].tolist()
+
+        tracked_stracks_states = np.array(self.tracked_stracks_states)[mask].tolist()
+        unconfirmed_states = np.array(self.tracked_stracks_states)[~mask].tolist()
+
+        tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[mask].tolist()
+        unconfirmed_startframes = np.array(self.tracked_stracks_startframes)[~mask].tolist()
+
+        tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask].tolist()
+        unconfirmed_bools = np.array(self.tracked_stracks_bools)[~mask].tolist()
 
         keep_a, keep_b = joint_stracks_indices(tracked_stracks_ids, self.lost_stracks_ids)
         strack_pool_values = [tracked_stracks_values[i] for i in keep_a] + [self.lost_stracks_values[i] for i in keep_b]

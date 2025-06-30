@@ -311,16 +311,14 @@ class BYTETracker(object):
         tracked_stracks_bools = np.array(self.tracked_stracks_bools)[mask].tolist()
         unconfirmed_bools = np.array(self.tracked_stracks_bools)[~mask].tolist()
 
-        keep_b = np.where(~np.isin(self.lost_stracks_ids, self.tracked_stracks_ids))[0]
-
-        strack_pool_values = tracked_stracks_values + np.array(self.lost_stracks_values).tolist()
-        strack_pool_means = tracked_stracks_means + [self.lost_stracks_means[i] for i in keep_b]
-        strack_pool_bools = tracked_stracks_bools + np.array(self.lost_stracks_bools).tolist()
-        strack_pool_covs = tracked_stracks_covs + [self.lost_stracks_covs[i] for i in keep_b]
-        strack_pool_ids = tracked_stracks_ids + [self.lost_stracks_ids[i] for i in keep_b]
-        strack_pool_fids = tracked_stracks_fids + [self.lost_stracks_fids[i] for i in keep_b]
-        strack_pool_startframes = tracked_stracks_startframes + [self.lost_stracks_startframes[i] for i in keep_b]
-        strack_pool_states = tracked_stracks_states + [self.lost_stracks_states[i] for i in keep_b]
+        strack_pool_values = tracked_stracks_values + list(self.lost_stracks_values)
+        strack_pool_means = tracked_stracks_means + list(self.lost_stracks_means)
+        strack_pool_bools = tracked_stracks_bools + list(self.lost_stracks_bools)
+        strack_pool_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
+        strack_pool_ids = tracked_stracks_ids + list(self.lost_stracks_ids)
+        strack_pool_fids = tracked_stracks_fids + list(self.lost_stracks_fids)
+        strack_pool_startframes = tracked_stracks_startframes + list(self.lost_stracks_startframes)
+        strack_pool_states = tracked_stracks_states + list(self.lost_stracks_states)
 
         # Predict the current location with KF
         if len(strack_pool_ids) > 0:

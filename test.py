@@ -181,6 +181,15 @@ class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self._count = 0
 
+        self.lost_stracks_ids_tg = Tensor.empty()
+        self.lost_stracks_fids_tg = Tensor.empty()
+        self.lost_stracks_startframes_tg = Tensor.empty()
+        self.lost_stracks_states_tg = Tensor.empty()
+        self.lost_stracks_bools_tg = Tensor.empty()
+        self.lost_stracks_values_tg = Tensor.empty()
+        self.lost_stracks_means_tg = Tensor.empty()
+        self.lost_stracks_covs_tg = Tensor.empty()
+
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
 
@@ -285,32 +294,40 @@ class BYTETracker(object):
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
 
-        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * mask_tg
-        tracked_stracks_fids_tg = self.tracked_stracks_fids_tg * mask_tg
-        tracked_stracks_bools_tg = self.tracked_stracks_bools_tg * mask_tg
-        tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg * mask_tg
-        tracked_stracks_states_tg = self.tracked_stracks_states_tg * mask_tg
+        tracked_stracks_ids_tg = (self.tracked_stracks_ids_tg * mask_tg)
+        tracked_stracks_fids_tg = (self.tracked_stracks_fids_tg * mask_tg)
+        tracked_stracks_bools_tg = (self.tracked_stracks_bools_tg * mask_tg)
+        tracked_stracks_startframes_tg = (self.tracked_stracks_startframes_tg * mask_tg)
+        tracked_stracks_states_tg = (self.tracked_stracks_states_tg * mask_tg)
         tracked_stracks_values_tg = self.tracked_stracks_values_tg * mask_tg.view(-1,1)
+
+        if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
+            tracked_stracks_ids_tg = tracked_stracks_ids_tg.cat(self.lost_stracks_ids_tg)
+            tracked_stracks_fids_tg = tracked_stracks_fids_tg.cat(self.lost_stracks_fids_tg)
+            tracked_stracks_bools_tg = tracked_stracks_bools_tg.cat(self.lost_stracks_bools_tg)
+            tracked_stracks_startframes_tg = tracked_stracks_startframes_tg.cat(self.lost_stracks_startframes_tg)
+            tracked_stracks_states_tg = tracked_stracks_states_tg.cat(self.lost_stracks_states_tg)
+            tracked_stracks_values_tg = tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
 
         tracked_stracks_ids = tracked_stracks_ids_tg.numpy() 
         id_mask = tracked_stracks_ids != 0
-        tracked_stracks_ids = tracked_stracks_ids[id_mask].tolist() + list(self.lost_stracks_ids)
+        tracked_stracks_ids = tracked_stracks_ids[id_mask].tolist()
 
         tracked_stracks_fids = tracked_stracks_fids_tg.numpy()
-        tracked_stracks_fids = tracked_stracks_fids[id_mask].tolist() + list(self.lost_stracks_fids)
+        tracked_stracks_fids = tracked_stracks_fids[id_mask].tolist()
 
         tracked_stracks_bools = tracked_stracks_bools_tg.numpy()
-        tracked_stracks_bools = tracked_stracks_bools[id_mask].tolist() + list(self.lost_stracks_bools)
+        tracked_stracks_bools = tracked_stracks_bools[id_mask].tolist()
 
         tracked_stracks_startframes = tracked_stracks_startframes_tg.numpy()
-        tracked_stracks_startframes = tracked_stracks_startframes[id_mask].tolist() + list(self.lost_stracks_startframes)
+        tracked_stracks_startframes = tracked_stracks_startframes[id_mask].tolist()
         
         tracked_stracks_states = tracked_stracks_states_tg.numpy()
-        tracked_stracks_states = tracked_stracks_states[id_mask].tolist() + list(self.lost_stracks_states)
+        tracked_stracks_states = tracked_stracks_states[id_mask].tolist()
         
         tracked_stracks_values = tracked_stracks_values_tg.numpy()
-        tracked_stracks_values = tracked_stracks_values[id_mask].tolist() + list(self.lost_stracks_values)
-        
+        tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
+
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
         unconfirmed_values_tg = self.tracked_stracks_values_tg * ~mask_tg.view(-1,1)
         unconfirmed_bools_tg = self.tracked_stracks_bools_tg * ~mask_tg
@@ -344,7 +361,6 @@ class BYTETracker(object):
 
         unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes[id_mask].tolist()
-
 
         tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
         tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)

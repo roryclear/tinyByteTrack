@@ -401,16 +401,19 @@ class BYTETracker(object):
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
         
-        original_indices = np.where(mask)[0]
-        
         for itracked, idet in matches:
             xyah = tlwh_to_xyah(dets_score_classes_second[idet][:4])
             tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]] = self.kalman_filter.update(tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]], xyah)
             tracked_stracks_values[u_track[itracked]][4] = dets_score_classes_second[idet][4]
             tracked_stracks_fids[u_track[itracked]] = self.frame_id
-            self.tracked_stracks_values[original_indices[u_track[itracked]]] = tracked_stracks_values[u_track[itracked]]
-            self.tracked_stracks_means[original_indices[u_track[itracked]]] = tracked_stracks_means[u_track[itracked]]
-            self.tracked_stracks_covs[original_indices[u_track[itracked]]] = tracked_stracks_covs[u_track[itracked]]
+
+            # Update tracked_stracks attributes if track exists in tracked_stracks
+            for i, t in enumerate(self.tracked_stracks_ids):
+                if t is tracked_stracks_ids[u_track[itracked]]:
+                    self.tracked_stracks_values[i] = tracked_stracks_values[u_track[itracked]]
+                    self.tracked_stracks_means[i] = tracked_stracks_means[u_track[itracked]]
+                    self.tracked_stracks_covs[i] = tracked_stracks_covs[u_track[itracked]]
+                    break
 
             activated_stracks_values.append(tracked_stracks_values[u_track[itracked]])
             activated_stracks_means.append(tracked_stracks_means[u_track[itracked]])

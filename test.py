@@ -402,9 +402,16 @@ class BYTETracker(object):
                 refind_stracks_states.append(tracked_stracks_states[itracked])
         
         tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
+        means = np.array([tracked_stracks_means[i] for i in tracked_indices])
+        atlbrs = np.empty(len(means))
+        if len(tracked_indices) > 0:
+            atlbrs = means[:, :4].copy()
+            atlbrs[:, 2] *= atlbrs[:, 3]
+            atlbrs[:, :2] -= atlbrs[:, 2:] / 2
+            atlbrs[:, 2:] += atlbrs[:, :2]
+        btlbrs = dets_score_classes_second[:, :4].copy()
+        btlbrs[:, 2:] += btlbrs[:, :2]
 
-        atlbrs = tlbr_np_batch([tracked_stracks_values[i] for i in tracked_indices], [tracked_stracks_means[i] for i in tracked_indices])
-        btlbrs = tlbr_np_batch(dets_score_classes_second, [None] * len(dets_score_classes_second) )
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)

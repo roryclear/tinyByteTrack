@@ -532,30 +532,27 @@ class BYTETracker(object):
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
 
-            for i, (mean, tlwh, id, sf, fid, state) in enumerate(zip(means, tlwhs, ids, startframes, fids, states)):
-                new_mean, new_cov = self.kalman_filter.update(mean, unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwh))
+            for i in range(len(ids)):
+                new_mean, new_cov = self.kalman_filter.update(means[i], unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwhs[i]))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
-                updated_ids.append(id)
-                updated_fids.append(fid)
-                updated_startframes.append(sf)
-                updated_states.append(state)
+                updated_ids.append(ids[i])
+                updated_fids.append(fids[i])
+                updated_startframes.append(startframes[i])
+                updated_states.append(states[i])
 
-            updated_scores = scores
-            frame_id_val = self.frame_id
-            for i, (mean, cov, score, values, fids, id) in enumerate(zip(updated_means, updated_covs, updated_scores, tracks_values, updated_fids, updated_ids)):
+            for i in range(len(updated_ids)):
                 unconfirmed_covs[itracked_arr[i]]
-                values = list(values)
-                values[4] = score
-                values = tuple(values)
-                updated_fids[i] = frame_id_val
+                tracks_values[i][4] = scores[i]
+                updated_fids[i] =  self.frame_id
                 updated_states[i] = TrackState.Tracked
 
-                if id in self.tracked_stracks_ids:
-                  idx = self.tracked_stracks_ids.index(id)
+                if updated_ids[i] in self.tracked_stracks_ids:
+                  idx = self.tracked_stracks_ids.index(updated_ids[i])
                   self.tracked_stracks_bools[idx] = True
                   self.tracked_stracks_states[idx] = TrackState.Tracked
 
+        # todo just add to these instead of updated_?
         activated_stracks_bools.extend(updated_bools)
         activated_stracks_values.extend(tracks_values)
         activated_stracks_means.extend(updated_means)

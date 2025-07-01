@@ -363,6 +363,11 @@ class BYTETracker(object):
             for i in range(len(tracked_stracks_covs)):   
                 tracked_stracks_covs[i][:] = multi_covariance[i]
             multi_mean, multi_covariance = None, None
+            
+            for i, t in enumerate(self.tracked_stracks_covs):
+              for j, p in enumerate(tracked_stracks_covs):
+                  if t is p:
+                      self.tracked_stracks_covs[i] = tracked_stracks_covs[j]
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
         btlbrs = tlbr_np_batch(dets_score_classes,detections_means)
@@ -512,9 +517,8 @@ class BYTETracker(object):
         updated_states = []
 
         if len(matches) > 0:
-            matches_arr = np.array(matches)
-            itracked_arr = matches_arr[:, 0]
-            idet_arr = matches_arr[:, 1]
+            itracked_arr = np.array(matches)[:, 0]
+            idet_arr = np.array(matches)[:, 1]
             ids = [unconfirmed_ids[i] for i in itracked_arr]
             fids = [unconfirmed_fids[i] for i in itracked_arr]
             startframes = [unconfirmed_startframes[i] for i in itracked_arr]
@@ -524,13 +528,12 @@ class BYTETracker(object):
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
 
-            covariances = [unconfirmed_covs[i] for i in itracked_arr]
             det_values = dets_score_classes_second[idet_arr]
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
 
-            for mean, cov, tlwh, id, sf, fid, state in zip(means, covariances, tlwhs, ids, startframes, fids, states):
-                new_mean, new_cov = self.kalman_filter.update(mean, cov, tlwh_to_xyah(tlwh))
+            for i, (mean, tlwh, id, sf, fid, state) in enumerate(zip(means, tlwhs, ids, startframes, fids, states)):
+                new_mean, new_cov = self.kalman_filter.update(mean, unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwh))
                 updated_means.append(new_mean)
                 updated_covs.append(new_cov)
                 updated_ids.append(id)
@@ -541,7 +544,7 @@ class BYTETracker(object):
             updated_scores = scores
             frame_id_val = self.frame_id
             for i, (mean, cov, score, values, fids, id) in enumerate(zip(updated_means, updated_covs, updated_scores, tracks_values, updated_fids, updated_ids)):
-                covariances[i][:] = cov
+                unconfirmed_covs[itracked_arr[i]]
                 values = list(values)
                 values[4] = score
                 values = tuple(values)

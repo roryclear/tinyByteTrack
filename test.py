@@ -357,12 +357,12 @@ class BYTETracker(object):
             for i in range(len(tracked_stracks_means)):
                 if tracked_stracks_states[i] != TrackState.Tracked: tracked_stracks_means[i][7] = 0
 
-            multi_mean = np.asarray([st for st in tracked_stracks_means])
-            multi_covariance = np.asarray([st for st in tracked_stracks_covs])
-            multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
-            for i in range(len(tracked_stracks_ids)):
-                tracked_stracks_means[i][:] = multi_mean[i].astype(np.float32)
+            multi_mean, multi_covariance = self.kalman_filter.multi_predict(np.array(tracked_stracks_means), np.array(tracked_stracks_covs))
+            for i in range(len(tracked_stracks_means)):
+                tracked_stracks_means[i][:] = multi_mean[i]
+            for i in range(len(tracked_stracks_covs)):   
                 tracked_stracks_covs[i][:] = multi_covariance[i]
+            multi_mean, multi_covariance = None, None
             
             for i, t in enumerate(self.tracked_stracks_covs):
               for j, p in enumerate(tracked_stracks_covs):
@@ -1273,5 +1273,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 

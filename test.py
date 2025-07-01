@@ -354,12 +354,11 @@ class BYTETracker(object):
 
         # Predict the current location with KF
         if len(tracked_stracks_ids) > 0:
+            for i in range(len(tracked_stracks_means)):
+                if tracked_stracks_states[i] != TrackState.Tracked: tracked_stracks_means[i][7] = 0
+
             multi_mean = np.asarray([st for st in tracked_stracks_means])
             multi_covariance = np.asarray([st for st in tracked_stracks_covs])
-            for i in range(len(tracked_stracks_ids)):
-                if tracked_stracks_states[i] != TrackState.Tracked:
-                    multi_mean[i][7] = 0
-
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(multi_mean, multi_covariance)
             for i in range(len(tracked_stracks_ids)):
                 tracked_stracks_means[i][:] = multi_mean[i].astype(np.float32)
@@ -1274,4 +1273,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 

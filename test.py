@@ -410,9 +410,11 @@ class BYTETracker(object):
             # Update tracked_stracks attributes if track exists in tracked_stracks
             for i, t in enumerate(self.tracked_stracks_ids):
                 if t is tracked_stracks_ids[u_track[itracked]]:
+                    self.tracked_stracks_fids[i] = self.frame_id
                     self.tracked_stracks_values[i] = tracked_stracks_values[u_track[itracked]]
                     self.tracked_stracks_means[i] = tracked_stracks_means[u_track[itracked]]
                     self.tracked_stracks_covs[i] = tracked_stracks_covs[u_track[itracked]]
+                    self.tracked_stracks_states[i] = TrackState.Tracked
                     break
 
             activated_stracks_values.append(tracked_stracks_values[u_track[itracked]])

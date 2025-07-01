@@ -363,11 +363,6 @@ class BYTETracker(object):
             for i in range(len(tracked_stracks_covs)):   
                 tracked_stracks_covs[i][:] = multi_covariance[i]
             multi_mean, multi_covariance = None, None
-            
-            for i, t in enumerate(self.tracked_stracks_covs):
-              for j, p in enumerate(tracked_stracks_covs):
-                  if t is p:
-                      self.tracked_stracks_covs[i] = tracked_stracks_covs[j]
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
         btlbrs = tlbr_np_batch(dets_score_classes,detections_means)
@@ -532,7 +527,6 @@ class BYTETracker(object):
                 activated_stracks_states.append(TrackState.Tracked)
 
             for i in range(len(ids)):
-                unconfirmed_covs[itracked_arr[i]]
                 tracks_values[i][4] = scores[i] 
 
                 if ids[i] in self.tracked_stracks_ids:
@@ -1231,4 +1225,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-

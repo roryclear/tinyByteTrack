@@ -403,19 +403,16 @@ class BYTETracker(object):
         
         tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
 
-        det_values = dets_score_classes_second
-        det_means = [None] * len(det_values)  # all means are None initially
-
         atlbrs = tlbr_np_batch([tracked_stracks_values[i] for i in tracked_indices], [tracked_stracks_means[i] for i in tracked_indices])
-        btlbrs = tlbr_np_batch(det_values, det_means)
+        btlbrs = tlbr_np_batch(dets_score_classes_second, [None] * len(dets_score_classes_second) )
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
         
         for itracked, idet in matches:
-            xyah = tlwh_to_xyah(tlwh_np(det_values[idet], det_means[idet]))
+            xyah = tlwh_to_xyah(tlwh_np(dets_score_classes_second[idet], None))
             tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]] = self.kalman_filter.update(tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]], xyah)
-            tracked_stracks_values[u_track[itracked]][4] = det_values[idet][4]  # Update score
+            tracked_stracks_values[u_track[itracked]][4] = dets_score_classes_second[idet][4]
             tracked_stracks_fids[u_track[itracked]] = self.frame_id
 
             # Update tracked_stracks attributes if track exists in tracked_stracks

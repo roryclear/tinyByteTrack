@@ -113,33 +113,18 @@ def tlbr_np(values, mean):
     return ret
 
 def tlbr_np_batch(tracked_stracks_values, tracked_stracks_means):
-    ret = np.empty((len(tracked_stracks_values), 4))
-    use_mean = np.array([m is not None for m in tracked_stracks_means], dtype=bool)
-    if np.any(use_mean):
-        means = np.array([m for m in tracked_stracks_means if m is not None])
-        ret[use_mean, :] = means[:, :4].copy()
-        ret[use_mean, 2] *= ret[use_mean, 3]
-        ret[use_mean, :2] -= ret[use_mean, 2:] / 2
-    if not np.all(use_mean):
-        ret[~use_mean, :] = tracked_stracks_values[~use_mean, :4].copy()
+    if len(tracked_stracks_means) == 0: return np.empty((0, 4))
+    if tracked_stracks_means[0] is None:
+        ret = tracked_stracks_values[:, :4].copy()
+    else:
+        means = np.array(tracked_stracks_means)
+        ret = means[:, :4].copy()
+        ret[:, 2] *= ret[:, 3]
+        ret[:, :2] -= ret[:, 2:] / 2
     ret[:, 2:] += ret[:, :2]
     return ret
 
-def tlwh_np(values,mean):
-    """Get current position in bounding box format `(top left x, top left y,
-            width, height)`.
-    """
-    if mean is None:
-        return values[:4].copy()
-    ret = mean[:4].copy()
-    ret[2] *= ret[3]
-    ret[:2] -= ret[2:] / 2
-    return ret
-
 def tlwh_to_xyah(tlwh):
-    """Convert bounding box to format `(center x, center y, aspect ratio,
-    height)`, where the aspect ratio is `width / height`.
-    """
     ret = np.asarray(tlwh).copy()
     ret[:2] += ret[2:] / 2
     ret[2] /= ret[3]
@@ -373,7 +358,7 @@ class BYTETracker(object):
         det_values_arr = [dets_score_classes[i] for _, i in matches]
 
         for idx, (itracked, idet) in enumerate(matches):
-            det_xyah = tlwh_to_xyah(tlwh_np(det_values_arr[idx], detections_means[idx]))
+            det_xyah = tlwh_to_xyah(det_values_arr[idx][:4])
             x, y = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], det_xyah)
             tracked_stracks_covs[itracked][:] = y
             tracked_stracks_means[itracked][:] = x
@@ -417,7 +402,7 @@ class BYTETracker(object):
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
         
         for itracked, idet in matches:
-            xyah = tlwh_to_xyah(tlwh_np(dets_score_classes_second[idet], None))
+            xyah = tlwh_to_xyah(dets_score_classes_second[idet][:4])
             tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]] = self.kalman_filter.update(tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]], xyah)
             tracked_stracks_values[u_track[itracked]][4] = dets_score_classes_second[idet][4]
             tracked_stracks_fids[u_track[itracked]] = self.frame_id

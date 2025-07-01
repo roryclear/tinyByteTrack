@@ -512,7 +512,6 @@ class BYTETracker(object):
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
-
             det_values = dets_score_classes_second[idet_arr]
             tlwhs = det_values[:, :4]
             scores = det_values[:, 4]
@@ -550,33 +549,20 @@ class BYTETracker(object):
 
         # Get tracks using proper list indexing
         
-        valid_values = dets_score_classes_second[valid_indices]  # Get corresponding values
-        valid_means = [detections_means[i] for i in valid_indices]
-        valid_bools = [detections_bools[i] for i in valid_indices]
-        valid_covs = [detections_cov[i] for i in valid_indices]
-        valid_ids = [detections_ids[i] for i in valid_indices]
-        valid_fids = [detections_fids[i] for i in valid_indices]
-        valid_startframes = [detections_startframes[i] for i in valid_indices]
-        valid_states = [detections_states[i] for i in valid_indices]
+        for i in range(len(valid_indices)):
+            detections_ids[valid_indices[i]] = self._count = self._count + 1
+            detections_means[valid_indices[i]], detections_cov[valid_indices[i]] = self.kalman_filter.initiate(tlwh_to_xyah(dets_score_classes_second[valid_indices[i]][:4]))
+            if self.frame_id == 1: detections_bools[valid_indices[i]] = True
+            detections_fids[valid_indices[i]] = self.frame_id
 
-        for i, (vals, mean) in enumerate(zip(valid_values, valid_means)):
-            y = self._count = self._count + 1
-            valid_ids[i] = y
-            valid_means[i], x = self.kalman_filter.initiate(
-                tlwh_to_xyah(vals[:4]))
-            valid_covs[i] = x
-            if self.frame_id == 1:
-                valid_bools[i] = True
-            valid_fids[i] = self.frame_id
-
-        activated_stracks_means.extend(valid_means)
-        activated_stracks_values.extend(valid_values)
-        activated_stracks_bools.extend(valid_bools)
-        activated_stracks_covs.extend(valid_covs)
-        activated_stracks_ids.extend(valid_ids)
-        activated_stracks_fids.extend(valid_fids)
-        activated_stracks_startframes.extend(valid_startframes)
-        activated_stracks_states.extend(valid_states)
+        activated_stracks_means.extend(detections_means[valid_indices])
+        activated_stracks_values.extend(dets_score_classes_second[valid_indices])
+        activated_stracks_bools.extend(detections_bools[valid_indices])
+        activated_stracks_covs.extend(detections_cov[valid_indices])
+        activated_stracks_ids.extend(detections_ids[valid_indices])
+        activated_stracks_fids.extend(detections_fids[valid_indices])
+        activated_stracks_startframes.extend(detections_startframes[valid_indices])
+        activated_stracks_states.extend(detections_states[valid_indices])
         remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
         for t in np.array(self.lost_stracks_states)[remove_mask]: t = TrackState.Removed
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]

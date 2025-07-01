@@ -405,97 +405,78 @@ class BYTETracker(object):
                 refind_stracks_fids.append(tracked_stracks_fids[itracked])
                 refind_stracks_startframes.append(tracked_stracks_startframes[itracked])
                 refind_stracks_states.append(tracked_stracks_states[itracked])
+        
+        tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
 
-        r_tracked_stracks_values = []
-        r_tracked_stracks_means = []
-        r_tracked_stracks_bools = []
-        r_tracked_stracks_covs = []
-        r_tracked_stracks_ids = []
-        r_tracked_stracks_fids = []
-        r_tracked_stracks_startframes = []
-        r_tracked_stracks_states = []
-        
-        for i in range(len(u_track)):
-            if tracked_stracks_states[u_track[i]] == TrackState.Tracked:
-                r_tracked_stracks_values.append(tracked_stracks_values[u_track[i]])
-                r_tracked_stracks_means.append(tracked_stracks_means[u_track[i]])
-                r_tracked_stracks_bools.append(tracked_stracks_bools[u_track[i]])
-                r_tracked_stracks_covs.append(tracked_stracks_covs[u_track[i]])
-                r_tracked_stracks_ids.append(tracked_stracks_ids[u_track[i]])
-                r_tracked_stracks_fids.append(tracked_stracks_fids[u_track[i]])
-                r_tracked_stracks_startframes.append(tracked_stracks_startframes[u_track[i]])
-                r_tracked_stracks_states.append(tracked_stracks_states[u_track[i]])
-        
         det_values = dets_score_classes_second
         det_means = [None] * len(det_values)  # all means are None initially
 
-        atlbrs = tlbr_np_batch(r_tracked_stracks_values, r_tracked_stracks_means)
+        atlbrs = tlbr_np_batch([tracked_stracks_values[i] for i in tracked_indices], [tracked_stracks_means[i] for i in tracked_indices])
         btlbrs = tlbr_np_batch(det_values, det_means)
         dists = iou_distance(atlbrs, btlbrs)
 
-        matches, u_track, _ = linear_assignment(dists, thresh=0.5)
+        matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
         
         for itracked, idet in matches:
-            mean = r_tracked_stracks_means[itracked]
-            bool_val = r_tracked_stracks_bools[itracked]
-            cov = r_tracked_stracks_covs[itracked]
-            startframe = r_tracked_stracks_startframes[itracked]
-            state = r_tracked_stracks_states[itracked]
-            id_val = r_tracked_stracks_ids[itracked]
-            fid = r_tracked_stracks_fids[itracked]
-            values = r_tracked_stracks_values[itracked]
-            t_val = r_tracked_stracks_values[itracked]
+            mean = tracked_stracks_means[u_track[itracked]]
+            bool_val = tracked_stracks_bools[u_track[itracked]]
+            cov = tracked_stracks_covs[u_track[itracked]]
+            startframe = tracked_stracks_startframes[u_track[itracked]]
+            state = tracked_stracks_states[u_track[itracked]]
+            id_val = tracked_stracks_ids[u_track[itracked]]
+            fid = tracked_stracks_fids[u_track[itracked]]
+            values = tracked_stracks_values[u_track[itracked]]
+            t_val = tracked_stracks_values[u_track[itracked]]
             d_val = det_values[idet]
             d_mean = det_means[idet]
 
             xyah = tlwh_to_xyah(tlwh_np(d_val, d_mean))
-            r_tracked_stracks_means[itracked][:], x = self.kalman_filter.update(mean, cov, xyah)
-            r_tracked_stracks_covs[itracked][:] = x
+            tracked_stracks_means[u_track[itracked]], tracked_stracks_covs[u_track[itracked]] = self.kalman_filter.update(mean, cov, xyah)
             t_val = list(t_val)
             t_val[4] = d_val[4]  # Update score
-            r_tracked_stracks_values[itracked] = tuple(t_val)
-            r_tracked_stracks_fids[itracked] = self.frame_id
+            tracked_stracks_values[u_track[itracked]] = tuple(t_val)
+            tracked_stracks_fids[u_track[itracked]] = self.frame_id
 
             # Update tracked_stracks attributes if track exists in tracked_stracks
             for i, t in enumerate(self.tracked_stracks_ids):
                 if t is id_val:
                     self.tracked_stracks_fids[i] = self.frame_id
                     self.tracked_stracks_values[i] = tuple(t_val)
-                    self.tracked_stracks_means[i] = r_tracked_stracks_means[itracked]
-                    self.tracked_stracks_covs[i] = r_tracked_stracks_covs[itracked]
+                    self.tracked_stracks_means[i] = tracked_stracks_means[u_track[itracked]]
+                    self.tracked_stracks_covs[i] = tracked_stracks_covs[u_track[itracked]]
                     self.tracked_stracks_states[i] = TrackState.Tracked
                     break
 
             if state == TrackState.Tracked:
-                activated_stracks_values.append(r_tracked_stracks_values[itracked])
-                activated_stracks_means.append(r_tracked_stracks_means[itracked])
+                activated_stracks_values.append(tracked_stracks_values[u_track[itracked]])
+                activated_stracks_means.append(tracked_stracks_means[u_track[itracked]])
                 activated_stracks_bools.append(bool_val)
-                activated_stracks_covs.append(r_tracked_stracks_covs[itracked])
+                activated_stracks_covs.append(tracked_stracks_covs[u_track[itracked]])
                 activated_stracks_ids.append(id_val)
                 activated_stracks_fids.append(self.frame_id)
                 activated_stracks_startframes.append(startframe)
                 activated_stracks_states.append(state)
             else:
-                r_tracked_stracks_bools[itracked] = True
-                r_tracked_stracks_states[itracked] = TrackState.Tracked
-                refind_stracks_values.append(r_tracked_stracks_values[itracked])
-                refind_stracks_means.append(r_tracked_stracks_means[itracked])
+                tracked_stracks_bools[u_track[itracked]] = True
+                tracked_stracks_states[u_track[itracked]] = TrackState.Tracked
+                refind_stracks_values.append(tracked_stracks_values[u_track[itracked]])
+                refind_stracks_means.append(tracked_stracks_means[u_track[itracked]])
                 refind_stracks_bools.append(True)
-                refind_stracks_covs.append(r_tracked_stracks_covs[itracked])
+                refind_stracks_covs.append(tracked_stracks_covs[u_track[itracked]])
                 refind_stracks_ids.append(id_val)
                 refind_stracks_fids.append(self.frame_id)
                 refind_stracks_startframes.append(startframe)
                 refind_stracks_states.append(state)
         
-        for i in range(len(u_track)):
-            values = r_tracked_stracks_values[u_track[i]]
-            mean = r_tracked_stracks_means[u_track[i]]
-            bool_val = r_tracked_stracks_bools[u_track[i]]
-            cov = r_tracked_stracks_covs[u_track[i]]
-            id_val = r_tracked_stracks_ids[u_track[i]]
-            fid = r_tracked_stracks_fids[u_track[i]]
-            startframe = r_tracked_stracks_startframes[u_track[i]]
-            state = r_tracked_stracks_states[u_track[i]]
+        for i in range(len(u_track2)):
+            values = tracked_stracks_values[u_track[u_track2[i]]]
+            mean = tracked_stracks_means[u_track[u_track2[i]]]
+            bool_val = tracked_stracks_bools[u_track[u_track2[i]]]
+            cov = tracked_stracks_covs[u_track[u_track2[i]]]
+            id_val = tracked_stracks_ids[u_track[u_track2[i]]]
+            fid = tracked_stracks_fids[u_track[u_track2[i]]]
+            startframe = tracked_stracks_startframes[u_track[u_track2[i]]]
+            state = tracked_stracks_states[u_track[u_track2[i]]]
             if state != TrackState.Lost:
                 for j, t in enumerate(self.tracked_stracks_ids):
                     if t is id_val:
@@ -1273,6 +1254,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
-

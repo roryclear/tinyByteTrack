@@ -507,23 +507,13 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
-        updated_means = []
         tracks_values = []
-        updated_bools = []
-        updated_covs = []
-        updated_ids = []
-        updated_fids = []
-        updated_startframes = []
-        updated_states = []
 
         if len(matches) > 0:
             itracked_arr = np.array(matches)[:, 0]
             idet_arr = np.array(matches)[:, 1]
             ids = [unconfirmed_ids[i] for i in itracked_arr]
-            fids = [unconfirmed_fids[i] for i in itracked_arr]
             startframes = [unconfirmed_startframes[i] for i in itracked_arr]
-            states = [unconfirmed_states[i] for i in itracked_arr]
-            updated_bools = [unconfirmed_bools[i] for i in itracked_arr]
             means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
@@ -534,33 +524,25 @@ class BYTETracker(object):
 
             for i in range(len(ids)):
                 new_mean, new_cov = self.kalman_filter.update(means[i], unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwhs[i]))
-                updated_means.append(new_mean)
-                updated_covs.append(new_cov)
-                updated_ids.append(ids[i])
-                updated_fids.append(fids[i])
-                updated_startframes.append(startframes[i])
-                updated_states.append(states[i])
+                activated_stracks_means.append(new_mean)
+                activated_stracks_covs.append(new_cov)
+                activated_stracks_ids.append(ids[i])
+                activated_stracks_fids.append(self.frame_id)
+                activated_stracks_startframes.append(startframes[i])
+                activated_stracks_states.append(TrackState.Tracked)
 
-            for i in range(len(updated_ids)):
+            for i in range(len(ids)):
                 unconfirmed_covs[itracked_arr[i]]
-                tracks_values[i][4] = scores[i]
-                updated_fids[i] =  self.frame_id
-                updated_states[i] = TrackState.Tracked
+                tracks_values[i][4] = scores[i] 
 
-                if updated_ids[i] in self.tracked_stracks_ids:
-                  idx = self.tracked_stracks_ids.index(updated_ids[i])
+                if ids[i] in self.tracked_stracks_ids:
+                  idx = self.tracked_stracks_ids.index(ids[i])
                   self.tracked_stracks_bools[idx] = True
                   self.tracked_stracks_states[idx] = TrackState.Tracked
 
         # todo just add to these instead of updated_?
-        activated_stracks_bools.extend(updated_bools)
+        activated_stracks_bools.extend([unconfirmed_bools[i] for i in np.array(matches)[:, 0]])
         activated_stracks_values.extend(tracks_values)
-        activated_stracks_means.extend(updated_means)
-        activated_stracks_covs.extend(updated_covs)
-        activated_stracks_ids.extend(updated_ids)
-        activated_stracks_fids.extend(updated_fids)
-        activated_stracks_startframes.extend(updated_startframes)
-        activated_stracks_states.extend(updated_states)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         ids = np.fromiter((unconfirmed_ids[key] for key in u_unconfirmed_np), dtype=object)

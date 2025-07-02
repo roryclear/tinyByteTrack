@@ -542,10 +542,7 @@ class BYTETracker(object):
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)[mask]
         self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes)[mask]
         self.tracked_stracks_states = np.array(self.tracked_stracks_states)[mask]
-            
-        keep_activated = np.where(~np.isin(activated_stracks_ids, self.tracked_stracks_ids))[0]
-        keep_activated_tg = Tensor(keep_activated)
-
+        
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
@@ -562,7 +559,18 @@ class BYTETracker(object):
         activated_stracks_means_tg = Tensor(activated_stracks_means,dtype=dtypes.float32)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
         activated_stracks_covs_tg = Tensor(activated_stracks_covs,dtype=dtypes.float32)
-
+        
+        a_exp = activated_stracks_ids_tg.reshape(-1, 1)
+        b_exp = self.tracked_stracks_ids_tg.reshape(1, -1)
+        matches = (a_exp == b_exp)
+        match_counts = matches.sum(axis=1)
+        not_in_mask = (match_counts == 0)
+        idxs = Tensor.arange(activated_stracks_ids_tg.shape[0])
+        masked_idxs = (idxs * not_in_mask)
+        sorted_idxs = masked_idxs.sort(descending=True)[1]
+        sorted_mask = not_in_mask[masked_idxs]
+        count = int(sorted_mask.sum().item())
+        keep_activated_tg = sorted_idxs[:count][::-1]
 
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(activated_stracks_ids_tg[keep_activated_tg])
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(activated_stracks_fids_tg[keep_activated_tg])

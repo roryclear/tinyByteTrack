@@ -587,7 +587,6 @@ class BYTETracker(object):
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
-        self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
 
         refind_stracks_fids_tg = Tensor(refind_stracks_fids)
         refind_stracks_bools_tg = Tensor(refind_stracks_bools)

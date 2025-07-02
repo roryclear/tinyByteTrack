@@ -263,13 +263,6 @@ class BYTETracker(object):
         mask = np.array(self.tracked_stracks_bools).astype(bool)
         mask_tg = Tensor(mask)
 
-        for i in range(len(self.tracked_stracks_ids)):
-            mean = self.tracked_stracks_means[i]
-            cov = self.tracked_stracks_covs[i]  
-            if self.tracked_stracks_bools[i]:
-                tracked_stracks_means.append(mean)
-                tracked_stracks_covs.append(cov)
-
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools)
@@ -334,10 +327,17 @@ class BYTETracker(object):
         unconfirmed_fids = unconfirmed_fids[id_mask].tolist()
         unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes[id_mask].tolist()
+
+        for i in range(len(self.tracked_stracks_ids)):
+            mean = self.tracked_stracks_means[i]
+            cov = self.tracked_stracks_covs[i]  
+            if self.tracked_stracks_bools[i]:
+                tracked_stracks_means.append(mean)
+                tracked_stracks_covs.append(cov)
+
         tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
         tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
 
-        # Predict the current location with KF
         if len(tracked_stracks_ids) > 0:
             for i in range(len(tracked_stracks_means)):
                 if tracked_stracks_states[i] != TrackState.Tracked: tracked_stracks_means[i][7] = 0

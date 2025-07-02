@@ -130,6 +130,12 @@ def tlwh_to_xyah(tlwh):
     ret[2] /= ret[3]
     return ret
 
+def tlwh_to_xyah_batch(tlwh_array):
+    ret = np.asarray(tlwh_array).copy()
+    ret[:, :2] += ret[:, 2:] / 2
+    ret[:, 2] /= ret[:, 3]
+    return ret
+
 def bbox_ious(boxes, query_boxes):
     N = boxes.shape[0]
     K = query_boxes.shape[0]
@@ -347,7 +353,6 @@ class BYTETracker(object):
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
         det_values_arr = [dets_score_classes[i] for _, i in matches]
-
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(det_values_arr[idx][:4])
             x, y = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], det_xyah)
@@ -396,8 +401,8 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
-
         original_indices = np.where(mask)[0]
+        for i in range(len(u_track2)):  self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
         
         for itracked, idet in matches:
             xyah = tlwh_to_xyah(dets_score_classes_second[idet][:4])
@@ -429,9 +434,6 @@ class BYTETracker(object):
         lost_stracks_covs = (np.array(tracked_stracks_covs)[u_track3]).tolist()
         lost_stracks_startframes = (np.array(tracked_stracks_startframes)[u_track3]).tolist()
         lost_stracks_states = [TrackState.Lost] * len(u_track2)
-
-        for i in range(len(u_track2)): 
-            self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
                 
         u_detection_np = np.array(u_detection)
         detections_ids = np.array(detections_ids)[u_detection_np]
@@ -455,12 +457,12 @@ class BYTETracker(object):
             itracked_arr = np.array(matches)[:, 0]
             idet_arr = np.array(matches)[:, 1]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
-
-            tlwhs = dets_score_classes_second[idet_arr][:, :4]
             scores = dets_score_classes_second[idet_arr][:, 4]
 
+            xyahs = tlwh_to_xyah_batch(dets_score_classes_second[idet_arr][:, :4])
+
             for i in range(len(itracked_arr)):
-                new_mean, new_cov = self.kalman_filter.update(unconfirmed_means[itracked_arr[i]], unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwhs[i]))
+                new_mean, new_cov = self.kalman_filter.update(unconfirmed_means[itracked_arr[i]], unconfirmed_covs[itracked_arr[i]], xyahs[i])
                 activated_stracks_means.append(new_mean)
                 activated_stracks_covs.append(new_cov)
                 activated_stracks_ids.append(unconfirmed_ids[itracked_arr[i]])

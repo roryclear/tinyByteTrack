@@ -460,29 +460,25 @@ class BYTETracker(object):
         if len(matches) > 0:
             itracked_arr = np.array(matches)[:, 0]
             idet_arr = np.array(matches)[:, 1]
-            ids = [unconfirmed_ids[i] for i in itracked_arr]
-            startframes = [unconfirmed_startframes[i] for i in itracked_arr]
-            means = [unconfirmed_means[i] for i in itracked_arr]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
 
-            det_values = dets_score_classes_second[idet_arr]
-            tlwhs = det_values[:, :4]
-            scores = det_values[:, 4]
+            tlwhs = dets_score_classes_second[idet_arr][:, :4]
+            scores = dets_score_classes_second[idet_arr][:, 4]
 
-            for i in range(len(ids)):
-                new_mean, new_cov = self.kalman_filter.update(means[i], unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwhs[i]))
+            for i in range(len(itracked_arr)):
+                new_mean, new_cov = self.kalman_filter.update(unconfirmed_means[itracked_arr[i]], unconfirmed_covs[itracked_arr[i]], tlwh_to_xyah(tlwhs[i]))
                 activated_stracks_means.append(new_mean)
                 activated_stracks_covs.append(new_cov)
-                activated_stracks_ids.append(ids[i])
+                activated_stracks_ids.append(unconfirmed_ids[itracked_arr[i]])
                 activated_stracks_fids.append(self.frame_id)
-                activated_stracks_startframes.append(startframes[i])
+                activated_stracks_startframes.append(unconfirmed_startframes[itracked_arr[i]])
                 activated_stracks_states.append(TrackState.Tracked)
 
-            for i in range(len(ids)):
+            for i in range(len(itracked_arr)):
                 tracks_values[i][4] = scores[i] 
 
-                if ids[i] in self.tracked_stracks_ids:
-                  idx = self.tracked_stracks_ids.index(ids[i])
+                if unconfirmed_ids[itracked_arr[i]] in self.tracked_stracks_ids:
+                  idx = self.tracked_stracks_ids.index(unconfirmed_ids[itracked_arr[i]])
                   self.tracked_stracks_bools[idx] = True
                   self.tracked_stracks_states[idx] = TrackState.Tracked
 

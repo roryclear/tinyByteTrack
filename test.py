@@ -272,21 +272,21 @@ class BYTETracker(object):
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
 
-        tracked_stracks_ids_tg = (self.tracked_stracks_ids_tg * mask_tg)
-        tracked_stracks_fids_tg = (self.tracked_stracks_fids_tg * mask_tg)
-        tracked_stracks_bools_tg = (self.tracked_stracks_bools_tg * mask_tg)
-        tracked_stracks_startframes_tg = (self.tracked_stracks_startframes_tg * mask_tg)
-        tracked_stracks_states_tg = (self.tracked_stracks_states_tg * mask_tg)
-        tracked_stracks_values_tg = self.tracked_stracks_values_tg * mask_tg.view(-1,1)
+        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * mask_tg
+        tracked_stracks_fids_tg = self.tracked_stracks_fids_tg
+        tracked_stracks_bools_tg = self.tracked_stracks_bools_tg
+        tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg
+        tracked_stracks_states_tg = self.tracked_stracks_states_tg
+        tracked_stracks_values_tg = self.tracked_stracks_values_tg
 
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
-        unconfirmed_values_tg = self.tracked_stracks_values_tg * ~mask_tg.view(-1,1)
-        unconfirmed_bools_tg = self.tracked_stracks_bools_tg * ~mask_tg
-        unconfirmed_states_tg = self.tracked_stracks_states_tg * ~mask_tg
-        unconfirmed_fids_tg = self.tracked_stracks_fids_tg * ~mask_tg
-        unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg * ~mask_tg
-        unconfirmed_covs_tg = self.tracked_stracks_covs_tg * ~mask_tg.view(-1,1,1)
-        unconfirmed_means_tg = self.tracked_stracks_means_tg * ~mask_tg.view(-1,1)
+        unconfirmed_values_tg = self.tracked_stracks_values_tg
+        unconfirmed_bools_tg = self.tracked_stracks_bools_tg
+        unconfirmed_states_tg = self.tracked_stracks_states_tg
+        unconfirmed_fids_tg = self.tracked_stracks_fids_tg
+        unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg
+        unconfirmed_covs_tg = self.tracked_stracks_covs_tg
+        unconfirmed_means_tg = self.tracked_stracks_means_tg
 
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
             tracked_stracks_ids_tg = tracked_stracks_ids_tg.cat(self.lost_stracks_ids_tg)
@@ -631,15 +631,7 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
 
-
         self.lost_stracks_ids_tg *= mask_tg
-        self.lost_stracks_fids_tg *= mask_tg
-        self.lost_stracks_startframes_tg *= mask_tg
-        self.lost_stracks_states_tg *= mask_tg
-        self.lost_stracks_bools_tg *= mask_tg
-        self.lost_stracks_values_tg = self.lost_stracks_values_tg * mask_tg.view(-1, 1)
-        self.lost_stracks_means_tg = self.lost_stracks_means_tg * mask_tg.view(-1, 1)
-        self.lost_stracks_covs_tg = self.lost_stracks_covs_tg * mask_tg.view(-1, 1, 1)
 
         lost_stracks_values_tg = Tensor(lost_stracks_values)
         lost_stracks_means_tg = Tensor(lost_stracks_means)
@@ -1177,3 +1169,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

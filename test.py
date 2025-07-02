@@ -354,7 +354,7 @@ class BYTETracker(object):
             multi_mean, multi_covariance = None, None
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
-        btlbrs = tlbr_np_batch(dets_score_classes,detections_means)
+        btlbrs = tlbr_np_batch(dets_score_classes, detections_means)
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
@@ -364,10 +364,15 @@ class BYTETracker(object):
         for idx, (itracked, idet) in enumerate(matches):
             det_xyah = tlwh_to_xyah(det_values_arr[idx][:4])
             x, y = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], det_xyah)
-            tracked_stracks_covs[itracked][:] = y
-            tracked_stracks_means[itracked][:] = x
+
+            for j in range(len(y)):
+                tracked_stracks_covs[itracked][j] = y[j]
+            for j in range(len(x)):
+                tracked_stracks_means[itracked][j] = x[j]
+
             tracked_stracks_fids[itracked] = self.frame_id
-            if itracked < len(self.tracked_stracks_fids): self.tracked_stracks_fids[itracked] = self.frame_id
+            if itracked < len(self.tracked_stracks_fids):
+                self.tracked_stracks_fids[itracked] = self.frame_id
 
             if tracked_stracks_states[itracked] == TrackState.Tracked:
                 activated_stracks_values.append(tracked_stracks_values[itracked])

@@ -513,7 +513,6 @@ class BYTETracker(object):
         activated_stracks_startframes.extend(detections_startframes[valid_indices])
         activated_stracks_states.extend(detections_states[valid_indices])
         remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
-        for t in np.array(self.lost_stracks_states)[remove_mask]: t = TrackState.Removed
         self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
         self.lost_stracks_bools = np.array(self.lost_stracks_bools)[~remove_mask]
         self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask])

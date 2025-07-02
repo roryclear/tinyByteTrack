@@ -249,13 +249,6 @@ class BYTETracker(object):
         dets_score_classes = dets_score_classes.numpy()
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
-        detections_means = [None for _ in dets_score_classes]
-        detections_bools = [False for _ in dets_score_classes_second]
-        detections_cov = [None for _ in dets_score_classes]
-        detections_ids = [None for _ in dets_score_classes]
-        detections_fids = [None for _ in dets_score_classes]
-        detections_startframes = [0 for _ in dets_score_classes]
-        detections_states = [TrackState.New for _ in dets_score_classes]
         
         tracked_stracks_means = []
         tracked_stracks_covs = []
@@ -341,7 +334,7 @@ class BYTETracker(object):
             multi_mean, multi_covariance = None, None
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
-        btlbrs = tlbr_np_batch(dets_score_classes, detections_means)
+        btlbrs = tlbr_np_batch(dets_score_classes, [None])
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
@@ -430,17 +423,10 @@ class BYTETracker(object):
         lost_stracks_states = [TrackState.Lost] * len(u_track2)
                 
         u_detection_np = np.array(u_detection)
-        detections_ids = np.array(detections_ids)[u_detection_np]
-        detections_fids = np.array(detections_fids)[u_detection_np]
-        detections_bools = np.array(detections_bools)[u_detection_np]
-        detections_means = np.array(detections_means)[u_detection_np]
-        detections_cov = np.array(detections_cov)[u_detection_np]
-        detections_startframes = np.array(detections_startframes)[u_detection_np]
-        detections_states = np.array(detections_states)[u_detection_np]
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
         
         atlbrs = tlbr_np_batch(unconfirmed_values, unconfirmed_means)
-        btlbrs = tlbr_np_batch(dets_score_classes_second, detections_means)
+        btlbrs = tlbr_np_batch(dets_score_classes_second, [None])
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
@@ -488,19 +474,15 @@ class BYTETracker(object):
         
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[u_detection[valid_mask]][:,:4])
         for i in range(len(valid_indices)):
-            detections_ids[valid_indices[i]] = self._count = self._count + 1
-            detections_means[valid_indices[i]], detections_cov[valid_indices[i]] = self.kalman_filter.initiate(xyahs[i])
-            if self.frame_id == 1: detections_bools[valid_indices[i]] = True
-            detections_fids[valid_indices[i]] = self.frame_id
+            self._count += 1
+            activated_stracks_ids.append(self._count)
+            x, y = self.kalman_filter.initiate(xyahs[i])
+            activated_stracks_means.append(x)
+            activated_stracks_covs.append(y)
+            if self.frame_id == 1: activated_stracks_bools.append(True)
+            activated_stracks_fids.append(self.frame_id)
 
-        activated_stracks_means.extend(detections_means[valid_indices])
         activated_stracks_values.extend(dets_score_classes_second[valid_indices])
-        activated_stracks_bools.extend(detections_bools[valid_indices])
-        activated_stracks_covs.extend(detections_cov[valid_indices])
-        activated_stracks_ids.extend(detections_ids[valid_indices])
-        activated_stracks_fids.extend(detections_fids[valid_indices])
-        activated_stracks_startframes.extend(detections_startframes[valid_indices])
-        activated_stracks_states.extend(detections_states[valid_indices])
 
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
@@ -1149,5 +1131,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-

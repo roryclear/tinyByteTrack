@@ -617,9 +617,9 @@ class BYTETracker(object):
         self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
         
         self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
-        self.tacked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
+        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         a_exp = self.lost_stracks_ids_tg.reshape(-1, 1)
-        b_exp = self.tacked_stracks_ids_tg.reshape(1, -1)
+        b_exp = self.tracked_stracks_ids_tg.reshape(1, -1)
         matches = (a_exp == b_exp).float()
         match_counts = matches.sum(axis=1)
         mask_tg = (match_counts == 0)

@@ -330,7 +330,7 @@ class BYTETracker(object):
 
         for i in range(len(self.tracked_stracks_ids)):
             mean = self.tracked_stracks_means[i]
-            cov = self.tracked_stracks_covs[i]  
+            cov = self.tracked_stracks_covs[i]
             if self.tracked_stracks_bools[i]:
                 tracked_stracks_means.append(mean)
                 tracked_stracks_covs.append(cov)
@@ -340,13 +340,17 @@ class BYTETracker(object):
 
         if len(tracked_stracks_ids) > 0:
             for i in range(len(tracked_stracks_means)):
-                if tracked_stracks_states[i] != TrackState.Tracked: tracked_stracks_means[i][7] = 0
+                if tracked_stracks_states[i] != TrackState.Tracked:
+                    tracked_stracks_means[i][7] = 0
 
             multi_mean, multi_covariance = self.kalman_filter.multi_predict(np.array(tracked_stracks_means), np.array(tracked_stracks_covs))
+            
             for i in range(len(tracked_stracks_means)):
-                tracked_stracks_means[i][:] = multi_mean[i]
-            for i in range(len(tracked_stracks_covs)):   
-                tracked_stracks_covs[i][:] = multi_covariance[i]
+                for j in range(len(multi_mean[i])): tracked_stracks_means[i][j] = multi_mean[i][j]
+            
+            for i in range(len(tracked_stracks_covs)):
+                for j in range(len(multi_covariance[i])): tracked_stracks_covs[i][j] = multi_covariance[i][j]
+            
             multi_mean, multi_covariance = None, None
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)

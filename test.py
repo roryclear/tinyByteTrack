@@ -276,7 +276,6 @@ class BYTETracker(object):
 
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
         unconfirmed_values_tg = self.tracked_stracks_values_tg
-        unconfirmed_bools_tg = self.tracked_stracks_bools_tg
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg
         unconfirmed_covs_tg = self.tracked_stracks_covs_tg
         unconfirmed_means_tg = self.tracked_stracks_means_tg
@@ -309,8 +308,6 @@ class BYTETracker(object):
         unconfirmed_ids = unconfirmed_ids[id_mask].tolist()
         unconfirmed_values = unconfirmed_values_tg.numpy()
         unconfirmed_values = unconfirmed_values[id_mask].tolist()
-        unconfirmed_bools = unconfirmed_bools_tg.numpy()
-        unconfirmed_bools = unconfirmed_bools[id_mask].tolist()
         unconfirmed_covs = unconfirmed_covs_tg.numpy()
         unconfirmed_covs = unconfirmed_covs[id_mask].tolist()
         unconfirmed_means = unconfirmed_means_tg.numpy()
@@ -480,7 +477,7 @@ class BYTETracker(object):
                   self.tracked_stracks_states[idx] = TrackState.Tracked
 
         # todo just add to these instead of updated_?
-        activated_stracks_bools.extend([unconfirmed_bools[i] for i in np.array(matches)[:, 0]])
+        activated_stracks_bools.extend([False for i in np.array(matches)[:, 0]])
         activated_stracks_values.extend(tracks_values)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
@@ -1157,3 +1154,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
+

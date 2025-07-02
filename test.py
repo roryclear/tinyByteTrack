@@ -277,8 +277,6 @@ class BYTETracker(object):
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
         unconfirmed_values_tg = self.tracked_stracks_values_tg
         unconfirmed_bools_tg = self.tracked_stracks_bools_tg
-        unconfirmed_states_tg = self.tracked_stracks_states_tg
-        unconfirmed_fids_tg = self.tracked_stracks_fids_tg
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg
         unconfirmed_covs_tg = self.tracked_stracks_covs_tg
         unconfirmed_means_tg = self.tracked_stracks_means_tg
@@ -305,21 +303,18 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
+        id_mask_tg = unconfirmed_ids_tg != 0
+        id_mask = id_mask_tg.numpy()
         unconfirmed_ids = unconfirmed_ids_tg.numpy()
-        id_mask = unconfirmed_ids != 0
         unconfirmed_ids = unconfirmed_ids[id_mask].tolist()
         unconfirmed_values = unconfirmed_values_tg.numpy()
         unconfirmed_values = unconfirmed_values[id_mask].tolist()
         unconfirmed_bools = unconfirmed_bools_tg.numpy()
         unconfirmed_bools = unconfirmed_bools[id_mask].tolist()
-        unconfirmed_states = unconfirmed_states_tg.numpy()
-        unconfirmed_states = unconfirmed_states[id_mask].tolist()
         unconfirmed_covs = unconfirmed_covs_tg.numpy()
         unconfirmed_covs = unconfirmed_covs[id_mask].tolist()
         unconfirmed_means = unconfirmed_means_tg.numpy()
         unconfirmed_means = unconfirmed_means[id_mask].tolist()
-        unconfirmed_fids = unconfirmed_fids_tg.numpy()
-        unconfirmed_fids = unconfirmed_fids[id_mask].tolist()
         unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes[id_mask].tolist()
 
@@ -1162,4 +1157,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-

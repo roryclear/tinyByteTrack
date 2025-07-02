@@ -428,16 +428,18 @@ class BYTETracker(object):
             activated_stracks_startframes.append(tracked_stracks_startframes[u_track[itracked]])
             activated_stracks_states.append(tracked_stracks_states[u_track[itracked]])
         
+        u_track3 = np.asarray(u_track)[np.asarray(u_track2)]
+        lost_stracks_values = (np.array(tracked_stracks_values)[u_track3]).tolist()
+        lost_stracks_means = (np.array(tracked_stracks_means)[u_track3]).tolist()
+        lost_stracks_bools = (np.array(tracked_stracks_bools)[u_track3]).tolist()
+        lost_stracks_ids = (np.array(tracked_stracks_ids)[u_track3]).tolist()
+        lost_stracks_fids = (np.array(tracked_stracks_fids)[u_track3]).tolist()
+        lost_stracks_covs = (np.array(tracked_stracks_covs)[u_track3]).tolist()
+        lost_stracks_startframes = (np.array(tracked_stracks_startframes)[u_track3]).tolist()
+        lost_stracks_states = [TrackState.Lost] * len(u_track2)
+
         for i in range(len(u_track2)): 
             self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
-            lost_stracks_values.append(tracked_stracks_values[u_track[u_track2[i]]])
-            lost_stracks_means.append(tracked_stracks_means[u_track[u_track2[i]]])
-            lost_stracks_bools.append(tracked_stracks_bools[u_track[u_track2[i]]])
-            lost_stracks_covs.append(tracked_stracks_covs[u_track[u_track2[i]]])
-            lost_stracks_ids.append(tracked_stracks_ids[u_track[u_track2[i]]])
-            lost_stracks_fids.append(tracked_stracks_fids[u_track[u_track2[i]]])
-            lost_stracks_startframes.append(tracked_stracks_startframes[u_track[u_track2[i]]])
-            lost_stracks_states.append(TrackState.Lost)
                 
         u_detection_np = np.array(u_detection)
         detections_ids = np.array(detections_ids)[u_detection_np]

@@ -57,6 +57,26 @@ class KalmanFilter(object):
             self._update_mat, covariance, self._update_mat.T))
         return mean, covariance + innovation_cov
 
+    def project_batch(self, means, covariances):
+        projected_means = []
+        projected_covariances = []
+        for mean, cov in zip(means, covariances):
+            std = [
+                self._std_weight_position * mean[3],
+                self._std_weight_position * mean[3],
+                1e-1,
+                self._std_weight_position * mean[3]
+            ]
+            innovation_cov = np.diag(np.square(std))
+
+            mean_proj = np.dot(self._update_mat, mean)
+            cov_proj = self._update_mat @ cov @ self._update_mat.T
+
+            projected_means.append(mean_proj)
+            projected_covariances.append(cov_proj + innovation_cov)
+
+        return np.array(projected_means), np.array(projected_covariances)
+
     def multi_predict(self, mean, covariance):
         std_pos = [
             self._std_weight_position * mean[:, 3],
@@ -92,6 +112,27 @@ class KalmanFilter(object):
         new_covariance = covariance - np.linalg.multi_dot((
             kalman_gain, projected_cov, kalman_gain.T))
         return new_mean, new_covariance
+    
+    def update_batch(self, means, covariances, measurements):
+        projected_means, projected_covs = self.project_batch(means, covariances)
+
+        chol_factors = np.linalg.cholesky(projected_covs)  # (N, dim_z, dim_z)
+        update_mat_T = self._update_mat.T  # (dim_z, dim_x)
+        new_means = []
+        new_covariances = []
+
+        for i in range(len(means)):
+            y = np.linalg.solve(chol_factors[i], np.dot(covariances[i], update_mat_T).T)
+            kalman_gain = np.linalg.solve(chol_factors[i].T, y).T
+            innovation = measurements[i] - projected_means[i]
+
+            new_mean = means[i] + np.dot(innovation, kalman_gain.T)
+            new_cov = covariances[i] - kalman_gain @ projected_covs[i] @ kalman_gain.T
+
+            new_means.append(new_mean)
+            new_covariances.append(new_cov)
+
+        return np.array(new_means), np.array(new_covariances)
 
 class TrackState(object):
     New = 1
@@ -257,19 +298,14 @@ class BYTETracker(object):
         original_indices = np.where(mask)[0]
         mask_tg = Tensor(mask)
 
-        if len(self.tracked_stracks_means) > 0:
-            self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
-        if len(self.lost_stracks_means) > 0:
-            self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(np.array(self.lost_stracks_means), np.array(self.lost_stracks_covs))
-
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
-        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
-        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
+        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
+        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
 
         tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * mask_tg
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
@@ -286,6 +322,7 @@ class BYTETracker(object):
         unconfirmed_means = unconfirmed_means[id_mask].tolist()
         unconfirmed_startframes = self.tracked_stracks_startframes_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes[id_mask].tolist()
+
 
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
             tracked_stracks_ids_tg = tracked_stracks_ids_tg.cat(self.lost_stracks_ids_tg)
@@ -309,6 +346,11 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
+        if len(self.tracked_stracks_means) > 0:
+            self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
+        if len(self.lost_stracks_means) > 0:
+            self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(np.array(self.lost_stracks_means), np.array(self.lost_stracks_covs))
+
         for i in range(len(self.tracked_stracks_ids)):
             mean = self.tracked_stracks_means[i]
             cov = self.tracked_stracks_covs[i]
@@ -325,11 +367,17 @@ class BYTETracker(object):
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
+        
         det_values_arr = [dets_score_classes[i] for _, i in matches]
         if len(matches) > 0:
             xyahs = tlwh_to_xyah_batch(np.array(det_values_arr)[:, :4])
-            for idx, (itracked, idet) in enumerate(matches):
-                tracked_stracks_means[itracked], tracked_stracks_covs[itracked] = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], xyahs[idx])
+            means = np.array([tracked_stracks_means[itracked] for itracked, _ in matches])
+            covs = np.array([tracked_stracks_covs[itracked] for itracked, _ in matches])
+            updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
+
+            for idx, (itracked, _) in enumerate(matches):
+                tracked_stracks_means[itracked] = updated_means[idx]
+                tracked_stracks_covs[itracked] = updated_covs[idx]
                 if itracked < len(original_indices):
                     self.tracked_stracks_means[original_indices[itracked]] = tracked_stracks_means[itracked]
                     self.tracked_stracks_covs[original_indices[itracked]] = tracked_stracks_covs[itracked]
@@ -340,7 +388,7 @@ class BYTETracker(object):
 
                 if tracked_stracks_states[itracked] == TrackState.Tracked:
                     activated_stracks_values.append(tracked_stracks_values[itracked])
-                    activated_stracks_means.append(tracked_stracks_means[itracked])
+                    activated_stracks_means.append(self.tracked_stracks_means[original_indices[itracked]])
                     activated_stracks_bools.append(tracked_stracks_bools[itracked])
                     activated_stracks_covs.append(tracked_stracks_covs[itracked])
                     activated_stracks_ids.append(tracked_stracks_ids[itracked])
@@ -1120,4 +1168,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 

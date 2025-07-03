@@ -254,6 +254,7 @@ class BYTETracker(object):
         tracked_stracks_covs = []
         
         mask = np.array(self.tracked_stracks_bools).astype(bool)
+        original_indices = np.where(mask)[0]
         mask_tg = Tensor(mask)
 
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
@@ -329,12 +330,10 @@ class BYTETracker(object):
         if len(matches) > 0:
             xyahs = tlwh_to_xyah_batch(np.array(det_values_arr)[:, :4])
             for idx, (itracked, idet) in enumerate(matches):
-                x, y = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], xyahs[idx])
-
-                for j in range(len(y)):
-                    tracked_stracks_covs[itracked][j] = y[j]
-                for j in range(len(x)):
-                    tracked_stracks_means[itracked][j] = x[j]
+                tracked_stracks_means[itracked], tracked_stracks_covs[itracked] = self.kalman_filter.update(tracked_stracks_means[itracked], tracked_stracks_covs[itracked], xyahs[idx])
+                if itracked < len(original_indices):
+                    self.tracked_stracks_means[original_indices[itracked]] = tracked_stracks_means[itracked]
+                    self.tracked_stracks_covs[original_indices[itracked]] = tracked_stracks_covs[itracked]
 
                 tracked_stracks_fids[itracked] = self.frame_id
                 if itracked < len(self.tracked_stracks_fids):
@@ -375,7 +374,6 @@ class BYTETracker(object):
         dists = iou_distance(atlbrs, btlbrs)
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
-        original_indices = np.where(mask)[0]
         for i in range(len(u_track2)):  self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:,1]][:, :4])
         for i, (itracked, idet) in enumerate(matches):

@@ -314,8 +314,8 @@ class BYTETracker(object):
             mean = self.tracked_stracks_means[i]
             cov = self.tracked_stracks_covs[i]
             if self.tracked_stracks_bools[i]:
-                tracked_stracks_means.append(mean)
-                tracked_stracks_covs.append(cov)
+                tracked_stracks_means.append(mean.copy())
+                tracked_stracks_covs.append(cov.copy())
 
         tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
         tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
@@ -1121,3 +1121,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

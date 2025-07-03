@@ -77,8 +77,7 @@ class KalmanFilter(object):
 
         return np.array(projected_means), np.array(projected_covariances)
 
-    def multi_predict(self, mean, covariance):
-        mean_tg = Tensor(mean,dtype=dtypes.float32)
+    def multi_predict(self, mean_tg, covariance_tg):
         sp = (mean_tg[:,3]*self._std_weight_position).cat(mean_tg[:,3]*self._std_weight_position)
         sp = sp.cat(1e-2 * Tensor.ones(mean_tg.shape[0]))
         sp = sp.cat(mean_tg[:,3]*self._std_weight_position)
@@ -90,7 +89,6 @@ class KalmanFilter(object):
         std_vel_tg = sv.reshape(4,int(sv.shape[0]/4))
         
         motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
-        covariance_tg = Tensor(covariance,dtype=dtypes.float32)
 
         r = std_pos_tg.cat(std_vel_tg)
         sqr = Tensor.square(r).T
@@ -101,6 +99,8 @@ class KalmanFilter(object):
         left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
         covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
         return mean_tg.numpy(), covariance_tg.numpy()
+
+
 
     def update(self, mean, covariance, measurement):
         projected_mean, projected_cov = self.project(mean, covariance)
@@ -345,10 +345,14 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
+        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32) # todo remove
+        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
+        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
+        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
         if len(self.tracked_stracks_means) > 0:
-            self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
+            self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
         if len(self.lost_stracks_means) > 0:
-            self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(np.array(self.lost_stracks_means), np.array(self.lost_stracks_covs))
+            self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(self.lost_stracks_means_tg, self.lost_stracks_covs_tg)
         
         means_in = np.array(self.tracked_stracks_means)[original_indices].tolist()
         covs_in = np.array(self.tracked_stracks_covs)[original_indices].tolist()

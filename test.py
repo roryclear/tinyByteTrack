@@ -304,6 +304,15 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
+        if len(self.tracked_stracks_ids) > 0:
+            for i in range(len(self.tracked_stracks_means)):
+                if self.tracked_stracks_states[i] != TrackState.Tracked:
+                    self.tracked_stracks_means[i][7] = 0
+
+        if len(self.lost_stracks_ids) > 0:
+            for i in range(len(self.lost_stracks_means)):
+                  self.lost_stracks_means[i][7] = 0
+        
         if len(self.tracked_stracks_means) > 0:
             self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
         if len(self.lost_stracks_means) > 0:
@@ -318,11 +327,6 @@ class BYTETracker(object):
 
         tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
         tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)
-
-        if len(tracked_stracks_ids) > 0:
-            for i in range(len(tracked_stracks_means)):
-                if tracked_stracks_states[i] != TrackState.Tracked:
-                    tracked_stracks_means[i][7] = 0
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
         btlbrs = tlbr_np_batch(dets_score_classes, [None])

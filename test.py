@@ -172,8 +172,8 @@ class BYTETracker(object):
         self.lost_stracks_states_tg = Tensor.empty()
         self.lost_stracks_bools_tg = Tensor.empty()
         self.lost_stracks_values_tg = Tensor.empty()
-        self.lost_stracks_means_tg = Tensor.empty()
-        self.lost_stracks_covs_tg = Tensor.empty()
+        self.lost_stracks_means_tg = Tensor.empty(dtype=dtypes.float32)
+        self.lost_stracks_covs_tg = Tensor.empty(dtype=dtypes.float32)
 
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
@@ -304,6 +304,11 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
+        if len(self.tracked_stracks_means) > 0:
+            self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
+        if len(self.lost_stracks_means) > 0:
+            self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(np.array(self.lost_stracks_means), np.array(self.lost_stracks_covs))
+
         for i in range(len(self.tracked_stracks_ids)):
             mean = self.tracked_stracks_means[i]
             cov = self.tracked_stracks_covs[i]
@@ -318,16 +323,6 @@ class BYTETracker(object):
             for i in range(len(tracked_stracks_means)):
                 if tracked_stracks_states[i] != TrackState.Tracked:
                     tracked_stracks_means[i][7] = 0
-
-            multi_mean, multi_covariance = self.kalman_filter.multi_predict(np.array(tracked_stracks_means), np.array(tracked_stracks_covs))
-            
-            for i in range(len(tracked_stracks_means)):
-                for j in range(len(multi_mean[i])): tracked_stracks_means[i][j] = multi_mean[i][j]
-            
-            for i in range(len(tracked_stracks_covs)):
-                for j in range(len(multi_covariance[i])): tracked_stracks_covs[i][j] = multi_covariance[i][j]
-            
-            multi_mean, multi_covariance = None, None
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, tracked_stracks_means)
         btlbrs = tlbr_np_batch(dets_score_classes, [None])
@@ -586,13 +581,13 @@ class BYTETracker(object):
         self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
         self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
         self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
-        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
-        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
+        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
+        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
 
         self.lost_stracks_ids_tg *= mask_tg
 
         lost_stracks_values_tg = Tensor(lost_stracks_values)
-        lost_stracks_means_tg = Tensor(lost_stracks_means)
+        lost_stracks_means_tg = Tensor(lost_stracks_means,dtype=dtypes.float32)
         lost_stracks_bools_tg = Tensor(lost_stracks_bools)
         lost_stracks_covs_tg = Tensor(lost_stracks_covs)
         lost_stracks_ids_tg = Tensor(lost_stracks_ids)
@@ -1110,10 +1105,10 @@ if __name__ == '__main__':
     
 
     if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
-       if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
+        if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
           exit()
-       #outs.append(values)
+        #outs.append(values)
 
 
     if frame_count % 10 == 0:

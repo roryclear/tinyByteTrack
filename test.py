@@ -350,13 +350,9 @@ class BYTETracker(object):
             self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
         if len(self.lost_stracks_means) > 0:
             self.lost_stracks_means, self.lost_stracks_covs = self.kalman_filter.multi_predict(np.array(self.lost_stracks_means), np.array(self.lost_stracks_covs))
-
-        for i in range(len(self.tracked_stracks_ids)):
-            mean = self.tracked_stracks_means[i]
-            cov = self.tracked_stracks_covs[i]
-            if self.tracked_stracks_bools[i]:
-                tracked_stracks_means.append(mean.copy())
-                tracked_stracks_covs.append(cov.copy())
+        
+        tracked_stracks_means = np.array(self.tracked_stracks_means)[original_indices].tolist()
+        tracked_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices].tolist()
 
         tracked_stracks_means = tracked_stracks_means + list(self.lost_stracks_means)
         tracked_stracks_covs = tracked_stracks_covs + list(self.lost_stracks_covs)

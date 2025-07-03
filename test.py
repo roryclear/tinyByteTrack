@@ -88,18 +88,22 @@ class KalmanFilter(object):
             self._std_weight_velocity * mean[:, 3],
             1e-5 * np.ones_like(mean[:, 3]),
             self._std_weight_velocity * mean[:, 3]]
-        sqr = np.square(np.r_[std_pos, std_vel]).T
+        
+        std_pos_tg = Tensor(std_pos,dtype=dtypes.float32)
+        std_vel_tg = Tensor(std_vel,dtype=dtypes.float32)
+        mean_tg = Tensor(mean,dtype=dtypes.float32)
+        motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
+        covariance_tg = Tensor(covariance,dtype=dtypes.float32)
 
-        motion_cov = []
-        for i in range(len(mean)):
-            motion_cov.append(np.diag(sqr[i]))
-        motion_cov = np.asarray(motion_cov)
-
-        mean = np.dot(mean, self._motion_mat.T)
-        left = np.dot(self._motion_mat, covariance).transpose((1, 0, 2))
-        covariance = np.dot(left, self._motion_mat.T) + motion_cov
-
-        return mean, covariance
+        r = std_pos_tg.cat(std_vel_tg)
+        sqr = Tensor.square(r).T
+        batch_size = sqr.shape[0]
+        dim = sqr.shape[1]
+        motion_cov_tg = Tensor.eye(dim).reshape(1, dim, dim) * sqr.reshape(batch_size, dim, 1)
+        mean_tg = Tensor.dot(mean_tg, motion_mat_tg.T)
+        left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
+        covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
+        return mean_tg.numpy(), covariance_tg.numpy()
 
     def update(self, mean, covariance, measurement):
         projected_mean, projected_cov = self.project(mean, covariance)
@@ -1164,3 +1168,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

@@ -304,15 +304,6 @@ class BYTETracker(object):
         tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
 
-        if len(self.tracked_stracks_ids) > 0:
-            for i in range(len(self.tracked_stracks_means)):
-                if self.tracked_stracks_states[i] != TrackState.Tracked:
-                    self.tracked_stracks_means[i][7] = 0
-
-        if len(self.lost_stracks_ids) > 0:
-            for i in range(len(self.lost_stracks_means)):
-                  self.lost_stracks_means[i][7] = 0
-        
         if len(self.tracked_stracks_means) > 0:
             self.tracked_stracks_means, self.tracked_stracks_covs = self.kalman_filter.multi_predict(np.array(self.tracked_stracks_means), np.array(self.tracked_stracks_covs))
         if len(self.lost_stracks_means) > 0:
@@ -589,6 +580,12 @@ class BYTETracker(object):
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
 
         self.lost_stracks_ids_tg *= mask_tg
+
+        if self.lost_stracks_means_tg.shape[0] > 0: self.lost_stracks_means_tg[:,7] = 0
+
+        if self.tracked_stracks_means_tg.shape[0] > 0: 
+            mask = self.tracked_stracks_states_tg == 2
+            self.tracked_stracks_means_tg[:,7] *= mask
 
         lost_stracks_values_tg = Tensor(lost_stracks_values)
         lost_stracks_means_tg = Tensor(lost_stracks_means,dtype=dtypes.float32)
@@ -1112,7 +1109,7 @@ if __name__ == '__main__':
         if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
           exit()
-        #outs.append(values)
+    #    outs.append(values)
 
 
     if frame_count % 10 == 0:

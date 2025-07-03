@@ -78,20 +78,17 @@ class KalmanFilter(object):
         return np.array(projected_means), np.array(projected_covariances)
 
     def multi_predict(self, mean, covariance):
-        std_pos = [
-            self._std_weight_position * mean[:, 3],
-            self._std_weight_position * mean[:, 3],
-            1e-2 * np.ones_like(mean[:, 3]),
-            self._std_weight_position * mean[:, 3]]
-        std_vel = [
-            self._std_weight_velocity * mean[:, 3],
-            self._std_weight_velocity * mean[:, 3],
-            1e-5 * np.ones_like(mean[:, 3]),
-            self._std_weight_velocity * mean[:, 3]]
-        
-        std_pos_tg = Tensor(std_pos,dtype=dtypes.float32)
-        std_vel_tg = Tensor(std_vel,dtype=dtypes.float32)
         mean_tg = Tensor(mean,dtype=dtypes.float32)
+        sp = (mean_tg[:,3]*self._std_weight_position).cat(mean_tg[:,3]*self._std_weight_position)
+        sp = sp.cat(1e-2 * Tensor.ones(mean_tg.shape[0]))
+        sp = sp.cat(mean_tg[:,3]*self._std_weight_position)
+        std_pos_tg = sp.reshape(4,int(sp.shape[0]/4))
+
+        sv = (mean_tg[:,3]*self._std_weight_velocity).cat(mean_tg[:,3]*self._std_weight_velocity)
+        sv = sv.cat(1e-5 * Tensor.ones(mean_tg.shape[0]))
+        sv = sv.cat(mean_tg[:,3]*self._std_weight_velocity)
+        std_vel_tg = sv.reshape(4,int(sv.shape[0]/4))
+        
         motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
         covariance_tg = Tensor(covariance,dtype=dtypes.float32)
 

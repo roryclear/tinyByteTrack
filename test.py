@@ -95,6 +95,26 @@ class KalmanFilter(object):
         covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
         return mean_tg, covariance_tg
     
+    def cholesky(self,A):
+        """Compute Cholesky decomposition of a batch of matrices A = LL^T"""
+        L = np.zeros_like(A)
+        for i in range(A.shape[-1]):
+            for j in range(i+1):
+                s = np.einsum('...ik,...jk->...ij', L[...,:j], L[...,:j])[...,i,j]
+                if i == j:
+                    L[...,i,i] = np.sqrt(A[...,i,i] - s)
+                else:
+                    L[...,i,j] = (A[...,i,j] - s) / L[...,j,j]
+        return L
+    
+    def solve_triangular(self,L, b):
+        """Solve Lx = b where L is lower triangular using forward substitution"""
+        x = np.zeros_like(b)
+        for i in range(L.shape[0]):
+            x[i] = (b[i] - np.dot(L[i,:i], x[:i])) / L[i,i]
+        return x
+
+
     def update_batch(self, means, covariances, measurements):
         if means.shape[0] == 0: return means, covariances
         mean_tg = Tensor(means, dtype=dtypes.float32)
@@ -103,14 +123,15 @@ class KalmanFilter(object):
         projected_means = projected_means_tg.numpy()
         projected_covs = projected_covs_tg.numpy()
 
-        chol_factors = np.linalg.cholesky(projected_covs)
+        chol_factors = self.cholesky(projected_covs)
         update_mat_T = self._update_mat.T
         new_means = []
         new_covariances = []
 
         for i in range(len(means)):
-            y = np.linalg.solve(chol_factors[i], np.dot(covariances[i], update_mat_T).T)
-            kalman_gain = np.linalg.solve(chol_factors[i].T, y).T
+            R = np.dot(covariances[i], update_mat_T).T
+            y = self.solve_triangular(chol_factors[i], R).T
+            kalman_gain = self.solve_triangular(chol_factors[i].T, y.T).T
             innovation = measurements[i] - projected_means[i]
 
             new_mean = means[i] + np.dot(innovation, kalman_gain.T)

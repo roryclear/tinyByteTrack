@@ -118,20 +118,24 @@ class KalmanFilter(object):
         x = (np.eye(d) - np.tril(L_offdiag * diag_inv, k=-1)) @ (b * diag_inv)
         return x.squeeze()
     
-    def solve_all_triangular(self,chol_factors, R):
-        N, d, _ = chol_factors.shape
-        if R.ndim == 2:
-            R = R[..., None]
-        diag = np.einsum('nii->ni', chol_factors)
-        diag_inv = 1.0 / diag
-        diag_inv = diag_inv[..., None]
-        L_offdiag = np.tril(chol_factors, k=-1)
-        I = np.eye(d)[None, :, :]
-        diag_inv_matrix = np.broadcast_to(diag_inv, (N, d, d))
-        L_term = np.tril(L_offdiag * diag_inv_matrix, k=-1)
-        T = I - L_term
-        RHS = R * diag_inv
-        x = np.matmul(T, RHS)
+    def solve_all_triangular(self,chol_factors_tg, R_tg):
+        N, d, _ = chol_factors_tg.shape
+        if R_tg.ndim == 2:
+            R_tg = R_tg[..., None]
+        eye = Tensor.eye(d)
+        eye = eye.reshape(1, d, d)
+        mask = eye._broadcast_to((N, d, d))
+        diag_only = chol_factors_tg * mask
+        diag_tg = diag_only.sum(axis=2)
+        diag_tg = 1.0 / diag_tg
+        diag_tg = diag_tg[..., None]
+        L_offdiag_tg = Tensor.tril(chol_factors_tg, diagonal=-1)
+        I_tg = Tensor.eye(d)[None, :, :]
+        diag_inv_matrix_tg = Tensor._broadcast_to(diag_tg, (N, d, d))
+        L_term_tg = Tensor.tril(L_offdiag_tg * diag_inv_matrix_tg, -1)
+        T_tg = I_tg - L_term_tg
+        RHS_tg = R_tg * diag_tg
+        x = Tensor.matmul(T_tg, RHS_tg)
         return x
 
     def update_batch(self, means, covariances, measurements):
@@ -146,9 +150,12 @@ class KalmanFilter(object):
         update_mat_T = self._update_mat.T
 
         R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
-        y = self.solve_all_triangular(chol_factors, R)
+        R_tg = Tensor(R,dtype=dtypes.float32)
+        y_tg = self.solve_all_triangular(chol_factors_tg, R_tg)
         chol_factors_T = np.transpose(chol_factors, (0, 2, 1))
-        kalman_gain = self.solve_all_triangular(chol_factors_T, y)
+        chol_factors_T_tg = Tensor(chol_factors_T,dtype=dtypes.float32)
+        kalman_gain_tg = self.solve_all_triangular(chol_factors_T_tg, y_tg)
+        kalman_gain = kalman_gain_tg.numpy()
         innovation = measurements - projected_means
         new_means = []
         new_means = means + np.einsum('ij,ijk->ik', innovation, kalman_gain)
@@ -1225,6 +1232,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
 

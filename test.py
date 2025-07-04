@@ -24,6 +24,7 @@ class KalmanFilter(object):
         for i in range(ndim):
             self._motion_mat[i, ndim + i] = dt
         self._update_mat = np.eye(ndim, 2 * ndim)
+        self._update_mat_tg = Tensor.eye(ndim, 2 * ndim)
         self._std_weight_position = 1. / 20
         self._std_weight_velocity = 1. / 160
 
@@ -57,21 +58,19 @@ class KalmanFilter(object):
             self._update_mat, covariance, self._update_mat.T))
         return mean, covariance + innovation_cov
 
-    def project_batch(self, means, covariances):
-        stds = np.array([
-            self._std_weight_position * means[:, 3],
-            self._std_weight_position * means[:, 3],
-            np.full(means.shape[0], 1e-1),
-            self._std_weight_position * means[:, 3]
-        ]).T
-        innovation_covs = np.zeros((means.shape[0], 4, 4))
-        rows = np.arange(means.shape[0])[:, None]
-        cols = np.arange(4)
-        innovation_covs[rows, cols, cols] = np.square(stds)
-        projected_means = np.dot(means, self._update_mat.T)
-        projected_covariances = np.einsum('ij,njk,kl->nil', self._update_mat, covariances, self._update_mat.T)
-        projected_covariances += innovation_covs     
-        return projected_means, projected_covariances
+    def project_batch(self, mean_tg, covariances_tg):
+        
+        sp = (mean_tg[:,3]*self._std_weight_position).cat(mean_tg[:,3]*self._std_weight_position)
+        sp = sp.cat(1e-1 * Tensor.ones(mean_tg.shape[0]))
+        sp = sp.cat(mean_tg[:,3]*self._std_weight_position)
+        std_pos_tg = sp.reshape(4, mean_tg.shape[0]).T
+        squared_stds = std_pos_tg.square()
+        eye = Tensor.eye(4, dtype=dtypes.float32).reshape(1, 4, 4).expand(mean_tg.shape[0], 4, 4)
+        innovation_covs_tg = eye * squared_stds.reshape(-1, 1, 4)
+        projected_means_tg = mean_tg @ self._update_mat_tg.T
+        projected_covariances_tg = Tensor.einsum('ij,njk,kl->nil', self._update_mat_tg, covariances_tg, self._update_mat_tg.T)
+        projected_covariances_tg += innovation_covs_tg
+        return projected_means_tg, projected_covariances_tg
 
     def multi_predict(self, mean_tg, covariance_tg):
         sp = (mean_tg[:,3]*self._std_weight_position).cat(mean_tg[:,3]*self._std_weight_position)
@@ -110,7 +109,11 @@ class KalmanFilter(object):
         return new_mean, new_covariance
     
     def update_batch(self, means, covariances, measurements):
-        projected_means, projected_covs = self.project_batch(means, covariances)
+        mean_tg = Tensor(means, dtype=dtypes.float32)
+        covariances_tg = Tensor(covariances, dtype=dtypes.float32)
+        projected_means_tg, projected_covs_tg = self.project_batch(mean_tg, covariances_tg)
+        projected_means = projected_means_tg.numpy()
+        projected_covs = projected_covs_tg.numpy()
 
         chol_factors = np.linalg.cholesky(projected_covs)  # (N, dim_z, dim_z)
         update_mat_T = self._update_mat.T  # (dim_z, dim_x)
@@ -1179,4 +1182,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 

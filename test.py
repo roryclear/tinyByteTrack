@@ -109,13 +109,14 @@ class KalmanFilter(object):
         L[:, 3, 3] = Tensor.sqrt(A[:, 3, 3] - L[:, 3, 0]**2 - L[:, 3, 1]**2 - L[:, 3, 2]**2)
         return L
     
-    def solve_triangular(self,L, b):
-        """Solve Lx = b where L is lower triangular using forward substitution"""
-        x = np.zeros_like(b)
-        for i in range(L.shape[0]):
-            x[i] = (b[i] - np.dot(L[i,:i], x[:i])) / L[i,i]
-        return x
-
+    def solve_triangular(self, L, b):
+        d = L.shape[0]
+        if b.ndim == 1:
+            b = b[:, None]
+        diag_inv = 1.0 / np.diag(L)[:, None]
+        L_offdiag = np.tril(L, k=-1)
+        x = (np.eye(d) - np.tril(L_offdiag * diag_inv, k=-1)) @ (b * diag_inv)
+        return x.squeeze()
 
     def update_batch(self, means, covariances, measurements):
         if means.shape[0] == 0: return means, covariances

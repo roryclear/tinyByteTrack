@@ -374,8 +374,8 @@ class BYTETracker(object):
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
+        dists_tg = fuse_score(dists_tg, dets_score_classes_tg)
         dists = dists_tg.numpy()
-        dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
         
@@ -479,8 +479,8 @@ class BYTETracker(object):
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_second_tg)
 
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
+        dists_tg = fuse_score(dists_tg, dets_score_classes_second_tg)
         dists = dists_tg.numpy()
-        dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
         tracks_values = []
@@ -730,13 +730,13 @@ def iou_distance(atlbrs, btlbrs):
     cost_matrix = 1 - _ious
     return cost_matrix
 
-def fuse_score(cost_matrix, det_values):
-    if cost_matrix.size == 0:
+def fuse_score(cost_matrix, det_values_tg):
+    if cost_matrix.shape[0] == 0:
         return cost_matrix
     iou_sim = 1 - cost_matrix
-    det_scores = np.array([det[4] for det in det_values])
-    det_scores = np.expand_dims(det_scores, axis=0).repeat(cost_matrix.shape[0], axis=0)
-    fuse_sim = iou_sim * det_scores
+    det_scores_tg = (det_values_tg)[:, 4]
+    det_scores_tg = det_scores_tg.unsqueeze(0).expand(cost_matrix.shape[0], -1)
+    fuse_sim = iou_sim * det_scores_tg
     fuse_cost = 1 - fuse_sim
     return fuse_cost
 

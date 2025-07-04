@@ -293,8 +293,8 @@ class BYTETracker(object):
         dets_second = bboxes * inds_second.unsqueeze(1)
         dets[:, 2:] -= dets[:, :2] #tlbr to tlwh
         dets_second[:, 2:] -= dets_second[:, :2]
-        dets_score_classes = dets.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
-        dets_score_classes = dets_score_classes.numpy()
+        dets_score_classes_tg = dets.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
+        dets_score_classes = dets_score_classes_tg.numpy()
         dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second = dets_score_classes_second.numpy()
       
@@ -370,8 +370,6 @@ class BYTETracker(object):
 
         means_in = means_in_tg.numpy().tolist()
         covs_in = covs_in_tg.numpy().tolist()
-
-        dets_score_classes_tg = Tensor(dets_score_classes)
 
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
@@ -1192,3 +1190,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

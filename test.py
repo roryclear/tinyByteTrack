@@ -144,7 +144,6 @@ class KalmanFilter(object):
         chol_factors = chol_factors_tg.numpy()
         projected_covs = projected_covs_tg.numpy()
         update_mat_T = self._update_mat.T
-        new_covariances = []
 
         R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
         y = self.solve_all_triangular(chol_factors, R)
@@ -153,10 +152,8 @@ class KalmanFilter(object):
         innovation = measurements - projected_means
         new_means = []
         new_means = means + np.einsum('ij,ijk->ik', innovation, kalman_gain)
-        for i in range(len(means)):
-            new_cov = covariances[i] - kalman_gain[i].T @ projected_covs[i] @ kalman_gain[i]
-            new_covariances.append(new_cov)
-
+        new_covariances = []
+        new_covariances = covariances - np.einsum('nji,njk,nkl->nil', kalman_gain, projected_covs, kalman_gain)
         return np.array(new_means), np.array(new_covariances)
 
 class TrackState(object):

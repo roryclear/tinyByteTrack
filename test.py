@@ -144,20 +144,17 @@ class KalmanFilter(object):
         chol_factors = chol_factors_tg.numpy()
         projected_covs = projected_covs_tg.numpy()
         update_mat_T = self._update_mat.T
-        new_means = []
         new_covariances = []
 
         R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
         y = self.solve_all_triangular(chol_factors, R)
         chol_factors_T = np.transpose(chol_factors, (0, 2, 1))
         kalman_gain = self.solve_all_triangular(chol_factors_T, y)
+        innovation = measurements - projected_means
+        new_means = []
+        new_means = means + np.einsum('ij,ijk->ik', innovation, kalman_gain)
         for i in range(len(means)):
-            innovation = measurements[i] - projected_means[i]
-
-            new_mean = means[i] + np.dot(innovation, kalman_gain[i])
             new_cov = covariances[i] - kalman_gain[i].T @ projected_covs[i] @ kalman_gain[i]
-
-            new_means.append(new_mean)
             new_covariances.append(new_cov)
 
         return np.array(new_means), np.array(new_covariances)

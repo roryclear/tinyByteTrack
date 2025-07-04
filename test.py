@@ -130,9 +130,9 @@ class KalmanFilter(object):
         new_means = []
         new_covariances = []
 
+        R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
         for i in range(len(means)):
-            R = np.dot(covariances[i], update_mat_T).T
-            y = self.solve_triangular(chol_factors[i], R).T
+            y = self.solve_triangular(chol_factors[i], R[i]).T
             kalman_gain = self.solve_triangular(chol_factors[i].T, y.T).T
             innovation = measurements[i] - projected_means[i]
 
@@ -1213,5 +1213,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 

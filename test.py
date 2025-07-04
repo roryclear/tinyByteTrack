@@ -94,17 +94,20 @@ class KalmanFilter(object):
         left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
         covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
         return mean_tg, covariance_tg
-    
+        
     def cholesky(self,A):
         L = Tensor.zeros_like(A).contiguous()
-        for i in range(A.shape[-1]):
-            for j in range(i+1):
-                s = Tensor.einsum('...ik,...jk->...ij', L[...,:j], L[...,:j])[...,i,j]
-                if i == j:
-                    L[...,i,i] = Tensor.sqrt(A[...,i,i] - s)
-                else:
-                    L[...,i,j] = (A[...,i,j] - s) / L[...,j,j]
-        return L.numpy()
+        L[:, 0, 0] = Tensor.sqrt(A[:, 0, 0])
+        L[:, 1, 0] = A[:, 1, 0] / L[:, 0, 0]
+        L[:, 1, 1] = Tensor.sqrt(A[:, 1, 1] - L[:, 1, 0]**2)
+        L[:, 2, 0] = A[:, 2, 0] / L[:, 0, 0]
+        L[:, 2, 1] = (A[:, 2, 1] - L[:, 2, 0]*L[:, 1, 0]) / L[:, 1, 1]
+        L[:, 2, 2] = Tensor.sqrt(A[:, 2, 2] - L[:, 2, 0]**2 - L[:, 2, 1]**2)
+        L[:, 3, 0] = A[:, 3, 0] / L[:, 0, 0]
+        L[:, 3, 1] = (A[:, 3, 1] - L[:, 3, 0]*L[:, 1, 0]) / L[:, 1, 1]
+        L[:, 3, 2] = (A[:, 3, 2] - L[:, 3, 0]*L[:, 2, 0] - L[:, 3, 1]*L[:, 2, 1]) / L[:, 2, 2]
+        L[:, 3, 3] = Tensor.sqrt(A[:, 3, 3] - L[:, 3, 0]**2 - L[:, 3, 1]**2 - L[:, 3, 2]**2)
+        return L
     
     def solve_triangular(self,L, b):
         """Solve Lx = b where L is lower triangular using forward substitution"""
@@ -120,8 +123,8 @@ class KalmanFilter(object):
         covariances_tg = Tensor(covariances, dtype=dtypes.float32)
         projected_means_tg, projected_covs_tg = self.project_batch(mean_tg, covariances_tg)
         projected_means = projected_means_tg.numpy()
-
-        chol_factors = self.cholesky(projected_covs_tg)
+        chol_factors_tg = self.cholesky(projected_covs_tg)
+        chol_factors = chol_factors_tg.numpy()
         projected_covs = projected_covs_tg.numpy()
         update_mat_T = self._update_mat.T
         new_means = []

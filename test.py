@@ -58,24 +58,20 @@ class KalmanFilter(object):
         return mean, covariance + innovation_cov
 
     def project_batch(self, means, covariances):
-        projected_means = []
-        projected_covariances = []
-        for mean, cov in zip(means, covariances):
-            std = [
-                self._std_weight_position * mean[3],
-                self._std_weight_position * mean[3],
-                1e-1,
-                self._std_weight_position * mean[3]
-            ]
-            innovation_cov = np.diag(np.square(std))
-
-            mean_proj = np.dot(self._update_mat, mean)
-            cov_proj = self._update_mat @ cov @ self._update_mat.T
-
-            projected_means.append(mean_proj)
-            projected_covariances.append(cov_proj + innovation_cov)
-
-        return np.array(projected_means), np.array(projected_covariances)
+        stds = np.array([
+            self._std_weight_position * means[:, 3],
+            self._std_weight_position * means[:, 3],
+            np.full(means.shape[0], 1e-1),
+            self._std_weight_position * means[:, 3]
+        ]).T
+        innovation_covs = np.zeros((means.shape[0], 4, 4))
+        rows = np.arange(means.shape[0])[:, None]
+        cols = np.arange(4)
+        innovation_covs[rows, cols, cols] = np.square(stds)
+        projected_means = np.dot(means, self._update_mat.T)
+        projected_covariances = np.einsum('ij,njk,kl->nil', self._update_mat, covariances, self._update_mat.T)
+        projected_covariances += innovation_covs     
+        return projected_means, projected_covariances
 
     def multi_predict(self, mean_tg, covariance_tg):
         sp = (mean_tg[:,3]*self._std_weight_position).cat(mean_tg[:,3]*self._std_weight_position)

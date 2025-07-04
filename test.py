@@ -179,8 +179,6 @@ def tlwh_to_xyah_batch(tlwh_array):
     return ret
 
 def bbox_ious(boxes, query_boxes):
-    boxes = Tensor(boxes,dtype=dtypes.float32)
-    query_boxes = Tensor(query_boxes,dtype=dtypes.float32)
     N = boxes.shape[0]
     K = query_boxes.shape[0]
     
@@ -210,7 +208,7 @@ def bbox_ious(boxes, query_boxes):
         intersection / union,
         Tensor.zeros_like(intersection)
     ) 
-    return overlaps.numpy()
+    return overlaps
 
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
@@ -375,9 +373,8 @@ class BYTETracker(object):
 
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
-        atlbrs = atlbrs_tg.numpy()
-        btlbrs = btlbrs_tg.numpy()
-        dists = iou_distance(atlbrs, btlbrs)
+        dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
+        dists = dists_tg.numpy()
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
@@ -437,7 +434,10 @@ class BYTETracker(object):
         btlbrs = dets_score_classes_second[:, :4].copy()
         btlbrs[:, 2:] += btlbrs[:, :2]
 
-        dists = iou_distance(atlbrs, btlbrs)
+        atlbrs_tg = Tensor(atlbrs,dtype=dtypes.float32)
+        btlbrs_tg = Tensor(btlbrs,dtype=dtypes.float32)
+        dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
+        dists = dists_tg.numpy()
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
         for i in range(len(u_track2)):  self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
@@ -478,9 +478,8 @@ class BYTETracker(object):
         atlbrs_tg = tlbr_np_batch2(unconfirmed_means_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_second_tg)
 
-        atlbrs = atlbrs_tg.numpy()
-        btlbrs = btlbrs_tg.numpy()
-        dists = iou_distance(atlbrs, btlbrs)
+        dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
+        dists = dists_tg.numpy()
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
 
@@ -720,18 +719,10 @@ class BYTETracker(object):
 
 
 def ious(atlbrs, btlbrs):
-    """
-    Compute cost based on IoU
-    :type atlbrs: list[tlbr] | np.ndarray
-    :type atlbrs: list[tlbr] | np.ndarray
-
-    :rtype ious np.ndarray
-    """
-    ious = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float)
-    if ious.size == 0:
+    ious = Tensor.zeros((atlbrs.shape[0], btlbrs.shape[0]), dtype=dtypes.float32)
+    if ious.shape[0] == 0:
         return ious
-    
-    ious = bbox_ious(np.ascontiguousarray(atlbrs, dtype=np.float), np.ascontiguousarray(btlbrs, dtype=np.float))
+    ious = bbox_ious(atlbrs, btlbrs)
     return ious
 
 def iou_distance(atlbrs, btlbrs):

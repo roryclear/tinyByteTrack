@@ -118,7 +118,7 @@ class KalmanFilter(object):
         x = (np.eye(d) - np.tril(L_offdiag * diag_inv, k=-1)) @ (b * diag_inv)
         return x.squeeze()
     
-    def solve_all_triangular(chol_factors, R):
+    def solve_all_triangular(self,chol_factors, R):
         N, d, _ = chol_factors.shape
         if R.ndim == 2:
             R = R[..., None]
@@ -132,7 +132,7 @@ class KalmanFilter(object):
         T = I - L_term
         RHS = R * diag_inv
         x = np.matmul(T, RHS)
-        return x.squeeze(-1)
+        return x
 
     def update_batch(self, means, covariances, measurements):
         if means.shape[0] == 0: return means, covariances
@@ -148,13 +148,14 @@ class KalmanFilter(object):
         new_covariances = []
 
         R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
-        y = self.solve_triangular(chol_factors, R)
+        y = self.solve_all_triangular(chol_factors, R)
+        chol_factors_T = np.transpose(chol_factors, (0, 2, 1))
+        kalman_gain = self.solve_all_triangular(chol_factors_T, y)
         for i in range(len(means)):
-            kalman_gain = self.solve_triangular(chol_factors[i].T, y[i])
             innovation = measurements[i] - projected_means[i]
 
-            new_mean = means[i] + np.dot(innovation, kalman_gain)
-            new_cov = covariances[i] - kalman_gain.T @ projected_covs[i] @ kalman_gain
+            new_mean = means[i] + np.dot(innovation, kalman_gain[i])
+            new_cov = covariances[i] - kalman_gain[i].T @ projected_covs[i] @ kalman_gain[i]
 
             new_means.append(new_mean)
             new_covariances.append(new_cov)
@@ -1230,4 +1231,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
+
 

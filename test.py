@@ -138,30 +138,20 @@ class KalmanFilter(object):
         x = Tensor.matmul(T_tg, RHS_tg)
         return x
 
-    def update_batch(self, means, covariances, measurements):
-        if means.shape[0] == 0: return means, covariances
-        mean_tg = Tensor(means, dtype=dtypes.float32)
-        covariances_tg = Tensor(covariances, dtype=dtypes.float32)
-        projected_means_tg, projected_covs_tg = self.project_batch(mean_tg, covariances_tg)
-        projected_means = projected_means_tg.numpy()
+    def update_batch(self, means_tg, covariances_tg, measurements_tg):
+        if means_tg.shape[0] == 0: return means_tg, covariances_tg
+        projected_means_tg, projected_covs_tg = self.project_batch(means_tg, covariances_tg)
         chol_factors_tg = self.cholesky(projected_covs_tg)
-        chol_factors = chol_factors_tg.numpy()
-        projected_covs = projected_covs_tg.numpy()
         update_mat_T = self._update_mat.T
-
-        R = np.einsum('ijk,kl->ilj', covariances, update_mat_T)
-        R_tg = Tensor(R,dtype=dtypes.float32)
+        update_mat_T_tg = Tensor(update_mat_T,dtype=dtypes.float32)
+        R_tg = Tensor.einsum('ijk,kl->ilj', covariances_tg, update_mat_T_tg)
         y_tg = self.solve_all_triangular(chol_factors_tg, R_tg)
-        chol_factors_T = np.transpose(chol_factors, (0, 2, 1))
-        chol_factors_T_tg = Tensor(chol_factors_T,dtype=dtypes.float32)
+        chol_factors_T_tg = Tensor.permute(chol_factors_tg, (0, 2, 1))
         kalman_gain_tg = self.solve_all_triangular(chol_factors_T_tg, y_tg)
-        kalman_gain = kalman_gain_tg.numpy()
-        innovation = measurements - projected_means
-        new_means = []
-        new_means = means + np.einsum('ij,ijk->ik', innovation, kalman_gain)
-        new_covariances = []
-        new_covariances = covariances - np.einsum('nji,njk,nkl->nil', kalman_gain, projected_covs, kalman_gain)
-        return np.array(new_means), np.array(new_covariances)
+        innovation_tg = measurements_tg - projected_means_tg
+        new_means_tg = means_tg + Tensor.einsum('ij,ijk->ik', innovation_tg, kalman_gain_tg)
+        new_covariances_tg = covariances_tg - Tensor.einsum('nji,njk,nkl->nil', kalman_gain_tg, projected_covs_tg, kalman_gain_tg)
+        return new_means_tg, new_covariances_tg
 
 class TrackState(object):
     New = 1
@@ -413,8 +403,11 @@ class BYTETracker(object):
             xyahs = tlwh_to_xyah_batch(np.array(det_values_arr)[:, :4])
             means = np.array([means_in[itracked] for itracked, _ in matches])
             covs = np.array([covs_in[itracked] for itracked, _ in matches])
-            updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
-
+            means_tg = Tensor(means,dtype=dtypes.float32)
+            covs_tg = Tensor(covs,dtype=dtypes.float32)
+            xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
+            updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
+            updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             for idx, (itracked, _) in enumerate(matches):
                 if itracked < len(original_indices):
                     self.tracked_stracks_means[original_indices[itracked]] = updated_means[idx]
@@ -487,8 +480,11 @@ class BYTETracker(object):
         ])
 
         # Apply batched Kalman update
-        updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
-
+        means_tg = Tensor(means,dtype=dtypes.float32)
+        covs_tg = Tensor(covs,dtype=dtypes.float32)
+        xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
+        updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
+        updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
         # Assign updated values back
         for i, (itracked, idet) in enumerate(matches):
             self.tracked_stracks_means[original_indices[u_track[itracked]]] = updated_means[i]
@@ -541,7 +537,12 @@ class BYTETracker(object):
             xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
             means = np.array([unconfirmed_means[i] for i in itracked_arr])
             covs = np.array([unconfirmed_covs[i] for i in itracked_arr])
-            updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
+
+            means_tg = Tensor(means,dtype=dtypes.float32)
+            covs_tg = Tensor(covs,dtype=dtypes.float32)
+            xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
+            updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
+            updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             for i in range(len(itracked_arr)):
                 activated_stracks_means.append(updated_means[i])
                 activated_stracks_covs.append(updated_covs[i])

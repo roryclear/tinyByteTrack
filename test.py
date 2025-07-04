@@ -94,29 +94,17 @@ class KalmanFilter(object):
         left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
         covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
         return mean_tg, covariance_tg
-
-
-    def update(self, mean, covariance, measurement):
-        projected_mean, projected_cov = self.project(mean, covariance)
-
-        chol_factor = np.linalg.cholesky(projected_cov)
-        y = np.linalg.solve(chol_factor, np.dot(covariance, self._update_mat.T).T)
-        kalman_gain = np.linalg.solve(chol_factor.T, y).T
-        innovation = measurement - projected_mean
-        new_mean = mean + np.dot(innovation, kalman_gain.T)
-        new_covariance = covariance - np.linalg.multi_dot((
-            kalman_gain, projected_cov, kalman_gain.T))
-        return new_mean, new_covariance
     
     def update_batch(self, means, covariances, measurements):
+        if means.shape[0] == 0: return means, covariances
         mean_tg = Tensor(means, dtype=dtypes.float32)
         covariances_tg = Tensor(covariances, dtype=dtypes.float32)
         projected_means_tg, projected_covs_tg = self.project_batch(mean_tg, covariances_tg)
         projected_means = projected_means_tg.numpy()
         projected_covs = projected_covs_tg.numpy()
 
-        chol_factors = np.linalg.cholesky(projected_covs)  # (N, dim_z, dim_z)
-        update_mat_T = self._update_mat.T  # (dim_z, dim_x)
+        chol_factors = np.linalg.cholesky(projected_covs)
+        update_mat_T = self._update_mat.T
         new_means = []
         new_covariances = []
 
@@ -439,10 +427,30 @@ class BYTETracker(object):
         dists = dists_tg.numpy()
 
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
-        for i in range(len(u_track2)):  self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
-        xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:,1]][:, :4])
+
+        # Mark unmatched tracks as lost
+        for i in range(len(u_track2)):
+            self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
+
+        # Build inputs for batch update
+        xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
+
+        means = np.array([
+            self.tracked_stracks_means[original_indices[u_track[itracked]]]
+            for itracked, _ in matches
+        ])
+        covs = np.array([
+            self.tracked_stracks_covs[original_indices[u_track[itracked]]]
+            for itracked, _ in matches
+        ])
+
+        # Apply batched Kalman update
+        updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
+
+        # Assign updated values back
         for i, (itracked, idet) in enumerate(matches):
-            self.tracked_stracks_means[original_indices[u_track[itracked]]], self.tracked_stracks_covs[original_indices[u_track[itracked]]] = self.kalman_filter.update(self.tracked_stracks_means[original_indices[u_track[itracked]]], self.tracked_stracks_covs[original_indices[u_track[itracked]]], xyahs[i])
+            self.tracked_stracks_means[original_indices[u_track[itracked]]] = updated_means[i]
+            self.tracked_stracks_covs[original_indices[u_track[itracked]]] = updated_covs[i]
             self.tracked_stracks_values[original_indices[u_track[itracked]]][4] = dets_score_classes_second[idet][4]
             tracked_stracks_fids[u_track[itracked]] = self.frame_id
 
@@ -487,14 +495,14 @@ class BYTETracker(object):
         if len(matches) > 0:
             itracked_arr = np.array(matches)[:, 0]
             tracks_values = [unconfirmed_values[i] for i in itracked_arr]
-            scores = dets_score_classes_second[matches[:,1]][:, 4]
-
-            xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:,1]][:, :4])
-
+            scores = dets_score_classes_second[matches[:, 1]][:, 4]
+            xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
+            means = np.array([unconfirmed_means[i] for i in itracked_arr])
+            covs = np.array([unconfirmed_covs[i] for i in itracked_arr])
+            updated_means, updated_covs = self.kalman_filter.update_batch(means, covs, xyahs)
             for i in range(len(itracked_arr)):
-                new_mean, new_cov = self.kalman_filter.update(unconfirmed_means[itracked_arr[i]], unconfirmed_covs[itracked_arr[i]], xyahs[i])
-                activated_stracks_means.append(new_mean)
-                activated_stracks_covs.append(new_cov)
+                activated_stracks_means.append(updated_means[i])
+                activated_stracks_covs.append(updated_covs[i])
                 activated_stracks_ids.append(unconfirmed_ids[itracked_arr[i]])
                 activated_stracks_fids.append(self.frame_id)
                 activated_stracks_startframes.append(unconfirmed_startframes[itracked_arr[i]])

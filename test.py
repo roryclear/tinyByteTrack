@@ -294,6 +294,7 @@ class BYTETracker(object):
         
         mask = np.array(self.tracked_stracks_bools).astype(bool)
         original_indices = np.where(mask)[0]
+        original_indices_tg = Tensor(original_indices)
         mask_tg = Tensor(mask)
 
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
@@ -353,11 +354,15 @@ class BYTETracker(object):
             self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
             self.lost_stracks_covs =  self.lost_stracks_covs_tg.numpy()
         
-        means_in = np.array(self.tracked_stracks_means)[original_indices].tolist()
-        covs_in = np.array(self.tracked_stracks_covs)[original_indices].tolist()
+        means_in_tg = self.tracked_stracks_means_tg[original_indices_tg]
+        covs_in_tg = self.tracked_stracks_covs_tg[original_indices_tg]
+        
+        if len(self.lost_stracks_means_tg.shape) > 0 and self.lost_stracks_means_tg.shape[0] > 0:
+            means_in_tg = means_in_tg.cat(self.lost_stracks_means_tg)
+            covs_in_tg = covs_in_tg.cat(self.lost_stracks_covs_tg)
 
-        means_in = means_in + list(self.lost_stracks_means)
-        covs_in = covs_in + list(self.lost_stracks_covs)
+        means_in = means_in_tg.numpy().tolist()
+        covs_in = covs_in_tg.numpy().tolist()
 
         atlbrs = tlbr_np_batch(tracked_stracks_values, means_in)
         btlbrs = tlbr_np_batch(dets_score_classes, [None])

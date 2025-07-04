@@ -153,14 +153,16 @@ def tlbr_np(values, mean):
     ret[2:] += ret[:2]
     return ret
 
-def tlbr_np_batch(tracked_stracks_values):
-    ret = tracked_stracks_values[:, :4].copy()
-    ret[:, 2:] += ret[:, :2]
+def tlbr_np_batch3(tracked_stracks_values):
+    ret = tracked_stracks_values[:, :4]
+    ret_0_1 = ret[:, :2]
+    ret_2_3 = ret[:, 2:]
+    ret_2_3_new = ret_2_3 + ret_0_1
+    ret = ret_0_1.cat(ret_2_3_new, dim=1)
     return ret
 
-
 def tlbr_np_batch2(means):
-    if len(means.shape) == 0 or means.shape[0] == 0: return np.empty((0, 4))
+    if means.shape[0] == 0: return Tensor.empty((0, 4))
     ret = means[:, :4]
     ret2 = ret[:, 2]
     ret3 = ret[:, 3]
@@ -168,7 +170,6 @@ def tlbr_np_batch2(means):
     ret = ret[:, :2].cat(ret_new2.unsqueeze(1), dim=1).cat(ret3.unsqueeze(1),dim=1)
     ret[:, :2] -= ret[:, 2:] / 2
     ret[:, 2:] += ret[:, :2]
-    ret = ret.numpy()
     return ret
 
 def tlwh_to_xyah_batch(tlwh_array):
@@ -370,9 +371,12 @@ class BYTETracker(object):
         means_in = means_in_tg.numpy().tolist()
         covs_in = covs_in_tg.numpy().tolist()
 
+        dets_score_classes_tg = Tensor(dets_score_classes)
 
-        atlbrs = tlbr_np_batch2(means_in_tg)
-        btlbrs = tlbr_np_batch(dets_score_classes)
+        atlbrs_tg = tlbr_np_batch2(means_in_tg)
+        btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
+        atlbrs = atlbrs_tg.numpy()
+        btlbrs = btlbrs_tg.numpy()
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes)
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
@@ -468,8 +472,14 @@ class BYTETracker(object):
         u_detection_np = np.array(u_detection)
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
         
-        atlbrs = tlbr_np_batch2(Tensor(unconfirmed_means,dtype=dtypes.float32))
-        btlbrs = tlbr_np_batch(dets_score_classes_second)
+        unconfirmed_means_tg = Tensor(unconfirmed_means,dtype=dtypes.float32)
+        dets_score_classes_second_tg = Tensor(dets_score_classes_second)
+
+        atlbrs_tg = tlbr_np_batch2(unconfirmed_means_tg)
+        btlbrs_tg = tlbr_np_batch3(dets_score_classes_second_tg)
+
+        atlbrs = atlbrs_tg.numpy()
+        btlbrs = btlbrs_tg.numpy()
         dists = iou_distance(atlbrs, btlbrs)
         dists = fuse_score(dists, dets_score_classes_second)
         matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
@@ -1182,5 +1192,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-

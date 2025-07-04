@@ -96,16 +96,15 @@ class KalmanFilter(object):
         return mean_tg, covariance_tg
     
     def cholesky(self,A):
-        """Compute Cholesky decomposition of a batch of matrices A = LL^T"""
-        L = np.zeros_like(A)
+        L = Tensor.zeros_like(A).contiguous()
         for i in range(A.shape[-1]):
             for j in range(i+1):
-                s = np.einsum('...ik,...jk->...ij', L[...,:j], L[...,:j])[...,i,j]
+                s = Tensor.einsum('...ik,...jk->...ij', L[...,:j], L[...,:j])[...,i,j]
                 if i == j:
-                    L[...,i,i] = np.sqrt(A[...,i,i] - s)
+                    L[...,i,i] = Tensor.sqrt(A[...,i,i] - s)
                 else:
                     L[...,i,j] = (A[...,i,j] - s) / L[...,j,j]
-        return L
+        return L.numpy()
     
     def solve_triangular(self,L, b):
         """Solve Lx = b where L is lower triangular using forward substitution"""
@@ -121,9 +120,9 @@ class KalmanFilter(object):
         covariances_tg = Tensor(covariances, dtype=dtypes.float32)
         projected_means_tg, projected_covs_tg = self.project_batch(mean_tg, covariances_tg)
         projected_means = projected_means_tg.numpy()
-        projected_covs = projected_covs_tg.numpy()
 
-        chol_factors = self.cholesky(projected_covs)
+        chol_factors = self.cholesky(projected_covs_tg)
+        projected_covs = projected_covs_tg.numpy()
         update_mat_T = self._update_mat.T
         new_means = []
         new_covariances = []

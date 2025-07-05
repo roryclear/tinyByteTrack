@@ -556,13 +556,12 @@ class BYTETracker(object):
             xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
-            for i in range(len(itracked_arr)):
-                activated_stracks_means.append(updated_means[i])
-                activated_stracks_covs.append(updated_covs[i])
-                activated_stracks_ids.append(unconfirmed_ids[itracked_arr[i]])
-                activated_stracks_fids.append(self.frame_id)
-                activated_stracks_startframes.append(unconfirmed_startframes[itracked_arr[i]])
-                activated_stracks_states.append(TrackState.Tracked)
+            activated_stracks_means += updated_means.tolist()
+            activated_stracks_covs += updated_covs.tolist()
+            activated_stracks_fids += [self.frame_id] * len(itracked_arr)
+            activated_stracks_states += [TrackState.Tracked] * len(itracked_arr)
+            activated_stracks_ids += np.array(unconfirmed_ids)[itracked_arr].tolist()
+            activated_stracks_startframes += np.array(unconfirmed_startframes)[itracked_arr].tolist()
 
             for i in range(len(itracked_arr)):
                 tracks_values[i][4] = scores[i] 

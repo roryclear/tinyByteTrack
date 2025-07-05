@@ -448,14 +448,13 @@ class BYTETracker(object):
             refind_stracks_states = [TrackState.Tracked] * itracked_untracked.sum() 
             refind_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_untracked].tolist()
 
-            for idx, (itracked, _) in enumerate(matches):
-                if tracked_stracks_states[itracked] != TrackState.Tracked:
-                    if itracked < len(original_indices):
-                        refind_stracks_means.append(self.tracked_stracks_means[original_indices[itracked]])
-                        refind_stracks_covs.append(self.tracked_stracks_covs[original_indices[itracked]])
-                    else:
-                        refind_stracks_means.append(self.lost_stracks_means[itracked - len(original_indices)])
-                        refind_stracks_covs.append(self.lost_stracks_covs[itracked - len(original_indices)])
+            valid = itracked[itracked_untracked][itracked[itracked_untracked] < len(original_indices)]
+            refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices[valid]].tolist()
+            refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices[valid]].tolist()
+
+            big = itracked[itracked >= len(original_indices)] - len(original_indices)
+            refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
+            refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
         tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
         means = np.array([self.tracked_stracks_means[original_indices[i]] for i in tracked_indices])
@@ -497,16 +496,18 @@ class BYTETracker(object):
         xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
         updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
         updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
-        # Assign updated values back
+
+
+        if len(matches) > 0:
+            self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]] = updated_means
+            self.tracked_stracks_covs[original_indices[u_track[matches[:,0]]]] = updated_covs
+            self.tracked_stracks_fids[original_indices[u_track[matches[:,0]]]] = self.frame_id
+            self.tracked_stracks_states[original_indices[u_track[matches[:,0]]]] = TrackState.Tracked
+            self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
+            tracked_stracks_fids = np.array(tracked_stracks_fids)
+            tracked_stracks_fids[u_track[matches[:, 0]]] = self.frame_id
+
         for i, (itracked, idet) in enumerate(matches):
-            self.tracked_stracks_means[original_indices[u_track[itracked]]] = updated_means[i]
-            self.tracked_stracks_covs[original_indices[u_track[itracked]]] = updated_covs[i]
-            self.tracked_stracks_values[original_indices[u_track[itracked]]][4] = dets_score_classes_second[idet][4]
-            tracked_stracks_fids[u_track[itracked]] = self.frame_id
-
-            self.tracked_stracks_fids[original_indices[u_track[itracked]]] = self.frame_id
-            self.tracked_stracks_states[original_indices[u_track[itracked]]] = TrackState.Tracked
-
             activated_stracks_values.append(self.tracked_stracks_values[original_indices[u_track[itracked]]])
             activated_stracks_means.append(self.tracked_stracks_means[original_indices[u_track[itracked]]])
             activated_stracks_bools.append(tracked_stracks_bools[u_track[itracked]])

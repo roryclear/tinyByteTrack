@@ -430,21 +430,26 @@ class BYTETracker(object):
                 self.lost_stracks_means[valid_lost_indices] = updated_means[lost_mask]
                 self.lost_stracks_covs[valid_lost_indices] = updated_covs[lost_mask]
 
+            itracked_tracked = np.array(tracked_stracks_states)[itracked] == TrackState.Tracked
+            itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
+            activated_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_tracked].tolist()
+            activated_stracks_bools = np.array(tracked_stracks_bools)[itracked][itracked_tracked].tolist()
+            activated_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_tracked].tolist()
+            activated_stracks_fids = np.array(tracked_stracks_fids)[itracked][itracked_tracked].tolist()
+            activated_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_tracked].tolist()
+            activated_stracks_states = np.array(tracked_stracks_states)[itracked][itracked_tracked].tolist()
+            
+            refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
+            refind_stracks_fids = np.array(tracked_stracks_fids)[itracked][itracked_untracked].tolist()
+            refind_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_untracked].tolist()
 
             for idx, (itracked, _) in enumerate(matches):
                 if tracked_stracks_states[itracked] == TrackState.Tracked:
-                    activated_stracks_values.append(tracked_stracks_values[itracked])
                     activated_stracks_means.append(self.tracked_stracks_means[original_indices[itracked]])
-                    activated_stracks_bools.append(tracked_stracks_bools[itracked])
                     activated_stracks_covs.append(self.tracked_stracks_covs[original_indices[itracked]])
-                    activated_stracks_ids.append(tracked_stracks_ids[itracked])
-                    activated_stracks_fids.append(tracked_stracks_fids[itracked])
-                    activated_stracks_startframes.append(tracked_stracks_startframes[itracked])
-                    activated_stracks_states.append(tracked_stracks_states[itracked])
                 else:
                     tracked_stracks_states[itracked] = TrackState.Tracked
                     tracked_stracks_bools[itracked] = True
-                    refind_stracks_values.append(tracked_stracks_values[itracked])
                     if itracked < len(original_indices):
                         refind_stracks_means.append(self.tracked_stracks_means[original_indices[itracked]])
                         refind_stracks_covs.append(self.tracked_stracks_covs[original_indices[itracked]])
@@ -452,8 +457,6 @@ class BYTETracker(object):
                         refind_stracks_means.append(self.lost_stracks_means[itracked - len(original_indices)])
                         refind_stracks_covs.append(self.lost_stracks_covs[itracked - len(original_indices)])
                     refind_stracks_bools.append(True)
-                    refind_stracks_ids.append(tracked_stracks_ids[itracked])
-                    refind_stracks_fids.append(tracked_stracks_fids[itracked])
                     refind_stracks_startframes.append(tracked_stracks_startframes[itracked])
                     refind_stracks_states.append(tracked_stracks_states[itracked])
         
@@ -1245,6 +1248,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
-

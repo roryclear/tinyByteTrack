@@ -589,9 +589,12 @@ class BYTETracker(object):
 
         
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[u_detection[valid_mask]][:,:4])
+        new_ids = len(valid_indices)
+        activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
+        activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
+        self._count += new_ids
+        activated_stracks_ids = activated_stracks_ids_tg.numpy().tolist()
         for i in range(len(valid_indices)):
-            self._count += 1
-            activated_stracks_ids.append(self._count)
             x, y = self.kalman_filter.initiate(xyahs[i])
             activated_stracks_means.append(x)
             activated_stracks_covs.append(y)

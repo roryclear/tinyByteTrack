@@ -563,13 +563,15 @@ class BYTETracker(object):
             activated_stracks_ids += np.array(unconfirmed_ids)[itracked_arr].tolist()
             activated_stracks_startframes += np.array(unconfirmed_startframes)[itracked_arr].tolist()
 
-            for i in range(len(itracked_arr)):
-                tracks_values[i][4] = scores[i] 
-
-                if unconfirmed_ids[itracked_arr[i]] in self.tracked_stracks_ids:
-                  idx = self.tracked_stracks_ids.index(unconfirmed_ids[itracked_arr[i]])
-                  self.tracked_stracks_bools[idx] = True
-                  self.tracked_stracks_states[idx] = TrackState.Tracked
+            tracks_values = np.array(tracks_values)
+            scores = np.array(scores)
+            tracks_values[:len(itracked_arr), 4] = scores
+            
+            unconfirmed_ids_arr = np.array(unconfirmed_ids)
+            tracked_ids_arr = np.array(self.tracked_stracks_ids)
+            _, tracked_indices = np.where(unconfirmed_ids_arr[itracked_arr][:, None] == tracked_ids_arr)
+            self.tracked_stracks_bools[tracked_indices] = True
+            self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
 
         # todo just add to these instead of updated_?
         activated_stracks_bools.extend([False for i in np.array(matches)[:, 0]])

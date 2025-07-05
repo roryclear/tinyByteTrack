@@ -447,14 +447,12 @@ class BYTETracker(object):
             refind_stracks_states = [TrackState.Tracked] * itracked_untracked.sum() 
             refind_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_untracked].tolist()
 
-            for idx, (itracked, _) in enumerate(matches):
-                if tracked_stracks_states[itracked] != TrackState.Tracked:
-                    if itracked < len(original_indices):
-                        refind_stracks_means.append(self.tracked_stracks_means[original_indices[itracked]])
-                        refind_stracks_covs.append(self.tracked_stracks_covs[original_indices[itracked]])
-                    else:
-                        refind_stracks_means.append(self.lost_stracks_means[itracked - len(original_indices)])
-                        refind_stracks_covs.append(self.lost_stracks_covs[itracked - len(original_indices)])
+            valid = itracked[itracked_untracked][itracked[itracked_untracked] < len(original_indices)]
+            refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices[valid]].tolist()
+            refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices[valid]].tolist()
+            big = itracked[itracked_untracked][itracked[itracked_untracked] > len(original_indices)] - len(original_indices)
+            refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[original_indices[big]].tolist()
+            refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[original_indices[big]].tolist()
 
         tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
         means = np.array([self.tracked_stracks_means[original_indices[i]] for i in tracked_indices])

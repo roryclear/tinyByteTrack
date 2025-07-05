@@ -508,15 +508,14 @@ class BYTETracker(object):
             self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
             tracked_stracks_fids = np.array(tracked_stracks_fids)
             tracked_stracks_fids[u_track[matches[:, 0]]] = self.frame_id
-        for i, (itracked, idet) in enumerate(matches):
-            activated_stracks_values.append(self.tracked_stracks_values[original_indices[u_track[itracked]]])
-            activated_stracks_means.append(self.tracked_stracks_means[original_indices[u_track[itracked]]])
-            activated_stracks_bools.append(tracked_stracks_bools[u_track[itracked]])
-            activated_stracks_covs.append(self.tracked_stracks_covs[original_indices[u_track[itracked]]])
-            activated_stracks_ids.append(tracked_stracks_ids[u_track[itracked]])
-            activated_stracks_fids.append(self.frame_id)
-            activated_stracks_startframes.append(tracked_stracks_startframes[u_track[itracked]])
-            activated_stracks_states.append(tracked_stracks_states[u_track[itracked]])
+            activated_stracks_values += self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_means += self.tracked_stracks_means[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_bools += self.tracked_stracks_bools[u_track[matches[:, 0]]].tolist()
+            activated_stracks_covs += self.tracked_stracks_covs[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_ids += np.array(tracked_stracks_ids)[u_track[matches[:, 0]]].tolist()
+            activated_stracks_startframes += self.tracked_stracks_startframes[u_track[matches[:, 0]]].tolist()
+            activated_stracks_states += self.tracked_stracks_states[u_track[matches[:, 0]]].tolist()
+            activated_stracks_fids += [self.frame_id] * len(matches)
         
         u_track3 = np.asarray(u_track)[np.asarray(u_track2)]
         lost_stracks_values = (np.array(self.tracked_stracks_values)[original_indices][u_track3]).tolist()

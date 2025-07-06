@@ -407,8 +407,8 @@ class BYTETracker(object):
             means_in_tg = means_in_tg.cat(self.lost_stracks_means_tg)
             covs_in_tg = covs_in_tg.cat(self.lost_stracks_covs_tg)
 
-        means_in = means_in_tg.numpy().tolist()
-        covs_in = covs_in_tg.numpy().tolist()
+        means_in = means_in_tg.numpy()
+        covs_in = covs_in_tg.numpy()
 
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
@@ -417,12 +417,11 @@ class BYTETracker(object):
         dists = dists_tg.numpy()
         matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
 
-        
-        det_values_arr = [dets_score_classes[i] for _, i in matches]
+        det_values_arr = dets_score_classes[matches[:,1]]
         if len(matches) > 0:
             xyahs = tlwh_to_xyah_batch(np.array(det_values_arr)[:, :4])
-            means = np.array([means_in[itracked] for itracked, _ in matches])
-            covs = np.array([covs_in[itracked] for itracked, _ in matches])
+            means = np.array(means_in[matches[:,0]])
+            covs = np.array(covs_in[matches[:,0]])
             means_tg = Tensor(means,dtype=dtypes.float32)
             covs_tg = Tensor(covs,dtype=dtypes.float32)
             xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
@@ -477,7 +476,8 @@ class BYTETracker(object):
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
         tracked_indices = u_track[np.array(tracked_stracks_states)[u_track] == TrackState.Tracked]
-        means = np.array([self.tracked_stracks_means[original_indices[i]] for i in tracked_indices])
+        self.tracked_stracks_means = np.array(self.tracked_stracks_means)
+        means = np.array(self.tracked_stracks_means[original_indices[tracked_indices]])
         atlbrs = np.empty(len(means))
         if len(tracked_indices) > 0:
             atlbrs = means[:, :4].copy()
@@ -501,15 +501,9 @@ class BYTETracker(object):
 
         # Build inputs for batch update
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
-
-        means = np.array([
-            self.tracked_stracks_means[original_indices[u_track[itracked]]]
-            for itracked, _ in matches
-        ])
-        covs = np.array([
-            self.tracked_stracks_covs[original_indices[u_track[itracked]]]
-            for itracked, _ in matches
-        ])
+        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)
+        means = self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]]
+        covs = self.tracked_stracks_covs[original_indices[u_track[matches[:,0]]]]
 
         # Apply batched Kalman update
         means_tg = Tensor(means,dtype=dtypes.float32)
@@ -598,11 +592,12 @@ class BYTETracker(object):
             self.tracked_stracks_states = np.array(self.tracked_stracks_states)
             self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
         
-        activated_stracks_bools.extend([False for i in np.array(matches)[:, 0]])
+        activated_stracks_bools.extend([False] * len(matches))
         activated_stracks_values.extend(tracks_values)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
-        ids = np.fromiter((unconfirmed_ids[key] for key in u_unconfirmed_np), dtype=object)
+        unconfirmed_ids = np.array(unconfirmed_ids)
+        ids = unconfirmed_ids[u_unconfirmed_np]
         if ids.size > 0:
             removed_stracks_ids.extend(ids.tolist())
         
@@ -1273,3 +1268,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+

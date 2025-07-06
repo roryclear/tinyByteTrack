@@ -626,14 +626,14 @@ class BYTETracker(object):
         remove_mask = remove_mask_tg.numpy()
 
         remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
-        self.lost_stracks_means = np.array(self.lost_stracks_means)[~remove_mask]
-        self.lost_stracks_bools = np.array(self.lost_stracks_bools)[~remove_mask]
-        self.lost_stracks_values = (np.array(self.lost_stracks_values)[~remove_mask])
-        self.lost_stracks_covs = np.array(self.lost_stracks_covs)[~remove_mask]
-        self.lost_stracks_ids = np.array(self.lost_stracks_ids)[~remove_mask]
-        self.lost_stracks_fids = np.array(self.lost_stracks_fids)[~remove_mask]
-        self.lost_stracks_startframes = np.array(self.lost_stracks_startframes)[~remove_mask]
-        self.lost_stracks_states = np.array(self.lost_stracks_states)[~remove_mask]
+        self.lost_stracks_means = np.array(self.lost_stracks_means) * ~remove_mask[:, np.newaxis]
+        self.lost_stracks_bools = np.array(self.lost_stracks_bools) * ~remove_mask
+        self.lost_stracks_values = np.array(self.lost_stracks_values) * ~remove_mask[:, np.newaxis]
+        self.lost_stracks_covs = np.array(self.lost_stracks_covs) * ~remove_mask[:, np.newaxis, np.newaxis]
+        self.lost_stracks_ids = np.array(self.lost_stracks_ids) * ~remove_mask
+        self.lost_stracks_fids = np.array(self.lost_stracks_fids) * ~remove_mask
+        self.lost_stracks_startframes = np.array(self.lost_stracks_startframes) * ~remove_mask
+        self.lost_stracks_states = np.array(self.lost_stracks_states) * ~remove_mask
 
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         mask_tg = self.tracked_stracks_states_tg == TrackState.Tracked

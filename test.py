@@ -657,15 +657,6 @@ class BYTETracker(object):
         activated_stracks_means_tg = Tensor(activated_stracks_means,dtype=dtypes.float32)
         activated_stracks_covs_tg = Tensor(activated_stracks_covs,dtype=dtypes.float32)
 
-        self.tracked_stracks_values = np.array(self.tracked_stracks_values) * mask[..., np.newaxis]
-        self.tracked_stracks_means = np.array(self.tracked_stracks_means) * mask[..., np.newaxis]
-        self.tracked_stracks_bools = np.array(self.tracked_stracks_bools) * mask
-        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs) * mask[..., np.newaxis, np.newaxis]
-        self.tracked_stracks_fids = np.array(self.tracked_stracks_fids) * mask
-        self.tracked_stracks_ids = np.array(self.tracked_stracks_ids) * mask
-        self.tracked_stracks_startframes = np.array(self.tracked_stracks_startframes) * mask
-        self.tracked_stracks_states = np.array(self.tracked_stracks_states) * mask
-
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
@@ -674,6 +665,16 @@ class BYTETracker(object):
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values,dtype=dtypes.float32)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
+
+        if self.tracked_stracks_values_tg.shape[0] > 0:
+            self.tracked_stracks_values_tg *= mask_tg.unsqueeze(-1)
+            self.tracked_stracks_means_tg *= mask_tg.unsqueeze(-1)
+            self.tracked_stracks_bools_tg *= mask_tg
+            self.tracked_stracks_fids_tg *= mask_tg
+            self.tracked_stracks_ids_tg *= mask_tg
+            self.tracked_stracks_covs_tg *= mask_tg.unsqueeze(-1).unsqueeze(-1)
+            self.tracked_stracks_states_tg *= mask_tg
+            self.tracked_stracks_startframes_tg *= mask_tg
 
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(activated_stracks_ids_tg[keep_activated_tg])
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(activated_stracks_fids_tg[keep_activated_tg])

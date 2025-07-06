@@ -46,24 +46,20 @@ class KalmanFilter(object):
         return mean, covariance
 
 
-    def initiate_batch(self, measurements):
-        mean_pos = measurements
-        mean_vel = np.zeros_like(mean_pos)
-        means = np.hstack([mean_pos, mean_vel])
-
-        h = measurements[:, 3]  # height
-        std = np.stack([
-            2 * self._std_weight_position * h,
-            2 * self._std_weight_position * h,
-            np.full_like(h, 1e-2),
-            2 * self._std_weight_position * h,
-            10 * self._std_weight_velocity * h,
-            10 * self._std_weight_velocity * h,
-            np.full_like(h, 1e-5),
-            10 * self._std_weight_velocity * h
-        ], axis=1)
-        covariances = np.array([np.diag(s**2) for s in std])
-        return means, covariances
+    def initiate_batch(self, mean_pos_tg):
+        means_tg = Tensor.cat(mean_pos_tg,Tensor.zeros_like(mean_pos_tg),dim=1)
+        h_tg = mean_pos_tg[:, 3]       
+        h_tg = h_tg.reshape(-1, 1)
+        std_tg = 2 * self._std_weight_position * h_tg
+        std_tg = std_tg.cat(2 * self._std_weight_position * h_tg, dim=1)
+        std_tg = std_tg.cat(Tensor.full_like(h_tg, 1e-2), dim=1)
+        std_tg = std_tg.cat(2 * self._std_weight_position * h_tg, dim=1)
+        std_tg = std_tg.cat(10 * self._std_weight_velocity * h_tg, dim=1)
+        std_tg = std_tg.cat(10 * self._std_weight_velocity * h_tg, dim=1)
+        std_tg = std_tg.cat(Tensor.full_like(h_tg, 1e-5), dim=1)
+        std_tg = std_tg.cat(10 * self._std_weight_velocity * h_tg, dim=1)
+        covariances_tg = Tensor.einsum('ij,jk->ijk', std_tg**2, Tensor.eye(std_tg.shape[1]))
+        return means_tg, covariances_tg
 
     def project(self, mean, covariance):
         std = [
@@ -626,7 +622,9 @@ class BYTETracker(object):
         activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
         activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
         self._count += new_ids
-        x, y = self.kalman_filter.initiate_batch(xyahs)
+        x_tg, y_tg = self.kalman_filter.initiate_batch(Tensor(xyahs))
+        x = x_tg.numpy()
+        y = y_tg.numpy()
         activated_stracks_fids += [self.frame_id] * len(valid_indices)
 
         activated_stracks_bools_tg = Tensor(activated_stracks_bools,dtype=dtypes.bool)

@@ -476,7 +476,7 @@ class BYTETracker(object):
             refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
-        tracked_indices = [i for i in u_track if tracked_stracks_states[i] == TrackState.Tracked]
+        tracked_indices = u_track[np.array(tracked_stracks_states)[u_track] == TrackState.Tracked]
         means = np.array([self.tracked_stracks_means[original_indices[i]] for i in tracked_indices])
         atlbrs = np.empty(len(means))
         if len(tracked_indices) > 0:
@@ -495,8 +495,9 @@ class BYTETracker(object):
         matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
 
         # Mark unmatched tracks as lost
-        for i in range(len(u_track2)):
-            self.tracked_stracks_states[original_indices[u_track[u_track2[i]]]] = TrackState.Lost
+        self.tracked_stracks_states = np.array(self.tracked_stracks_states)
+        self.tracked_stracks_states[original_indices[u_track[u_track2]]] = TrackState.Lost
+        self.tracked_stracks_states = self.tracked_stracks_states.tolist()
 
         # Build inputs for batch update
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
@@ -522,6 +523,7 @@ class BYTETracker(object):
             self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]] = updated_means
             self.tracked_stracks_covs[original_indices[u_track[matches[:,0]]]] = updated_covs
             self.tracked_stracks_fids[original_indices[u_track[matches[:,0]]]] = self.frame_id
+            self.tracked_stracks_states = np.array(self.tracked_stracks_states)
             self.tracked_stracks_states[original_indices[u_track[matches[:,0]]]] = TrackState.Tracked
             self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
             tracked_stracks_fids = np.array(tracked_stracks_fids)
@@ -564,11 +566,14 @@ class BYTETracker(object):
 
         if len(matches) > 0:
             itracked_arr = np.array(matches)[:, 0]
-            tracks_values = [unconfirmed_values[i] for i in itracked_arr]
+            unconfirmed_values = np.array(unconfirmed_values)
+            tracks_values = unconfirmed_values[itracked_arr]
             scores = dets_score_classes_second[matches[:, 1]][:, 4]
             xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
-            means = np.array([unconfirmed_means[i] for i in itracked_arr])
-            covs = np.array([unconfirmed_covs[i] for i in itracked_arr])
+            unconfirmed_means = np.array(unconfirmed_means)
+            means = unconfirmed_means[itracked_arr]
+            unconfirmed_covs = np.array(unconfirmed_covs)
+            covs = unconfirmed_covs[itracked_arr]
 
             means_tg = Tensor(means,dtype=dtypes.float32)
             covs_tg = Tensor(covs,dtype=dtypes.float32)
@@ -590,9 +595,9 @@ class BYTETracker(object):
             tracked_ids_arr = np.array(self.tracked_stracks_ids)
             _, tracked_indices = np.where(unconfirmed_ids_arr[itracked_arr][:, None] == tracked_ids_arr)
             self.tracked_stracks_bools[tracked_indices] = True
+            self.tracked_stracks_states = np.array(self.tracked_stracks_states)
             self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
-
-        # todo just add to these instead of updated_?
+        
         activated_stracks_bools.extend([False for i in np.array(matches)[:, 0]])
         activated_stracks_values.extend(tracks_values)
 
@@ -600,7 +605,7 @@ class BYTETracker(object):
         ids = np.fromiter((unconfirmed_ids[key] for key in u_unconfirmed_np), dtype=object)
         if ids.size > 0:
             removed_stracks_ids.extend(ids.tolist())
-
+        
         u_detection = np.asarray(u_detection)
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
         valid_mask = track_scores >= self.det_thresh

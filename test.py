@@ -544,7 +544,7 @@ class BYTETracker(object):
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids)
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
+        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
 
@@ -667,7 +667,6 @@ class BYTETracker(object):
         activated_stracks_covs_tg = Tensor(activated_stracks_covs,dtype=dtypes.float32)
 
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes,dtype=dtypes.int)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools,dtype=dtypes.bool)
@@ -680,7 +679,6 @@ class BYTETracker(object):
             self.tracked_stracks_means_tg *= mask_tg.unsqueeze(-1)
             self.tracked_stracks_bools_tg *= mask_tg
             self.tracked_stracks_fids_tg *= mask_tg
-            self.tracked_stracks_ids_tg *= mask_tg
             self.tracked_stracks_covs_tg *= mask_tg.unsqueeze(-1).unsqueeze(-1)
             self.tracked_stracks_states_tg *= mask_tg
             self.tracked_stracks_startframes_tg *= mask_tg

@@ -612,7 +612,6 @@ class BYTETracker(object):
         activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
         activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
         self._count += new_ids
-        activated_stracks_ids = activated_stracks_ids_tg.numpy().tolist()
         x, y = self.kalman_filter.initiate_batch(xyahs)
         activated_stracks_fids += [self.frame_id] * len(valid_indices)
         if self.frame_id == 1: activated_stracks_bools += [True] * len(valid_indices)
@@ -628,15 +627,10 @@ class BYTETracker(object):
 
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         mask_tg = self.tracked_stracks_states_tg == TrackState.Tracked
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_ids_tg *= mask_tg
         mask_tg = self.tracked_stracks_ids_tg != 0
-        mask = mask_tg.numpy()
 
-
-        self.tracked_stracks_ids2 = np.array(self.tracked_stracks_ids) * mask
-        self.tracked_stracks_ids2_tg = Tensor(self.tracked_stracks_ids2,dtype=dtypes.int)
-        activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
+        self.tracked_stracks_ids2_tg = self.tracked_stracks_ids_tg * mask_tg
         a_exp = activated_stracks_ids_tg.reshape(-1, 1)
         b_exp = self.tracked_stracks_ids2_tg.reshape(1, -1)
         matches = (a_exp == b_exp)

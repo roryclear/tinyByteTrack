@@ -305,14 +305,6 @@ class BYTETracker(object):
         refind_stracks_fids = []
         refind_stracks_startframes = []
         refind_stracks_states = []
-        lost_stracks_means = []
-        lost_stracks_bools = []
-        lost_stracks_covs = []
-        lost_stracks_values = []
-        lost_stracks_startframes = []
-        lost_stracks_states = []
-        lost_stracks_ids = []
-        lost_stracks_fids = []
         removed_stracks_ids = []
 
         classes = output_results[:, 5]
@@ -376,6 +368,14 @@ class BYTETracker(object):
             self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg.cat(self.lost_stracks_startframes_tg)
             self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(self.lost_stracks_states_tg)
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
+
+        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
+        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
+        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
+        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
+        self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
+        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
+        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
 
         tracked_stracks_ids = tracked_stracks_ids_tg.numpy() 
         id_mask = tracked_stracks_ids != 0
@@ -724,14 +724,6 @@ class BYTETracker(object):
         matches = (a_exp == b_exp).float()
         match_counts = matches.sum(axis=1)
         mask_tg = (match_counts == 0)
-
-        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
-        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
-        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
-        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
-        self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
-        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
-        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
 
         self.lost_stracks_ids_tg *= mask_tg
 

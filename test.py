@@ -45,6 +45,26 @@ class KalmanFilter(object):
         covariance = np.diag(np.square(std))
         return mean, covariance
 
+
+    def initiate_batch(self, measurements):
+        mean_pos = measurements
+        mean_vel = np.zeros_like(mean_pos)
+        means = np.hstack([mean_pos, mean_vel])
+
+        h = measurements[:, 3]  # height
+        std = np.stack([
+            2 * self._std_weight_position * h,
+            2 * self._std_weight_position * h,
+            np.full_like(h, 1e-2),
+            2 * self._std_weight_position * h,
+            10 * self._std_weight_velocity * h,
+            10 * self._std_weight_velocity * h,
+            np.full_like(h, 1e-5),
+            10 * self._std_weight_velocity * h
+        ], axis=1)
+        covariances = np.array([np.diag(s**2) for s in std])
+        return means, covariances
+
     def project(self, mean, covariance):
         std = [
             self._std_weight_position * mean[3],
@@ -507,15 +527,14 @@ class BYTETracker(object):
             tracked_stracks_fids = np.array(tracked_stracks_fids)
             tracked_stracks_fids[u_track[matches[:, 0]]] = self.frame_id
 
-        for i, (itracked, idet) in enumerate(matches):
-            activated_stracks_values.append(self.tracked_stracks_values[original_indices[u_track[itracked]]])
-            activated_stracks_means.append(self.tracked_stracks_means[original_indices[u_track[itracked]]])
-            activated_stracks_bools.append(tracked_stracks_bools[u_track[itracked]])
-            activated_stracks_covs.append(self.tracked_stracks_covs[original_indices[u_track[itracked]]])
-            activated_stracks_ids.append(tracked_stracks_ids[u_track[itracked]])
-            activated_stracks_fids.append(self.frame_id)
-            activated_stracks_startframes.append(tracked_stracks_startframes[u_track[itracked]])
-            activated_stracks_states.append(tracked_stracks_states[u_track[itracked]])
+            activated_stracks_values += self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_means += self.tracked_stracks_means[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_bools += self.tracked_stracks_bools[u_track[matches[:, 0]]].tolist()
+            activated_stracks_covs += self.tracked_stracks_covs[original_indices[u_track[matches[:, 0]]]].tolist()
+            activated_stracks_ids += np.array(tracked_stracks_ids)[u_track[matches[:, 0]]].tolist()
+            activated_stracks_startframes += self.tracked_stracks_startframes[u_track[matches[:, 0]]].tolist()
+            activated_stracks_states += self.tracked_stracks_states[u_track[matches[:, 0]]].tolist()
+            activated_stracks_fids += [self.frame_id] * len(matches)
         
         u_track3 = np.asarray(u_track)[np.asarray(u_track2)]
         lost_stracks_values = (np.array(self.tracked_stracks_values)[original_indices][u_track3]).tolist()
@@ -556,21 +575,22 @@ class BYTETracker(object):
             xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
-            for i in range(len(itracked_arr)):
-                activated_stracks_means.append(updated_means[i])
-                activated_stracks_covs.append(updated_covs[i])
-                activated_stracks_ids.append(unconfirmed_ids[itracked_arr[i]])
-                activated_stracks_fids.append(self.frame_id)
-                activated_stracks_startframes.append(unconfirmed_startframes[itracked_arr[i]])
-                activated_stracks_states.append(TrackState.Tracked)
+            activated_stracks_means += updated_means.tolist()
+            activated_stracks_covs += updated_covs.tolist()
+            activated_stracks_fids += [self.frame_id] * len(itracked_arr)
+            activated_stracks_states += [TrackState.Tracked] * len(itracked_arr)
+            activated_stracks_ids += np.array(unconfirmed_ids)[itracked_arr].tolist()
+            activated_stracks_startframes += np.array(unconfirmed_startframes)[itracked_arr].tolist()
 
-            for i in range(len(itracked_arr)):
-                tracks_values[i][4] = scores[i] 
-
-                if unconfirmed_ids[itracked_arr[i]] in self.tracked_stracks_ids:
-                  idx = self.tracked_stracks_ids.index(unconfirmed_ids[itracked_arr[i]])
-                  self.tracked_stracks_bools[idx] = True
-                  self.tracked_stracks_states[idx] = TrackState.Tracked
+            tracks_values = np.array(tracks_values)
+            scores = np.array(scores)
+            tracks_values[:len(itracked_arr), 4] = scores
+            
+            unconfirmed_ids_arr = np.array(unconfirmed_ids)
+            tracked_ids_arr = np.array(self.tracked_stracks_ids)
+            _, tracked_indices = np.where(unconfirmed_ids_arr[itracked_arr][:, None] == tracked_ids_arr)
+            self.tracked_stracks_bools[tracked_indices] = True
+            self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
 
         # todo just add to these instead of updated_?
         activated_stracks_bools.extend([False for i in np.array(matches)[:, 0]])
@@ -588,14 +608,16 @@ class BYTETracker(object):
 
         
         xyahs = tlwh_to_xyah_batch(dets_score_classes_second[u_detection[valid_mask]][:,:4])
-        for i in range(len(valid_indices)):
-            self._count += 1
-            activated_stracks_ids.append(self._count)
-            x, y = self.kalman_filter.initiate(xyahs[i])
-            activated_stracks_means.append(x)
-            activated_stracks_covs.append(y)
-            if self.frame_id == 1: activated_stracks_bools.append(True)
-            activated_stracks_fids.append(self.frame_id)
+        new_ids = len(valid_indices)
+        activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
+        activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
+        self._count += new_ids
+        activated_stracks_ids = activated_stracks_ids_tg.numpy().tolist()
+        x, y = self.kalman_filter.initiate_batch(xyahs)
+        activated_stracks_fids += [self.frame_id] * len(valid_indices)
+        if self.frame_id == 1: activated_stracks_bools += [True] * len(valid_indices)
+        activated_stracks_means += (np.array(x)).tolist()
+        activated_stracks_covs += (np.array(y)).tolist()
 
         activated_stracks_values.extend(dets_score_classes_second[valid_indices])
 

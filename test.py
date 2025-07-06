@@ -295,7 +295,8 @@ class BYTETracker(object):
         activated_stracks_states = []
         refind_stracks_values = []
         refind_stracks_means = []
-        refind_stracks_bools = []
+        refind_stracks_bools_tg = Tensor.empty()
+        refind_stracks_states_tg = Tensor.empty()
         refind_stracks_covs = []
         refind_stracks_ids = []
         refind_stracks_fids = []
@@ -459,8 +460,9 @@ class BYTETracker(object):
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
             refind_stracks_fids = np.array(tracked_stracks_fids)[itracked][itracked_untracked].tolist()
             refind_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_untracked].tolist()
-            refind_stracks_bools = [True] * itracked_untracked.sum()
-            refind_stracks_states = [TrackState.Tracked] * itracked_untracked.sum() 
+            x = itracked_untracked.sum()
+            refind_stracks_bools_tg = Tensor(True).repeat(int(x))
+            refind_stracks_states_tg = Tensor(TrackState.Tracked).repeat(int(x))
             refind_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_untracked].tolist()
 
             valid = itracked[itracked_untracked][itracked[itracked_untracked] < len(original_indices)]
@@ -692,8 +694,6 @@ class BYTETracker(object):
 
         refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
         refind_stracks_fids_tg = Tensor(refind_stracks_fids)
-        refind_stracks_bools_tg = Tensor(refind_stracks_bools)
-        refind_stracks_states_tg = Tensor(refind_stracks_states,dtype=dtypes.int)
         refind_stracks_startframes_tg = Tensor(refind_stracks_startframes)
         refind_stracks_values_tg = Tensor(refind_stracks_values)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
@@ -701,8 +701,9 @@ class BYTETracker(object):
 
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(refind_stracks_fids_tg)
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(refind_stracks_ids_tg)
-        self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg.cat(refind_stracks_bools_tg)
-        self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(refind_stracks_states_tg)
+        if len(refind_stracks_bools_tg.shape) > 0:
+            self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg.cat(refind_stracks_bools_tg)
+            self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(refind_stracks_states_tg)
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg.cat(refind_stracks_startframes_tg)
         if refind_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(refind_stracks_means_tg)

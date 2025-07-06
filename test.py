@@ -623,17 +623,8 @@ class BYTETracker(object):
 
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
-        remove_mask = remove_mask_tg.numpy()
-
-        remove_mask = (self.frame_id - np.array(self.lost_stracks_fids)) > self.max_time_lost
-        self.lost_stracks_means = np.array(self.lost_stracks_means) * ~remove_mask[:, np.newaxis]
-        self.lost_stracks_bools = np.array(self.lost_stracks_bools) * ~remove_mask
-        self.lost_stracks_values = np.array(self.lost_stracks_values) * ~remove_mask[:, np.newaxis]
-        self.lost_stracks_covs = np.array(self.lost_stracks_covs) * ~remove_mask[:, np.newaxis, np.newaxis]
-        self.lost_stracks_ids = np.array(self.lost_stracks_ids) * ~remove_mask
-        self.lost_stracks_fids = np.array(self.lost_stracks_fids) * ~remove_mask
-        self.lost_stracks_startframes = np.array(self.lost_stracks_startframes) * ~remove_mask
-        self.lost_stracks_states = np.array(self.lost_stracks_states) * ~remove_mask
+        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
+        self.lost_stracks_ids_tg *= ~remove_mask_tg
 
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         mask_tg = self.tracked_stracks_states_tg == TrackState.Tracked
@@ -714,14 +705,12 @@ class BYTETracker(object):
             self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(refind_stracks_covs_tg)
       
       
-        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
         a_exp = self.lost_stracks_ids_tg.reshape(-1, 1)
         b_exp = self.tracked_stracks_ids_tg.reshape(1, -1)
         matches = (a_exp == b_exp).float()
         match_counts = matches.sum(axis=1)
         mask_tg = (match_counts == 0)
 
-        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
         self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
@@ -1268,4 +1257,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 

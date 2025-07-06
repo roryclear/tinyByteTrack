@@ -720,11 +720,7 @@ class BYTETracker(object):
         self.lost_stracks_ids_tg *= mask_tg
 
         if self.lost_stracks_means_tg.shape[0] > 0: self.lost_stracks_means_tg[:,7] = 0
-
-        if self.tracked_stracks_means_tg.shape[0] > 0: 
-            mask = self.tracked_stracks_states_tg == 2
-            self.tracked_stracks_means_tg[:,7] *= mask
-
+        
         if self.lost_stracks_values_tg.shape[0] == 0:
             self.lost_stracks_values_tg = lost_stracks_values_tg
             self.lost_stracks_means_tg = lost_stracks_means_tg

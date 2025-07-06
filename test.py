@@ -674,15 +674,6 @@ class BYTETracker(object):
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
 
-        if self.tracked_stracks_values_tg.shape[0] > 0:
-            self.tracked_stracks_values_tg *= mask_tg.unsqueeze(-1)
-            self.tracked_stracks_means_tg *= mask_tg.unsqueeze(-1)
-            self.tracked_stracks_bools_tg *= mask_tg
-            self.tracked_stracks_fids_tg *= mask_tg
-            self.tracked_stracks_covs_tg *= mask_tg.unsqueeze(-1).unsqueeze(-1)
-            self.tracked_stracks_states_tg *= mask_tg
-            self.tracked_stracks_startframes_tg *= mask_tg
-
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(activated_stracks_ids_tg[keep_activated_tg])
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(activated_stracks_fids_tg[keep_activated_tg])
         self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(activated_stracks_states_tg[keep_activated_tg])
@@ -1250,7 +1241,7 @@ if __name__ == '__main__':
         if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
           exit()
-    #    outs.append(values)
+          #outs.append(values)
 
 
     if frame_count % 10 == 0:

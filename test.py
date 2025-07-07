@@ -471,9 +471,8 @@ class BYTETracker(object):
             refind_stracks_startframes2 = np.array(tracked_stracks_startframes)[itracked].tolist()
 
             if self.frame_id == 2:
-                valid = np.arange(len(original_indices))
-                refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices[valid]].tolist()
-                refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices[valid]].tolist()
+                refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices].tolist()
+                refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices].tolist()
             
 
             arrays = []

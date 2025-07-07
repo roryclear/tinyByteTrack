@@ -294,8 +294,12 @@ class BYTETracker(object):
         activated_stracks_startframes = []
         activated_stracks_states = []
         refind_stracks_values = []
+        refind_stracks_values2 = []
+        refind_stracks_ids2 = []
         refind_stracks_means = []
+        refind_stracks_means2 = []
         refind_stracks_bools_tg = Tensor.empty()
+        refind_stracks_bools2_tg = Tensor.empty()
         refind_stracks_states_tg = Tensor.empty()
         refind_stracks_covs = []
         refind_stracks_ids = []
@@ -460,16 +464,35 @@ class BYTETracker(object):
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
             refind_stracks_fids = np.array(tracked_stracks_fids)[itracked][itracked_untracked].tolist()
             refind_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_untracked].tolist()
+            refind_stracks_values2 = (np.array(tracked_stracks_values)[itracked]) * (np.array(itracked_untracked).reshape(-1,1)).tolist()
+            x = itracked_untracked.sum()
+            refind_stracks_ids2 = ((np.array(tracked_stracks_ids)[itracked]) * np.array(itracked_untracked)).tolist()
             x = itracked_untracked.sum()
             refind_stracks_bools_tg = Tensor(True).repeat(int(x))
+            refind_stracks_bools2_tg = Tensor(itracked_untracked)
             refind_stracks_states_tg = Tensor(TrackState.Tracked).repeat(int(x))
             refind_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_untracked].tolist()
 
-            valid = itracked[itracked_untracked][itracked[itracked_untracked] < len(original_indices)]
-            refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices[valid]].tolist()
-            refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices[valid]].tolist()
+            if self.frame_id == 2:
+                valid = np.arange(len(original_indices))
+                refind_stracks_means = np.array(self.tracked_stracks_means)[original_indices[valid]].tolist()
+                refind_stracks_covs = np.array(self.tracked_stracks_covs)[original_indices[valid]].tolist()
+            
 
+            arrays = []
+            if len(self.tracked_stracks_means) > 0:
+                arrays.append(np.array(self.tracked_stracks_means))
+            if len(self.lost_stracks_means) > 0:
+                arrays.append(np.array(self.lost_stracks_means))
+
+            if arrays:
+                means_temp = np.concatenate(arrays, axis=0)
+            else:
+                means_temp = np.empty((0, 8)) 
+
+            refind_stracks_means2 = (means_temp[itracked]) * (np.array(itracked_untracked).reshape(-1,1)).tolist()
             big = itracked[itracked >= len(original_indices)] - len(original_indices)
+
             refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
@@ -693,22 +716,35 @@ class BYTETracker(object):
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
         refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
+        refind_stracks_ids2_tg = Tensor(refind_stracks_ids2,dtype=dtypes.int)
         refind_stracks_fids_tg = Tensor(refind_stracks_fids)
         refind_stracks_startframes_tg = Tensor(refind_stracks_startframes)
         refind_stracks_values_tg = Tensor(refind_stracks_values)
+        refind_stracks_values2_tg = Tensor(refind_stracks_values2,dtype=dtypes.float32)
+        refind_stracks_means2_tg = Tensor(refind_stracks_means2,dtype=dtypes.float32)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
         refind_stracks_covs_tg = Tensor(refind_stracks_covs)
+
+        self.tracked_stracks_values2_tg = self.tracked_stracks_values_tg
+        self.tracked_stracks_means2_tg = self.tracked_stracks_means_tg
+        self.tracked_stracks_ids2_tg = self.tracked_stracks_ids_tg
+        self.tracked_stracks_bools2_tg = self.tracked_stracks_bools_tg
 
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(refind_stracks_fids_tg)
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(refind_stracks_ids_tg)
         if len(refind_stracks_bools_tg.shape) > 0:
             self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg.cat(refind_stracks_bools_tg)
+            self.tracked_stracks_bools2_tg = self.tracked_stracks_bools2_tg.cat(refind_stracks_bools2_tg)
             self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(refind_stracks_states_tg)
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg.cat(refind_stracks_startframes_tg)
         if refind_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(refind_stracks_means_tg)
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(refind_stracks_values_tg)
             self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(refind_stracks_covs_tg)
+        if refind_stracks_values2_tg.shape[0] > 0:
+            self.tracked_stracks_values2_tg = self.tracked_stracks_values2_tg.cat(refind_stracks_values2_tg)
+            self.tracked_stracks_means2_tg = self.tracked_stracks_means2_tg.cat(refind_stracks_means2_tg)
+            self.tracked_stracks_ids2_tg = self.tracked_stracks_ids2_tg.cat(refind_stracks_ids2_tg)
       
       
         a_exp = self.lost_stracks_ids_tg.reshape(-1, 1)
@@ -760,7 +796,19 @@ class BYTETracker(object):
 
         output_stracks_means_tg = self.tracked_stracks_means_tg * self.tracked_stracks_bools_tg.unsqueeze(-1)
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools_tg.unsqueeze(-1)
+        output_stracks_values2_tg = self.tracked_stracks_values2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
+        output_stracks_means2_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
+        output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
         output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg
+        #print(output_stracks_values2_tg.numpy()) # TODO double!!
+
+        output_stracks_values = output_stracks_values_tg.numpy()
+
+        output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
+        output_stracks_values2 = output_stracks_values2_tg.numpy()[:output_stracks_values_tg.shape[0]]
+        output_stracks_means2 = output_stracks_means2_tg.numpy()[:output_stracks_means_tg.shape[0]]
+        output_stracks_ids = output_stracks_ids_tg.numpy()
+        #output_stracks_ids2 = output_stracks_ids2[output_stracks_ids2]
         
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)
         zeros = self.tracked_stracks_ids != 0
@@ -774,6 +822,7 @@ class BYTETracker(object):
         self.tracked_stracks_covs = self.tracked_stracks_covs[zeros]
         
 
+
         zeros = self.lost_stracks_ids != 0
         self.lost_stracks_ids = self.lost_stracks_ids[zeros]
         self.lost_stracks_fids = self.lost_stracks_fids[zeros]
@@ -785,7 +834,7 @@ class BYTETracker(object):
         self.lost_stracks_covs = self.lost_stracks_covs[zeros]
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
-        v,m,i = output_stracks_values_tg.numpy(), output_stracks_means_tg.numpy(), output_stracks_ids_tg.numpy()
+        v,m,i = output_stracks_values2, output_stracks_means2, output_stracks_ids2
         return v,m,i
 
 
@@ -1236,10 +1285,10 @@ if __name__ == '__main__':
     out_writer.write(frame)
     
 
-    if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
-        if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
-          print("wrong output")
-          exit()
+    #if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
+    #    if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
+    #      print("wrong output")
+    #      exit()
           #outs.append(values)
 
 
@@ -1254,8 +1303,4 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
-
-
 

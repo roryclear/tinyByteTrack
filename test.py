@@ -297,8 +297,8 @@ class BYTETracker(object):
         refind_stracks_values = []
         refind_stracks_values2 = []
         refind_stracks_ids2 = []
+        refind_stracks_startframes2 = []
         refind_stracks_fids2 = []
-        refind_stracks_means = []
         refind_stracks_means2 = []
         refind_stracks_covs2 = []
         refind_stracks_bools_tg = Tensor.empty()
@@ -475,8 +475,8 @@ class BYTETracker(object):
             refind_stracks_bools2_tg = Tensor(itracked_untracked)
             refind_stracks_states_tg = Tensor(TrackState.Tracked).repeat(int(x))
             refind_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_untracked].tolist()
+            refind_stracks_startframes2 = ((np.array(tracked_stracks_startframes)[itracked]) * np.array(itracked_untracked)).tolist()
 
-          
             arrays = []
             arrays_covs = []
             if len(self.tracked_stracks_means) > 0:
@@ -723,6 +723,7 @@ class BYTETracker(object):
         refind_stracks_values2_tg = Tensor(refind_stracks_values2,dtype=dtypes.float32)
         refind_stracks_means2_tg = Tensor(refind_stracks_means2,dtype=dtypes.float32)
         refind_stracks_covs2_tg = Tensor(refind_stracks_covs2)
+        refind_stracks_startframes2_tg = Tensor(refind_stracks_startframes2)
 
         self.tracked_stracks_values2_tg = self.tracked_stracks_values_tg
         self.tracked_stracks_means2_tg = self.tracked_stracks_means_tg
@@ -730,6 +731,7 @@ class BYTETracker(object):
         self.tracked_stracks_fids2_tg = self.tracked_stracks_fids_tg
         self.tracked_stracks_bools2_tg = self.tracked_stracks_bools_tg
         self.tracked_stracks_covs2_tg = self.tracked_stracks_covs_tg
+        self.tracked_stracks_startframes2_tg = self.tracked_stracks_startframes_tg
 
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(refind_stracks_fids_tg)
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(refind_stracks_ids_tg)
@@ -746,6 +748,7 @@ class BYTETracker(object):
             self.tracked_stracks_ids2_tg = self.tracked_stracks_ids2_tg.cat(refind_stracks_ids2_tg)
             self.tracked_stracks_fids2_tg = self.tracked_stracks_fids2_tg.cat(refind_stracks_fids2_tg)
             self.tracked_stracks_covs2_tg = self.tracked_stracks_covs2_tg.cat(refind_stracks_covs2_tg)
+            self.tracked_stracks_startframes2_tg = self.tracked_stracks_startframes2_tg.cat(refind_stracks_startframes2_tg)
       
       
         a_exp = self.lost_stracks_ids_tg.reshape(-1, 1)
@@ -793,14 +796,13 @@ class BYTETracker(object):
         self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
         self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
-        output_stracks_values2_tg = self.tracked_stracks_values2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
-        output_stracks_means2_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
-        output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
-        output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg
+        output_stracks_values_tg = self.tracked_stracks_values2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
+        output_stracks_means_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
+        output_stracks_ids_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
 
-        output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
-        output_stracks_values2 = output_stracks_values2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
-        output_stracks_means2 = output_stracks_means2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
+        output_stracks_ids = output_stracks_ids_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
+        output_stracks_values = output_stracks_values_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
+        output_stracks_means = output_stracks_means_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         
         self.tracked_stracks_ids = np.array(self.tracked_stracks_ids)
         zeros = self.tracked_stracks_ids != 0
@@ -813,20 +815,16 @@ class BYTETracker(object):
         self.tracked_stracks_values2 = self.tracked_stracks_values2_tg.numpy()
         self.tracked_stracks_covs2 = self.tracked_stracks_covs2_tg.numpy()
         self.tracked_stracks_fids2 = self.tracked_stracks_fids2_tg.numpy()
+        self.tracked_stracks_startframes2 = self.tracked_stracks_startframes2_tg.numpy()
 
         zeros2 = self.tracked_stracks_ids2 != 0
         self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2]
-        self.tracked_stracks_ids2 = self.tracked_stracks_ids2[zeros2]
         self.tracked_stracks_fids = self.tracked_stracks_fids2[zeros2]
-        self.tracked_stracks_fids2 = self.tracked_stracks_fids2[zeros2]
         self.tracked_stracks_bools = self.tracked_stracks_bools2[zeros2]
-        self.tracked_stracks_bools2 = self.tracked_stracks_bools2[zeros2]
         self.tracked_stracks_means = self.tracked_stracks_means2[zeros2]
-        self.tracked_stracks_means2 = self.tracked_stracks_means2[zeros2]
         self.tracked_stracks_values = self.tracked_stracks_values2[zeros2]
-        self.tracked_stracks_values2 = self.tracked_stracks_values2[zeros2]
         self.tracked_stracks_covs = self.tracked_stracks_covs2[zeros2]
-        self.tracked_stracks_covs2 = self.tracked_stracks_covs2[zeros2]
+        self.tracked_stracks_startframes = self.tracked_stracks_startframes2[zeros2]
 
         zeros = self.lost_stracks_ids != 0
         self.lost_stracks_ids = self.lost_stracks_ids[zeros]
@@ -839,7 +837,7 @@ class BYTETracker(object):
         self.lost_stracks_covs = self.lost_stracks_covs[zeros]
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
-        v,m,i = output_stracks_values2, output_stracks_means2, output_stracks_ids2
+        v,m,i = output_stracks_values, output_stracks_means, output_stracks_ids
         return v,m,i
 
 

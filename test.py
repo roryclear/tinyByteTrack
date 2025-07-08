@@ -459,9 +459,14 @@ class BYTETracker(object):
             activated_stracks_means = self.tracked_stracks_means[original_indices[itracked[itracked_tracked]]].tolist()
             activated_stracks_covs = self.tracked_stracks_covs[original_indices[itracked[itracked_tracked]]].tolist() 
             
+            tracked_stracks_fids_tg = Tensor(tracked_stracks_fids,dtype=dtypes.int)
+            tracked_stracks_values_tg = Tensor(tracked_stracks_values,dtype=dtypes.float32)
+            itracked_tg = Tensor(itracked)
+
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
-            refind_stracks_fids = np.array(tracked_stracks_fids)[itracked].tolist()
-            refind_stracks_values = np.array(tracked_stracks_values)[itracked].tolist()
+
+            refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
+            refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]
             x = itracked_untracked.sum()
             refind_stracks_ids2 = ((np.array(tracked_stracks_ids)[itracked]) * np.array(itracked_untracked)).tolist()
             refind_stracks_bools_tg = Tensor(True).repeat(int(x))
@@ -713,9 +718,7 @@ class BYTETracker(object):
 
         refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
         refind_stracks_ids2_tg = Tensor(refind_stracks_ids2,dtype=dtypes.int)
-        refind_stracks_fids_tg = Tensor(refind_stracks_fids,dtype=dtypes.int)
         refind_stracks_startframes_tg = Tensor(refind_stracks_startframes)
-        refind_stracks_values_tg = Tensor(refind_stracks_values,dtype=dtypes.float32)
         refind_stracks_means2_tg = Tensor(refind_stracks_means2,dtype=dtypes.float32)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
         refind_stracks_covs_tg = Tensor(refind_stracks_covs)
@@ -736,7 +739,7 @@ class BYTETracker(object):
         if refind_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(refind_stracks_means_tg)
             self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(refind_stracks_covs_tg)
-        if refind_stracks_values_tg.shape[0] > 0:
+        if refind_stracks_means2_tg.shape[0] > 0:
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(refind_stracks_values_tg)
             self.tracked_stracks_means2_tg = self.tracked_stracks_means2_tg.cat(refind_stracks_means2_tg)
             self.tracked_stracks_ids2_tg = self.tracked_stracks_ids2_tg.cat(refind_stracks_ids2_tg)

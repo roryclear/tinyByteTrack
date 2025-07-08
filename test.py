@@ -798,11 +798,10 @@ class BYTETracker(object):
         output_stracks_values2_tg = self.tracked_stracks_values2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_means2_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
-        output_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg
 
-        output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
-        output_stracks_values2 = output_stracks_values2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
-        output_stracks_means2 = output_stracks_means2_tg.numpy()[:output_stracks_ids_tg.shape[0]]
+        output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
+        output_stracks_values2 = output_stracks_values2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
+        output_stracks_means2 = output_stracks_means2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         
         zeros = self.tracked_stracks_ids != 0
         self.tracked_stracks_bools = self.tracked_stracks_bools[zeros]

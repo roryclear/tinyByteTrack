@@ -370,20 +370,21 @@ class BYTETracker(object):
         self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
         self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
+        
+        id_mask_tg = nonzero_indices_1d(tracked_stracks_ids_tg != 0).cast(dtype=dtypes.int)
+        tracked_stracks_ids_tg = tracked_stracks_ids_tg[id_mask_tg] 
+        self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg[id_mask_tg]
+        self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg[id_mask_tg]
+        self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
+        self.tracked_stracks_states_tg = self.tracked_stracks_states_tg[id_mask_tg]
+        self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[id_mask_tg]
 
-        tracked_stracks_ids = tracked_stracks_ids_tg.numpy() 
-        id_mask = tracked_stracks_ids != 0
-        tracked_stracks_ids = tracked_stracks_ids[id_mask].tolist()
-        tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
-        tracked_stracks_fids = tracked_stracks_fids[id_mask].tolist()
-        tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy()
-        tracked_stracks_bools = tracked_stracks_bools[id_mask].tolist()
-        tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
-        tracked_stracks_startframes = tracked_stracks_startframes[id_mask].tolist()
-        tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
-        tracked_stracks_states = tracked_stracks_states[id_mask].tolist()
-        tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
-        tracked_stracks_values = tracked_stracks_values[id_mask].tolist()
+        tracked_stracks_states = self.tracked_stracks_states_tg.numpy().tolist()
+        tracked_stracks_values = self.tracked_stracks_values_tg.numpy().tolist()
+        tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
+        tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy().tolist()
+        tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy().tolist()
+        tracked_stracks_ids = tracked_stracks_ids_tg.numpy().tolist()
 
         if len(self.tracked_stracks_means) > 0:
             self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)

@@ -585,18 +585,19 @@ class BYTETracker(object):
         dists_tg = fuse_score(dists_tg, dets_score_classes_second_tg)
         dists = dists_tg.numpy()
         matches_tg, u_unconfirmed_tg, u_detection_tg = linear_assignment(dists, thresh=0.7)
-        matches = matches_tg.numpy()
         u_unconfirmed = u_unconfirmed_tg.numpy()
         u_detection = u_detection_tg.numpy()
 
         tracks_values = []
 
-        if len(matches) > 0:
-            itracked_arr = np.array(matches)[:, 0]
+        if matches_tg.shape[0] > 0:
+            itracked_arr_tg = matches_tg[:, 0]
+            itracked_arr = itracked_arr_tg.numpy()
             unconfirmed_values = np.array(unconfirmed_values)
             tracks_values = unconfirmed_values[itracked_arr]
-            scores = dets_score_classes_second[matches[:, 1]][:, 4]
-            tlwh_tg = Tensor(dets_score_classes_second[matches[:, 1]][:, :4])
+            scores_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, 4]
+            scores = scores_tg.numpy()
+            tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             unconfirmed_means = np.array(unconfirmed_means)
             means = unconfirmed_means[itracked_arr]
@@ -655,7 +656,7 @@ class BYTETracker(object):
         if self.frame_id == 1:
             activated_stracks_bools_tg = Tensor(True).repeat(len(valid_indices))
         else:
-            activated_stracks_bools_tg = activated_stracks_bools_tg.cat(Tensor(False).repeat(len(matches)))
+            activated_stracks_bools_tg = activated_stracks_bools_tg.cat(Tensor(False).repeat(matches_tg.shape[0]))
         activated_stracks_means += (np.array(x)).tolist()
         activated_stracks_covs += (np.array(y)).tolist()
 

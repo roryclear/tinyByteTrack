@@ -349,9 +349,7 @@ class BYTETracker(object):
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
 
         unconfirmed_ids = unconfirmed_ids_tg.numpy()
-        unconfirmed_values = unconfirmed_values_tg.numpy()
         unconfirmed_covs = unconfirmed_covs_tg.numpy()
-        unconfirmed_means = unconfirmed_means_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
 
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
@@ -574,7 +572,6 @@ class BYTETracker(object):
         u_detection_np = np.array(u_detection)
         dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
         
-        unconfirmed_means_tg = Tensor(unconfirmed_means,dtype=dtypes.float32)
         dets_score_classes_second_tg = Tensor(dets_score_classes_second)
 
         atlbrs_tg = tlbr_np_batch2(unconfirmed_means_tg)
@@ -587,7 +584,6 @@ class BYTETracker(object):
         u_unconfirmed = u_unconfirmed_tg.numpy()
         u_detection = u_detection_tg.numpy()
 
-        tracks_values = []
         tracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
 
         if matches_tg.shape[0] > 0:
@@ -598,12 +594,10 @@ class BYTETracker(object):
             scores = scores_tg.numpy()
             tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-            unconfirmed_means = np.array(unconfirmed_means)
-            means = unconfirmed_means[itracked_arr]
+            means_tg = unconfirmed_means_tg[itracked_arr_tg]
             unconfirmed_covs = np.array(unconfirmed_covs)
             covs = unconfirmed_covs[itracked_arr]
 
-            means_tg = Tensor(means,dtype=dtypes.float32)
             covs_tg = Tensor(covs,dtype=dtypes.float32)
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
@@ -1299,5 +1293,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 

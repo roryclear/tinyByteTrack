@@ -490,11 +490,12 @@ class BYTETracker(object):
             refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
-        tracked_indices = u_track[np.array(tracked_stracks_states)[u_track] == TrackState.Tracked]
-        tracked_indices_tg = Tensor(tracked_indices)
+        tracked_stracks_states_tg = Tensor(tracked_stracks_states,dtype=dtypes.int)
+
+        tracked_indices_tg = u_track_tg[nonzero_indices_1d(tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = self.tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
         atlbrs_tg = Tensor.empty((means_tg.shape[0]),dtype=dtypes.float32)
-        if len(tracked_indices) > 0:
+        if tracked_indices_tg.shape[0] > 0:
             atlbrs_tg = means_tg[:, :4].contiguous()
             atlbrs_tg[:, 2] *= atlbrs_tg[:, 3]
             atlbrs_tg[:, :2] -= atlbrs_tg[:, 2:] / 2

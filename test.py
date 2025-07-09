@@ -758,12 +758,6 @@ class BYTETracker(object):
         self.tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy()
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
 
-        self.tracked_stracks_ids2 = self.tracked_stracks_ids2_tg.numpy()
-        self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
-        self.tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
-        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
-        self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
-
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_means2_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg

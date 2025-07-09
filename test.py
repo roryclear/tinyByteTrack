@@ -494,16 +494,15 @@ class BYTETracker(object):
         self.tracked_stracks_means = np.array(self.tracked_stracks_means)
         means = np.array(self.tracked_stracks_means[original_indices[tracked_indices]])
         atlbrs = np.empty(len(means))
-        if len(tracked_indices) > 0:
-            atlbrs = means[:, :4].copy()
-            atlbrs[:, 2] *= atlbrs[:, 3]
-            atlbrs[:, :2] -= atlbrs[:, 2:] / 2
-            atlbrs[:, 2:] += atlbrs[:, :2]
-        btlbrs = dets_score_classes_second[:, :4].copy()
-        btlbrs[:, 2:] += btlbrs[:, :2]
-
         atlbrs_tg = Tensor(atlbrs,dtype=dtypes.float32)
-        btlbrs_tg = Tensor(btlbrs,dtype=dtypes.float32)
+        means_tg = Tensor(means,dtype=dtypes.float32)
+        if len(tracked_indices) > 0:
+            atlbrs_tg = means_tg[:, :4].contiguous()
+            atlbrs_tg[:, 2] *= atlbrs_tg[:, 3]
+            atlbrs_tg[:, :2] -= atlbrs_tg[:, 2:] / 2
+            atlbrs_tg[:, 2:] += atlbrs_tg[:, :2]
+        btlbrs_tg = dets_score_classes_second_tg[:, :4].contiguous()
+        btlbrs_tg[:, 2:] += btlbrs_tg[:, :2]
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists = dists_tg.numpy()
 

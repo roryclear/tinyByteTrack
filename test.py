@@ -781,14 +781,6 @@ class BYTETracker(object):
         self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
         self.tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy()
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
-        self.lost_stracks_values = self.lost_stracks_values_tg.numpy()
-        self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
-        self.lost_stracks_bools = self.lost_stracks_bools_tg.numpy()
-        self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
-        self.lost_stracks_ids = self.lost_stracks_ids_tg.numpy()
-        self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
-        self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
-        self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
         self.tracked_stracks_ids2 = self.tracked_stracks_ids2_tg.numpy()
         self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
@@ -816,29 +808,44 @@ class BYTETracker(object):
         self.tracked_stracks_states = self.tracked_stracks_states[zeros2]
         self.tracked_stracks_startframes = self.tracked_stracks_startframes[zeros2]
         
-        zeros = self.lost_stracks_ids != 0
-        self.lost_stracks_ids = self.lost_stracks_ids[zeros]
-        self.lost_stracks_fids = self.lost_stracks_fids[zeros]
-        self.lost_stracks_startframes = self.lost_stracks_startframes[zeros]
-        self.lost_stracks_states = self.lost_stracks_states[zeros]
-        self.lost_stracks_bools = self.lost_stracks_bools[zeros]
-        self.lost_stracks_values = self.lost_stracks_values[zeros]
-        self.lost_stracks_means = self.lost_stracks_means[zeros]
-        self.lost_stracks_covs = self.lost_stracks_covs[zeros]
-        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means)
-        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs)
+        zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)
+        self.lost_stracks_ids_tg = self.lost_stracks_ids_tg[zeros]
+        self.lost_stracks_fids_tg = self.lost_stracks_fids_tg[zeros]
+        self.lost_stracks_startframes_tg = self.lost_stracks_startframes_tg[zeros]
+        self.lost_stracks_states_tg = self.lost_stracks_states_tg[zeros]
+        self.lost_stracks_bools_tg = self.lost_stracks_bools_tg[zeros]
+        self.lost_stracks_values_tg = self.lost_stracks_values_tg[zeros]
+        self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
+        self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
+      
+        self.lost_stracks_values = self.lost_stracks_values_tg.numpy()
+        self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
+        self.lost_stracks_bools = self.lost_stracks_bools_tg.numpy()
+        self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
+        self.lost_stracks_ids = self.lost_stracks_ids_tg.numpy()
+        self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
+        self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
+        self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
+
         v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2
         return v,m,i
 
 def nonzero_indices_1d(mask: Tensor) -> Tensor:
-    if mask.shape[0] == 0 or mask.sum().item() == 0:
-        return Tensor([])  # return empty tensor if no True values
+    size = mask.shape[0]
+    count = int(mask.sum().item())
 
-    idxs = Tensor.arange(mask.shape[0])
+    if size == 0 or count == 0:
+        return Tensor([])  # empty mask or all False
+
+    if count == 1:
+        # quick path: single True → return its index
+        return Tensor([(mask * Tensor.arange(size)).sum().item()])
+
+    idxs = Tensor.arange(size)
     masked = idxs * mask
     sorted_vals, sorted_idxs = masked.sort(descending=True)
-    count = int(mask.sum().item())
     return sorted_idxs[:count][::-1]
+
 
 def ious(atlbrs, btlbrs):
     ious = Tensor.zeros((atlbrs.shape[0], btlbrs.shape[0]), dtype=dtypes.float32)

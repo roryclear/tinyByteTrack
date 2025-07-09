@@ -454,6 +454,7 @@ class BYTETracker(object):
             activated_stracks_means = self.tracked_stracks_means[original_indices[itracked[itracked_tracked]]].tolist()
             activated_stracks_covs = self.tracked_stracks_covs[original_indices[itracked[itracked_tracked]]].tolist() 
             
+            tracked_stracks_ids_tg = Tensor(tracked_stracks_ids)
             tracked_stracks_fids_tg = Tensor(tracked_stracks_fids,dtype=dtypes.int)
             tracked_stracks_values_tg = Tensor(tracked_stracks_values,dtype=dtypes.float32)
             refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)

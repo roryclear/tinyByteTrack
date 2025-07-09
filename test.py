@@ -491,11 +491,9 @@ class BYTETracker(object):
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
         tracked_indices = u_track[np.array(tracked_stracks_states)[u_track] == TrackState.Tracked]
-        self.tracked_stracks_means = np.array(self.tracked_stracks_means)
-        means = np.array(self.tracked_stracks_means[original_indices[tracked_indices]])
-        atlbrs = np.empty(len(means))
-        atlbrs_tg = Tensor(atlbrs,dtype=dtypes.float32)
-        means_tg = Tensor(means,dtype=dtypes.float32)
+        tracked_indices_tg = Tensor(tracked_indices)
+        means_tg = self.tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
+        atlbrs_tg = Tensor.empty((means_tg.shape[0]),dtype=dtypes.float32)
         if len(tracked_indices) > 0:
             atlbrs_tg = means_tg[:, :4].contiguous()
             atlbrs_tg[:, 2] *= atlbrs_tg[:, 3]
@@ -1287,6 +1285,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 
 

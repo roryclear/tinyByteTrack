@@ -544,8 +544,6 @@ class BYTETracker(object):
             self.tracked_stracks_fids_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = self.frame_id
             self.tracked_stracks_states_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = TrackState.Tracked
             self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
-            tracked_stracks_fids = np.array(tracked_stracks_fids)
-            tracked_stracks_fids[u_track[matches[:, 0]]] = self.frame_id
 
             activated_stracks_values += self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]]].tolist()
             activated_stracks_means += self.tracked_stracks_means[original_indices[u_track[matches[:, 0]]]].tolist()
@@ -1291,6 +1289,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 
 

@@ -792,13 +792,20 @@ class BYTETracker(object):
         self.tracked_stracks_means = self.tracked_stracks_means[zeros]
         self.tracked_stracks_covs = self.tracked_stracks_covs[zeros]
 
-        zeros2 = self.tracked_stracks_ids2 != 0
-        self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2]
-        self.tracked_stracks_fids = self.tracked_stracks_fids[zeros2]
-        self.tracked_stracks_values = self.tracked_stracks_values[zeros2]
-        self.tracked_stracks_states = self.tracked_stracks_states[zeros2]
-        self.tracked_stracks_startframes = self.tracked_stracks_startframes[zeros2]
+        zeros2_tg = nonzero_indices_1d(self.tracked_stracks_ids2_tg != 0)
+        self.tracked_stracks_ids_tg = self.tracked_stracks_ids2_tg[zeros2_tg]
+        self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg[zeros2_tg]
+        self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[zeros2_tg]
+        self.tracked_stracks_states_tg = self.tracked_stracks_states_tg[zeros2_tg]
+        self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg[zeros2_tg]
         
+        # todo remove!
+        self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
+        self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
+        self.tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
+        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
+        self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
+
         zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         self.lost_stracks_ids_tg = self.lost_stracks_ids_tg[zeros]
         self.lost_stracks_fids_tg = self.lost_stracks_fids_tg[zeros]

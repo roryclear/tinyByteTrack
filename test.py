@@ -588,12 +588,12 @@ class BYTETracker(object):
         u_detection = u_detection_tg.numpy()
 
         tracks_values = []
+        tracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
 
         if matches_tg.shape[0] > 0:
             itracked_arr_tg = matches_tg[:, 0]
             itracked_arr = itracked_arr_tg.numpy()
-            unconfirmed_values = np.array(unconfirmed_values)
-            tracks_values = unconfirmed_values[itracked_arr]
+            tracks_values_tg = unconfirmed_values_tg[itracked_arr_tg]
             scores_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, 4]
             scores = scores_tg.numpy()
             tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
@@ -614,9 +614,7 @@ class BYTETracker(object):
             activated_stracks_ids += np.array(unconfirmed_ids)[itracked_arr].tolist()
             activated_stracks_startframes += np.array(unconfirmed_startframes)[itracked_arr].tolist()
 
-            tracks_values = np.array(tracks_values)
-            scores = np.array(scores)
-            tracks_values[:len(itracked_arr), 4] = scores
+            tracks_values_tg[:itracked_arr_tg.shape[0], 4] = scores_tg
             
             unconfirmed_ids_arr = np.array(unconfirmed_ids)
             tracked_ids_arr = np.array(self.tracked_stracks_ids)
@@ -625,7 +623,7 @@ class BYTETracker(object):
             self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
             self.tracked_stracks_states = np.array(self.tracked_stracks_states)
             self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
-        
+        tracks_values = tracks_values_tg.numpy()
         activated_stracks_values.extend(tracks_values)
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)

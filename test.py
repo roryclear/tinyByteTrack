@@ -255,7 +255,7 @@ class BYTETracker(object):
         self.lost_stracks_states_tg = Tensor.empty()
         self.lost_stracks_bools_tg = Tensor.empty()
         self.lost_stracks_values_tg = Tensor.empty((0,6))
-        self.lost_stracks_means_tg = Tensor.empty(dtype=dtypes.float32)
+        self.lost_stracks_means_tg = Tensor.empty((0,8),dtype=dtypes.float32)
         self.lost_stracks_covs_tg = Tensor.empty(dtype=dtypes.float32)
 
         self.tracked_stracks_values = []
@@ -364,7 +364,6 @@ class BYTETracker(object):
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
 
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
-        self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
         
         id_mask_tg = nonzero_indices_1d(tracked_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         tracked_stracks_ids_tg = tracked_stracks_ids_tg[id_mask_tg] 
@@ -385,7 +384,7 @@ class BYTETracker(object):
             self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
             self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
             self.tracked_stracks_covs =  self.tracked_stracks_covs_tg.numpy()
-        if len(self.lost_stracks_means) > 0:
+        if self.lost_stracks_means_tg.shape[0] > 0:
             self.lost_stracks_means_tg, self.lost_stracks_covs_tg = self.kalman_filter.multi_predict(self.lost_stracks_means_tg, self.lost_stracks_covs_tg)
             self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
             self.lost_stracks_covs =  self.lost_stracks_covs_tg.numpy()
@@ -812,7 +811,6 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
       
-        self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
         self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
 
         v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2

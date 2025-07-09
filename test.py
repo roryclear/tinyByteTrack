@@ -348,7 +348,6 @@ class BYTETracker(object):
         unconfirmed_means_tg = self.tracked_stracks_means_tg[id_mask_tg]
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
 
-        unconfirmed_covs = unconfirmed_covs_tg.numpy()
         unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
 
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
@@ -595,10 +594,7 @@ class BYTETracker(object):
             tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             means_tg = unconfirmed_means_tg[itracked_arr_tg]
-            unconfirmed_covs = np.array(unconfirmed_covs)
-            covs = unconfirmed_covs[itracked_arr]
-
-            covs_tg = Tensor(covs,dtype=dtypes.float32)
+            covs_tg = unconfirmed_covs_tg[itracked_arr_tg]
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             activated_stracks_means += updated_means.tolist()

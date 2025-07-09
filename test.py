@@ -292,9 +292,6 @@ class BYTETracker(object):
         activated_stracks_fids = []
         activated_stracks_startframes = []
         activated_stracks_states = []
-        refind_stracks_values = []
-        refind_stracks_ids2 = []
-        refind_stracks_fids = []
         refind_stracks_means = []
         refind_stracks_means2 = []
         refind_stracks_bools_tg = Tensor.empty()
@@ -302,7 +299,6 @@ class BYTETracker(object):
         refind_stracks_states_tg = Tensor.empty()
         refind_stracks_covs = []
         refind_stracks_ids = []
-        refind_stracks_startframes = []
         removed_stracks_ids = []
 
         classes = output_results[:, 5]
@@ -462,13 +458,14 @@ class BYTETracker(object):
             tracked_stracks_values_tg = Tensor(tracked_stracks_values,dtype=dtypes.float32)
             refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)
             itracked_tg = Tensor(itracked)
+            itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
 
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
 
             refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
             refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]
             x = itracked_untracked.sum()
-            refind_stracks_ids2 = ((np.array(tracked_stracks_ids)[itracked]) * np.array(itracked_untracked)).tolist()
+            refind_stracks_ids2_tg = tracked_stracks_ids_tg[itracked_tg] * itracked_untracked_tg
             refind_stracks_bools_tg = Tensor(True).repeat(int(x))
             refind_stracks_bools2_tg = Tensor(itracked_untracked)
             x = itracked.shape[0]
@@ -717,7 +714,6 @@ class BYTETracker(object):
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
         refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
-        refind_stracks_ids2_tg = Tensor(refind_stracks_ids2,dtype=dtypes.int)
         refind_stracks_means2_tg = Tensor(refind_stracks_means2,dtype=dtypes.float32)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
         refind_stracks_covs_tg = Tensor(refind_stracks_covs)

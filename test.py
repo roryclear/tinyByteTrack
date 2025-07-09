@@ -208,6 +208,7 @@ def tlbr_np_batch2(means):
     return ret
 
 def tlwh_to_xyah_batch(tlwh):
+    tlwh = tlwh.contiguous()
     tlwh[:, :2] += tlwh[:, 2:] / 2
     tlwh[:, 2] /= tlwh[:, 3]
     return tlwh
@@ -320,8 +321,8 @@ class BYTETracker(object):
         dets_second[:, 2:] -= dets_second[:, :2]
         dets_score_classes_tg = dets.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes = dets_score_classes_tg.numpy()
-        dets_score_classes_second = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
-        dets_score_classes_second = dets_score_classes_second.numpy()
+        dets_score_classes_second_tg = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
+        dets_score_classes_second = dets_score_classes_second_tg.numpy()
       
         
 
@@ -408,7 +409,10 @@ class BYTETracker(object):
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists_tg = fuse_score(dists_tg, dets_score_classes_tg)
         dists = dists_tg.numpy()
-        matches, u_track, u_detection = linear_assignment(dists, thresh=self.args.match_thresh)
+        matches_tg, u_track_tg, u_detection_tg = linear_assignment(dists, thresh=self.args.match_thresh)
+        matches = matches_tg.numpy()
+        u_track = u_track_tg.numpy()
+        u_detection = u_detection_tg.numpy()
 
         det_values_arr = dets_score_classes[matches[:,1]]
         if len(matches) > 0:
@@ -511,15 +515,16 @@ class BYTETracker(object):
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists = dists_tg.numpy()
 
-        matches, u_track2, _ = linear_assignment(dists, thresh=0.5)
+        matches_tg, u_track2_tg, _ = linear_assignment(dists, thresh=0.5)
+        matches = matches_tg.numpy()
+        u_track2 = u_track2_tg.numpy()
 
-        # Mark unmatched tracks as lost
-        self.tracked_stracks_states = np.array(self.tracked_stracks_states)
-        self.tracked_stracks_states[original_indices[u_track[u_track2]]] = TrackState.Lost
-        self.tracked_stracks_states = self.tracked_stracks_states.tolist()
+        self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
+        self.tracked_stracks_states_tg[original_indices_tg[u_track_tg[u_track2_tg]]] = TrackState.Lost
+        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
 
         # Build inputs for batch update
-        tlwh_tg = Tensor(dets_score_classes_second[matches[:, 1]][:, :4])
+        tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
         xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)
         means = self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]]
@@ -533,7 +538,6 @@ class BYTETracker(object):
         u_track_tg = Tensor(u_track)
         matches_tg = Tensor(matches)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
-        self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
 
@@ -586,7 +590,10 @@ class BYTETracker(object):
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists_tg = fuse_score(dists_tg, dets_score_classes_second_tg)
         dists = dists_tg.numpy()
-        matches, u_unconfirmed, u_detection = linear_assignment(dists, thresh=0.7)
+        matches_tg, u_unconfirmed_tg, u_detection_tg = linear_assignment(dists, thresh=0.7)
+        matches = matches_tg.numpy()
+        u_unconfirmed = u_unconfirmed_tg.numpy()
+        u_detection = u_detection_tg.numpy()
 
         tracks_values = []
 
@@ -856,13 +863,13 @@ def fuse_score(cost_matrix, det_values_tg):
 
 def linear_assignment(cost_matrix, thresh):
     if cost_matrix.size == 0:
-        return np.empty((0, 2), dtype=int), np.arange(cost_matrix.shape[0]), np.arange(cost_matrix.shape[1])
+        return Tensor.empty((0, 2), dtype=dtypes.int), Tensor.arange(cost_matrix.shape[0]), Tensor.arange(cost_matrix.shape[1])
     _, x, y = lap.lapjv(cost_matrix, extend_cost=True, cost_limit=thresh)
     matched_mask = x >= 0
     matches = np.column_stack((np.arange(len(x))[matched_mask],x[matched_mask]))
     unmatched_a = np.where(~matched_mask)[0]
     unmatched_b = np.where(y < 0)[0]
-    return matches, unmatched_a, unmatched_b
+    return Tensor(matches), Tensor(unmatched_a), Tensor(unmatched_b)
 
 
 #Model architecture from https://github.com/ultralytics/ultralytics/issues/189

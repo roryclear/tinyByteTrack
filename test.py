@@ -400,6 +400,7 @@ class BYTETracker(object):
         u_track = u_track_tg.numpy()
         u_detection = u_detection_tg.numpy()
 
+        tracked_stracks_fids_tg = Tensor(tracked_stracks_fids,dtype=dtypes.int)
 
         det_values_arr_tg = dets_score_classes_tg[matches_tg[:,1]]
         if len(matches) > 0:
@@ -410,10 +411,8 @@ class BYTETracker(object):
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 
-            matches = np.asarray(matches)
-
-            itracked = matches[:, 0]
-            itracked_tg = Tensor(itracked)
+            itracked_tg = matches_tg[:, 0]
+            itracked = itracked_tg.numpy()
             tracked_mask_tg = nonzero_indices_1d(itracked_tg < original_indices_tg.shape[0])
             lost_mask_tg = nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])
             lost_mask = lost_mask_tg.numpy()
@@ -424,9 +423,7 @@ class BYTETracker(object):
             self.tracked_stracks_covs_tg[valid_tracked_indices_tg] = updated_covs_tg[tracked_mask_tg]
             self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
       
-            tracked_stracks_fids = np.asarray(tracked_stracks_fids)
-            tracked_stracks_fids[itracked] = self.frame_id
-            tracked_stracks_fids = tracked_stracks_fids.tolist()
+            tracked_stracks_fids_tg[itracked_tg] = self.frame_id
             self.tracked_stracks_fids[itracked[itracked < len(self.tracked_stracks_fids)]] = self.frame_id
 
             if np.any(lost_mask):
@@ -434,6 +431,8 @@ class BYTETracker(object):
                 self.lost_stracks_means[valid_lost_indices] = updated_means[lost_mask]
                 self.lost_stracks_covs[valid_lost_indices] = updated_covs[lost_mask]
             itracked_tracked = np.array(tracked_stracks_states)[itracked] == TrackState.Tracked
+
+            tracked_stracks_fids = tracked_stracks_fids_tg.numpy()
 
             itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
             activated_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_tracked].tolist()

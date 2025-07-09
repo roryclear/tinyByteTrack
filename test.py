@@ -420,14 +420,13 @@ class BYTETracker(object):
             itracked_tg = Tensor(itracked)
             tracked_mask_tg = nonzero_indices_1d(itracked_tg < original_indices_tg.shape[0])
             lost_mask_tg = nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])
-            tracked_mask = tracked_mask_tg.numpy()
             lost_mask = lost_mask_tg.numpy()
-            if np.any(tracked_mask):
-                valid_tracked_indices_tg = original_indices_tg[itracked_tg[tracked_mask_tg]]
-                self.tracked_stracks_means_tg[valid_tracked_indices_tg] = updated_means_tg[tracked_mask_tg]
-                self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
-                self.tracked_stracks_covs_tg[valid_tracked_indices_tg] = updated_covs_tg[tracked_mask_tg]
-                self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
+
+            valid_tracked_indices_tg = original_indices_tg[itracked_tg[tracked_mask_tg]]
+            self.tracked_stracks_means_tg[valid_tracked_indices_tg] = updated_means_tg[tracked_mask_tg]
+            self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
+            self.tracked_stracks_covs_tg[valid_tracked_indices_tg] = updated_covs_tg[tracked_mask_tg]
+            self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
       
             tracked_stracks_fids = np.asarray(tracked_stracks_fids)
             tracked_stracks_fids[itracked] = self.frame_id

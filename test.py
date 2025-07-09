@@ -250,7 +250,7 @@ class BYTETracker(object):
         self._count = 0
 
         self.lost_stracks_ids_tg = Tensor.empty((0))
-        self.lost_stracks_fids_tg = Tensor.empty()
+        self.lost_stracks_fids_tg = Tensor.empty((0))
         self.lost_stracks_startframes_tg = Tensor.empty()
         self.lost_stracks_states_tg = Tensor.empty()
         self.lost_stracks_bools_tg = Tensor.empty()
@@ -363,7 +363,6 @@ class BYTETracker(object):
             self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(self.lost_stracks_states_tg)
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
 
-        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         
         id_mask_tg = nonzero_indices_1d(tracked_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         tracked_stracks_ids_tg = tracked_stracks_ids_tg[id_mask_tg] 
@@ -662,7 +661,6 @@ class BYTETracker(object):
 
         activated_stracks_values.extend(dets_score_classes_second[valid_indices])
 
-        self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
         self.lost_stracks_ids_tg *= ~remove_mask_tg
 
@@ -810,8 +808,6 @@ class BYTETracker(object):
         self.lost_stracks_values_tg = self.lost_stracks_values_tg[zeros]
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
-      
-        self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
 
         v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2
         return v,m,i

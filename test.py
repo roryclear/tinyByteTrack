@@ -207,11 +207,10 @@ def tlbr_np_batch2(means):
     ret[:, 2:] += ret[:, :2]
     return ret
 
-def tlwh_to_xyah_batch(tlwh_array):
-    ret = np.asarray(tlwh_array).copy()
-    ret[:, :2] += ret[:, 2:] / 2
-    ret[:, 2] /= ret[:, 3]
-    return ret
+def tlwh_to_xyah_batch(tlwh):
+    tlwh[:, :2] += tlwh[:, 2:] / 2
+    tlwh[:, 2] /= tlwh[:, 3]
+    return tlwh
 
 def bbox_ious(boxes, query_boxes):
     N = boxes.shape[0]
@@ -418,12 +417,12 @@ class BYTETracker(object):
 
         det_values_arr = dets_score_classes[matches[:,1]]
         if len(matches) > 0:
-            xyahs = tlwh_to_xyah_batch(np.array(det_values_arr)[:, :4])
+            tlwh_tg = Tensor(np.array(det_values_arr)[:, :4])
+            xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             means = np.array(means_in[matches[:,0]])
             covs = np.array(covs_in[matches[:,0]])
             means_tg = Tensor(means,dtype=dtypes.float32)
             covs_tg = Tensor(covs,dtype=dtypes.float32)
-            xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 
@@ -523,7 +522,8 @@ class BYTETracker(object):
         self.tracked_stracks_states = self.tracked_stracks_states.tolist()
 
         # Build inputs for batch update
-        xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
+        tlwh_tg = Tensor(dets_score_classes_second[matches[:, 1]][:, :4])
+        xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
         self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)
         means = self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]]
         covs = self.tracked_stracks_covs[original_indices[u_track[matches[:,0]]]]
@@ -531,7 +531,6 @@ class BYTETracker(object):
         # Apply batched Kalman update
         means_tg = Tensor(means,dtype=dtypes.float32)
         covs_tg = Tensor(covs,dtype=dtypes.float32)
-        xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
         updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
         updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 
@@ -601,7 +600,8 @@ class BYTETracker(object):
             unconfirmed_values = np.array(unconfirmed_values)
             tracks_values = unconfirmed_values[itracked_arr]
             scores = dets_score_classes_second[matches[:, 1]][:, 4]
-            xyahs = tlwh_to_xyah_batch(dets_score_classes_second[matches[:, 1]][:, :4])
+            tlwh_tg = Tensor(dets_score_classes_second[matches[:, 1]][:, :4])
+            xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             unconfirmed_means = np.array(unconfirmed_means)
             means = unconfirmed_means[itracked_arr]
             unconfirmed_covs = np.array(unconfirmed_covs)
@@ -609,7 +609,6 @@ class BYTETracker(object):
 
             means_tg = Tensor(means,dtype=dtypes.float32)
             covs_tg = Tensor(covs,dtype=dtypes.float32)
-            xyahs_tg = Tensor(xyahs,dtype=dtypes.float32)
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             activated_stracks_means += updated_means.tolist()
@@ -643,13 +642,13 @@ class BYTETracker(object):
         valid_mask = track_scores >= self.det_thresh
         valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
 
-        
-        xyahs = tlwh_to_xyah_batch(dets_score_classes_second[u_detection[valid_mask]][:,:4])
+        tlwh_tg = Tensor(dets_score_classes_second[u_detection[valid_mask]][:,:4])
+        xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
         new_ids = len(valid_indices)
         activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)
         activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
         self._count += new_ids
-        x_tg, y_tg = self.kalman_filter.initiate_batch(Tensor(xyahs))
+        x_tg, y_tg = self.kalman_filter.initiate_batch(xyahs_tg)
         x = x_tg.numpy()
         y = y_tg.numpy()
         activated_stracks_fids += [self.frame_id] * len(valid_indices)
@@ -1297,4 +1296,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 

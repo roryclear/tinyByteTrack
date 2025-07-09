@@ -507,6 +507,7 @@ class BYTETracker(object):
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists = dists_tg.numpy()
 
+
         matches_tg, u_track2_tg, _ = linear_assignment(dists, thresh=0.5)
         matches = matches_tg.numpy()
         u_track2 = u_track2_tg.numpy()
@@ -518,13 +519,11 @@ class BYTETracker(object):
         # Build inputs for batch update
         tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
         xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-        self.tracked_stracks_covs = np.array(self.tracked_stracks_covs)
-        means = self.tracked_stracks_means[original_indices[u_track[matches[:,0]]]]
-        covs = self.tracked_stracks_covs[original_indices[u_track[matches[:,0]]]]
+        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
+        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
+        means_tg = self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
+        covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
 
-        # Apply batched Kalman update
-        means_tg = Tensor(means,dtype=dtypes.float32)
-        covs_tg = Tensor(covs,dtype=dtypes.float32)
         updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
 
         u_track_tg = Tensor(u_track)

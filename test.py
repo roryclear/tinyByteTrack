@@ -249,12 +249,12 @@ class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
         self._count = 0
 
-        self.lost_stracks_ids_tg = Tensor.empty()
+        self.lost_stracks_ids_tg = Tensor.empty((0))
         self.lost_stracks_fids_tg = Tensor.empty()
         self.lost_stracks_startframes_tg = Tensor.empty()
         self.lost_stracks_states_tg = Tensor.empty()
         self.lost_stracks_bools_tg = Tensor.empty()
-        self.lost_stracks_values_tg = Tensor.empty()
+        self.lost_stracks_values_tg = Tensor.empty((0,6))
         self.lost_stracks_means_tg = Tensor.empty(dtype=dtypes.float32)
         self.lost_stracks_covs_tg = Tensor.empty(dtype=dtypes.float32)
 
@@ -364,12 +364,7 @@ class BYTETracker(object):
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
 
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
-        self.lost_stracks_startframes_tg = Tensor(self.lost_stracks_startframes)
-        self.lost_stracks_states_tg = Tensor(self.lost_stracks_states)
-        self.lost_stracks_bools_tg = Tensor(self.lost_stracks_bools)
-        self.lost_stracks_values_tg = Tensor(self.lost_stracks_values)
         self.lost_stracks_means_tg = Tensor(self.lost_stracks_means,dtype=dtypes.float32)
-        self.lost_stracks_covs_tg = Tensor(self.lost_stracks_covs,dtype=dtypes.float32)
         
         id_mask_tg = nonzero_indices_1d(tracked_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         tracked_stracks_ids_tg = tracked_stracks_ids_tg[id_mask_tg] 
@@ -670,7 +665,6 @@ class BYTETracker(object):
 
         self.lost_stracks_fids_tg = Tensor(self.lost_stracks_fids)
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
-        self.lost_stracks_ids_tg = Tensor(self.lost_stracks_ids)
         self.lost_stracks_ids_tg *= ~remove_mask_tg
 
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
@@ -818,14 +812,8 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
       
-        self.lost_stracks_values = self.lost_stracks_values_tg.numpy()
         self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
-        self.lost_stracks_bools = self.lost_stracks_bools_tg.numpy()
-        self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
-        self.lost_stracks_ids = self.lost_stracks_ids_tg.numpy()
         self.lost_stracks_fids = self.lost_stracks_fids_tg.numpy()
-        self.lost_stracks_startframes = self.lost_stracks_startframes_tg.numpy()
-        self.lost_stracks_states = self.lost_stracks_states_tg.numpy()
 
         v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2
         return v,m,i
@@ -1312,7 +1300,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
-
-

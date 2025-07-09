@@ -334,14 +334,11 @@ class BYTETracker(object):
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
 
-        mask_tg = self.tracked_stracks_bools_tg
+        original_indices_tg = nonzero_indices_1d(self.tracked_stracks_bools_tg).cast(dtype=dtypes.int)
+        original_indices = original_indices_tg.numpy()
 
-        mask = mask_tg.numpy()
-        original_indices = np.where(mask)[0]
-        original_indices_tg = Tensor(original_indices)
-
-        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * mask_tg
-        unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg
+        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * self.tracked_stracks_bools_tg
+        unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~self.tracked_stracks_bools_tg
 
         id_mask_tg = unconfirmed_ids_tg != 0
         id_mask = id_mask_tg.numpy()
@@ -444,8 +441,8 @@ class BYTETracker(object):
                 valid_lost_indices = itracked[lost_mask] - len(original_indices)
                 self.lost_stracks_means[valid_lost_indices] = updated_means[lost_mask]
                 self.lost_stracks_covs[valid_lost_indices] = updated_covs[lost_mask]
-
             itracked_tracked = np.array(tracked_stracks_states)[itracked] == TrackState.Tracked
+
             itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
             activated_stracks_values = np.array(tracked_stracks_values)[itracked][itracked_tracked].tolist()
             activated_stracks_bools = np.array(tracked_stracks_bools)[itracked][itracked_tracked].tolist()
@@ -825,6 +822,15 @@ class BYTETracker(object):
         v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2
         return v,m,i
 
+def nonzero_indices_1d(mask: Tensor) -> Tensor:
+    if mask.shape[0] == 0 or mask.sum().item() == 0:
+        return Tensor([])  # return empty tensor if no True values
+
+    idxs = Tensor.arange(mask.shape[0])
+    masked = idxs * mask
+    sorted_vals, sorted_idxs = masked.sort(descending=True)
+    count = int(mask.sum().item())
+    return sorted_idxs[:count][::-1]
 
 def ious(atlbrs, btlbrs):
     ious = Tensor.zeros((atlbrs.shape[0], btlbrs.shape[0]), dtype=dtypes.float32)

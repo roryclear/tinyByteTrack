@@ -324,19 +324,21 @@ class BYTETracker(object):
         dets_score_classes_second = dets_score_classes_second.numpy()
       
         
-        mask = np.array(self.tracked_stracks_bools).astype(bool)
-        original_indices = np.where(mask)[0]
-        original_indices_tg = Tensor(original_indices)
-        mask_tg = Tensor(mask)
 
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
-        self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools)
+        self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools,dtype=dtypes.bool)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states)
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
+
+        mask_tg = self.tracked_stracks_bools_tg
+
+        mask = mask_tg.numpy()
+        original_indices = np.where(mask)[0]
+        original_indices_tg = Tensor(original_indices)
 
         tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * mask_tg
         unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~mask_tg

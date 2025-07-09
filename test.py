@@ -390,9 +390,6 @@ class BYTETracker(object):
             means_in_tg = means_in_tg.cat(self.lost_stracks_means_tg)
             covs_in_tg = covs_in_tg.cat(self.lost_stracks_covs_tg)
 
-        means_in = means_in_tg.numpy()
-        covs_in = covs_in_tg.numpy()
-
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
@@ -403,14 +400,13 @@ class BYTETracker(object):
         u_track = u_track_tg.numpy()
         u_detection = u_detection_tg.numpy()
 
-        det_values_arr = dets_score_classes[matches[:,1]]
+
+        det_values_arr_tg = dets_score_classes_tg[matches_tg[:,1]]
         if len(matches) > 0:
-            tlwh_tg = Tensor(np.array(det_values_arr)[:, :4])
+            tlwh_tg = det_values_arr_tg[:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-            means = np.array(means_in[matches[:,0]])
-            covs = np.array(covs_in[matches[:,0]])
-            means_tg = Tensor(means,dtype=dtypes.float32)
-            covs_tg = Tensor(covs,dtype=dtypes.float32)
+            means_tg = means_in_tg[matches_tg[:,0]]
+            covs_tg = covs_in_tg[matches_tg[:,0]]
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 

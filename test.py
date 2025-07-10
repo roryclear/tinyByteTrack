@@ -27,6 +27,7 @@ class KalmanFilter(object):
         self._update_mat_tg = Tensor.eye(ndim, 2 * ndim)
         self._std_weight_position = 1. / 20
         self._std_weight_velocity = 1. / 160
+        self._motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
 
     def initiate(self, measurement):
         mean_pos = measurement
@@ -98,17 +99,15 @@ class KalmanFilter(object):
         sv = sv.cat(1e-5 * Tensor.ones(mean_tg.shape[0]))
         sv = sv.cat(mean_tg[:,3]*self._std_weight_velocity)
         std_vel_tg = sv.reshape(4,int(sv.shape[0]/4))
-        
-        motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
 
         r = std_pos_tg.cat(std_vel_tg)
         sqr = Tensor.square(r).T
         batch_size = sqr.shape[0]
         dim = sqr.shape[1]
         motion_cov_tg = Tensor.eye(dim).reshape(1, dim, dim) * sqr.reshape(batch_size, dim, 1)
-        mean_tg = Tensor.dot(mean_tg, motion_mat_tg.T)
-        left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
-        covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
+        mean_tg = Tensor.dot(mean_tg, self._motion_mat_tg.T)
+        left_tg = Tensor.dot(self._motion_mat_tg,covariance_tg)
+        covariance_tg = Tensor.dot(left_tg, self._motion_mat_tg.T) + motion_cov_tg
         return mean_tg, covariance_tg
         
     def cholesky(self,A):

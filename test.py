@@ -511,8 +511,6 @@ class BYTETracker(object):
         # Build inputs for batch update
         tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
         xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
-        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
         means_tg = self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
         covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
 

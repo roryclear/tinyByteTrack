@@ -485,7 +485,6 @@ class BYTETracker(object):
             refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
         
-        self.tracked_stracks_states_tg = Tensor(tracked_stracks_states,dtype=dtypes.int)
 
         tracked_indices_tg = u_track_tg[nonzero_indices_1d(self.tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = self.tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]

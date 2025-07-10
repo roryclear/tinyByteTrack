@@ -1226,8 +1226,9 @@ if __name__ == '__main__':
   
   frame_count = 0
   people = set()
-  #outs = []
+  outs = []
   expected_values = pickle.load(open('values.pkl', 'rb'))
+  expected_values2 = pickle.load(open('values2.pkl', 'rb'))
   while True:
     ret, frame = cap.read()
     if not ret:
@@ -1259,7 +1260,12 @@ if __name__ == '__main__':
         if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
           exit()
-    #      outs.append(values)
+          #outs.append(values)
+    else:
+        if not np.array_equal(np.array(expected_values2[frame_count - 1]), values):
+          print("wrong output")
+          exit()
+    
 
 
     if frame_count % 10 == 0:

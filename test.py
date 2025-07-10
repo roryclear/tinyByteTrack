@@ -23,6 +23,7 @@ class KalmanFilter(object):
         self._motion_mat = np.eye(2 * ndim, 2 * ndim)
         for i in range(ndim):
             self._motion_mat[i, ndim + i] = dt
+        self._motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
         self._update_mat = np.eye(ndim, 2 * ndim)
         self._update_mat_tg = Tensor.eye(ndim, 2 * ndim)
         self._std_weight_position = 1. / 20
@@ -99,16 +100,14 @@ class KalmanFilter(object):
         sv = sv.cat(mean_tg[:,3]*self._std_weight_velocity)
         std_vel_tg = sv.reshape(4,int(sv.shape[0]/4))
         
-        motion_mat_tg = Tensor(self._motion_mat,dtype=dtypes.float32)
-
         r = std_pos_tg.cat(std_vel_tg)
         sqr = Tensor.square(r).T
         batch_size = sqr.shape[0]
         dim = sqr.shape[1]
         motion_cov_tg = Tensor.eye(dim).reshape(1, dim, dim) * sqr.reshape(batch_size, dim, 1)
-        mean_tg = Tensor.dot(mean_tg, motion_mat_tg.T)
-        left_tg = Tensor.dot(motion_mat_tg,covariance_tg)
-        covariance_tg = Tensor.dot(left_tg, motion_mat_tg.T) + motion_cov_tg
+        mean_tg = Tensor.dot(mean_tg, self._motion_mat_tg.T)
+        left_tg = Tensor.dot(self._motion_mat_tg,covariance_tg)
+        covariance_tg = Tensor.dot(left_tg, self._motion_mat_tg.T) + motion_cov_tg
         return mean_tg, covariance_tg
         
     def cholesky(self,A):
@@ -158,8 +157,7 @@ class KalmanFilter(object):
         if means_tg.shape[0] == 0: return means_tg, covariances_tg
         projected_means_tg, projected_covs_tg = self.project_batch(means_tg, covariances_tg)
         chol_factors_tg = self.cholesky(projected_covs_tg)
-        update_mat_T = self._update_mat.T
-        update_mat_T_tg = Tensor(update_mat_T,dtype=dtypes.float32)
+        update_mat_T_tg = self._update_mat_tg.T
         R_tg = Tensor.einsum('ijk,kl->ilj', covariances_tg, update_mat_T_tg)
         y_tg = self.solve_all_triangular(chol_factors_tg, R_tg)
         chol_factors_T_tg = Tensor.permute(chol_factors_tg, (0, 2, 1))
@@ -409,10 +407,8 @@ class BYTETracker(object):
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 
-            matches = np.asarray(matches)
-
-            itracked = matches[:, 0]
-            itracked_tg = Tensor(itracked)
+            itracked_tg = matches_tg[:,0]
+            itracked = itracked_tg.numpy()
             tracked_mask_tg = nonzero_indices_1d(itracked_tg < original_indices_tg.shape[0])
             lost_mask_tg = nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])
             lost_mask = lost_mask_tg.numpy()
@@ -484,8 +480,6 @@ class BYTETracker(object):
 
             refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
             refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
-        
-        self.tracked_stracks_states_tg = Tensor(tracked_stracks_states,dtype=dtypes.int)
 
         tracked_indices_tg = u_track_tg[nonzero_indices_1d(self.tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = self.tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
@@ -511,8 +505,6 @@ class BYTETracker(object):
         # Build inputs for batch update
         tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
         xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-        self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means)
-        self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs)
         means_tg = self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
         covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]]
 

@@ -266,7 +266,7 @@ class BYTETracker(object):
         self.tracked_stracks_fids = []
         self.tracked_stracks_startframes = []
         self.tracked_stracks_states = []
-        self.tracked_stracks_states_tg = Tensor.empty((0),dtype=dtypes.int)
+        self.tracked_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
         self.lost_stracks_covs = []
@@ -284,14 +284,14 @@ class BYTETracker(object):
 
     def update(self, output_results, img_info, img_size):
         self.frame_id += 1
-        activated_stracks_values = []
+        activated_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float)
         activated_stracks_means_tg = Tensor.empty((0,6),dtype=dtypes.float)
         activated_stracks_bools = []
-        activated_stracks_covs = []
-        activated_stracks_ids = []
-        activated_stracks_fids = []
+        activated_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float)
+        activated_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
+        activated_stracks_fids_tg = Tensor.empty((0,),dtype=dtypes.int)
         activated_stracks_startframes = []
-        activated_stracks_states = []
+        activated_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
         refind_stracks_means = []
         refind_stracks_means2 = []
         refind_stracks_bools_tg = Tensor.empty()
@@ -346,8 +346,6 @@ class BYTETracker(object):
         unconfirmed_means_tg = self.tracked_stracks_means_tg[id_mask_tg]
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
 
-        unconfirmed_startframes = unconfirmed_startframes_tg.numpy()
-
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
             tracked_stracks_ids_tg = tracked_stracks_ids_tg.cat(self.lost_stracks_ids_tg)
             self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(self.lost_stracks_fids_tg)
@@ -366,10 +364,8 @@ class BYTETracker(object):
         self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[id_mask_tg]
 
         tracked_stracks_states = self.tracked_stracks_states_tg.numpy().tolist()
-        tracked_stracks_values = self.tracked_stracks_values_tg.numpy().tolist()
         tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
         tracked_stracks_bools = self.tracked_stracks_bools_tg.numpy().tolist()
-        tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy().tolist()
         tracked_stracks_ids = tracked_stracks_ids_tg.numpy().tolist()
 
         if len(self.tracked_stracks_means) > 0:
@@ -400,6 +396,8 @@ class BYTETracker(object):
 
 
         det_values_arr_tg = dets_score_classes_tg[matches_tg[:,1]]
+        tracked_stracks_states_tg = self.tracked_stracks_states_tg
+        tracked_stracks_fids_tg = self.tracked_stracks_fids_tg
         if len(matches) > 0:
             tlwh_tg = det_values_arr_tg[:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
@@ -420,9 +418,7 @@ class BYTETracker(object):
             self.tracked_stracks_covs_tg[valid_tracked_indices_tg] = updated_covs_tg[tracked_mask_tg]
             self.tracked_stracks_covs = self.tracked_stracks_covs_tg.numpy()
       
-            tracked_stracks_fids = np.asarray(tracked_stracks_fids)
-            tracked_stracks_fids[itracked] = self.frame_id
-            tracked_stracks_fids = tracked_stracks_fids.tolist()
+            tracked_stracks_fids_tg[itracked_tg] = self.frame_id
             self.tracked_stracks_fids[itracked[itracked < len(self.tracked_stracks_fids)]] = self.frame_id
             self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
             itracked2_tg = nonzero_indices_1d(itracked_tg < self.tracked_stracks_fids_tg.shape[0])
@@ -437,18 +433,17 @@ class BYTETracker(object):
             itracked_tracked_tg = nonzero_indices_1d(itracked_tracked_tg).cast(dtype=dtypes.int)
 
             activated_stracks_means_tg = self.tracked_stracks_means_tg[original_indices_tg][itracked_tg[itracked_tracked_tg]]
+            activated_stracks_values_tg = self.tracked_stracks_values_tg[itracked_tg][itracked_tracked_tg]
+            activated_stracks_states_tg = tracked_stracks_states_tg[itracked_tg][itracked_tracked_tg]
 
             itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
-            activated_stracks_values = np.array(self.tracked_stracks_values_tg.numpy())[itracked][itracked_tracked].tolist()
             activated_stracks_bools = np.array(tracked_stracks_bools)[itracked][itracked_tracked].tolist()
-            activated_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_tracked].tolist()
-            activated_stracks_fids = np.array(tracked_stracks_fids)[itracked][itracked_tracked].tolist()
+            activated_stracks_ids_tg = tracked_stracks_ids_tg[itracked_tg][itracked_tracked_tg]
+            activated_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_startframes = np.array(tracked_stracks_startframes)[itracked][itracked_tracked].tolist()
-            activated_stracks_states = np.array(tracked_stracks_states)[itracked][itracked_tracked].tolist()
-            activated_stracks_covs = self.tracked_stracks_covs[original_indices[itracked[itracked_tracked]]].tolist() 
+            activated_stracks_covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[itracked_tg[itracked_tracked_tg]]]
             
             tracked_stracks_ids_tg = Tensor(tracked_stracks_ids)
-            tracked_stracks_fids_tg = Tensor(tracked_stracks_fids,dtype=dtypes.int)
             refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)
             itracked_tg = Tensor(itracked)
             itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
@@ -502,7 +497,6 @@ class BYTETracker(object):
 
         matches_tg, u_track2_tg, _ = linear_assignment(dists, thresh=0.5)
         matches = matches_tg.numpy()
-        u_track2 = u_track2_tg.numpy()
 
         self.tracked_stracks_states_tg = Tensor(self.tracked_stracks_states,dtype=dtypes.int)
         self.tracked_stracks_states_tg[original_indices_tg[u_track_tg[u_track2_tg]]] = TrackState.Lost
@@ -525,18 +519,17 @@ class BYTETracker(object):
             self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
 
             activated_stracks_means_tg = activated_stracks_means_tg.cat(self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
+            
+            activated_stracks_values_tg = activated_stracks_values_tg.cat(self.tracked_stracks_values_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
+            activated_stracks_states_tg = activated_stracks_states_tg.cat(self.tracked_stracks_states_tg[u_track_tg[matches_tg[:, 0]]])
+            activated_stracks_ids_tg = activated_stracks_ids_tg.cat(tracked_stracks_ids_tg[u_track_tg[matches_tg[:, 0]]])
 
-            activated_stracks_values += self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]]].tolist()
             activated_stracks_bools += self.tracked_stracks_bools[u_track[matches[:, 0]]].tolist()
-            activated_stracks_covs += self.tracked_stracks_covs[original_indices[u_track[matches[:, 0]]]].tolist()
-            activated_stracks_ids += np.array(tracked_stracks_ids)[u_track[matches[:, 0]]].tolist()
+            activated_stracks_covs_tg = activated_stracks_covs_tg.cat(self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
             activated_stracks_startframes += self.tracked_stracks_startframes[u_track[matches[:, 0]]].tolist()
-            activated_stracks_states += np.array(self.tracked_stracks_states)[u_track[matches[:, 0]]].tolist()
-            activated_stracks_fids += [self.frame_id] * len(matches)
+            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(matches)))
         
-        #
-
-        activated_stracks_ids_tg = Tensor(activated_stracks_ids,dtype=dtypes.int)  
+  
         u_track3_tg = u_track_tg[u_track2_tg]
 
         self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
@@ -567,11 +560,8 @@ class BYTETracker(object):
         matches_tg, u_unconfirmed_tg, u_detection_tg = linear_assignment(dists, thresh=0.7)
         u_unconfirmed = u_unconfirmed_tg.numpy()
         u_detection = u_detection_tg.numpy()
-
         tracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
-        activated_stracks_states_tg = Tensor(activated_stracks_states,dtype=dtypes.int)
         activated_stracks_startframes_tg = Tensor(activated_stracks_startframes)
-        unconfirmed_startframes
         if matches_tg.shape[0] > 0:
             itracked_arr_tg = matches_tg[:, 0]
             itracked_arr = itracked_arr_tg.numpy()
@@ -585,8 +575,8 @@ class BYTETracker(object):
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
             updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             activated_stracks_means_tg = activated_stracks_means_tg.cat(updated_means_tg)
-            activated_stracks_covs += updated_covs.tolist()
-            activated_stracks_fids += [self.frame_id] * len(itracked_arr)
+            activated_stracks_covs_tg = activated_stracks_covs_tg.cat(updated_covs_tg)
+            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(itracked_arr)))
             activated_stracks_states_tg = activated_stracks_states_tg.cat(Tensor(TrackState.Tracked).repeat(itracked_arr_tg.shape[0]))
             activated_stracks_ids_tg = activated_stracks_ids_tg.cat(unconfirmed_ids_tg[itracked_arr_tg])
             activated_stracks_startframes_tg = activated_stracks_startframes_tg.cat(unconfirmed_startframes_tg[itracked_arr_tg])
@@ -600,8 +590,10 @@ class BYTETracker(object):
             self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
             self.tracked_stracks_states = np.array(self.tracked_stracks_states)
             self.tracked_stracks_states[tracked_indices] = TrackState.Tracked
-        tracks_values = tracks_values_tg.numpy()
-        activated_stracks_values.extend(tracks_values)
+        if activated_stracks_values_tg.shape[0] > 0:
+            activated_stracks_values_tg = activated_stracks_values_tg.cat(tracks_values_tg)
+        else:
+           activated_stracks_values_tg = tracks_values_tg
 
         u_unconfirmed_np = np.asarray(u_unconfirmed)
         unconfirmed_ids = unconfirmed_ids_tg.numpy()
@@ -621,8 +613,6 @@ class BYTETracker(object):
         self._count += new_ids
         x_tg, y_tg = self.kalman_filter.initiate_batch(xyahs_tg)
         x = x_tg.numpy()
-        y = y_tg.numpy()
-        activated_stracks_fids_tg = Tensor(activated_stracks_fids)
         activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(new_ids))
 
         activated_stracks_bools_tg = Tensor(activated_stracks_bools,dtype=dtypes.bool)
@@ -636,9 +626,16 @@ class BYTETracker(object):
             activated_stracks_means_tg = activated_stracks_means_tg.cat(x_tg)
         else:
             activated_stracks_means_tg = x_tg
-        activated_stracks_covs += (np.array(y)).tolist()
-
-        activated_stracks_values.extend(dets_score_classes_second[valid_indices])
+        
+        if activated_stracks_covs_tg.shape[0] > 0:
+            activated_stracks_covs_tg = activated_stracks_covs_tg.cat(y_tg)
+        else:
+            activated_stracks_covs_tg = y_tg
+        valid_indices_tg = Tensor(valid_indices,dtype=dtypes.int)
+        if activated_stracks_values_tg.shape[0] > 0:
+            activated_stracks_values_tg = activated_stracks_values_tg.cat(dets_score_classes_second_tg[valid_indices_tg])
+        else:
+           activated_stracks_values_tg = dets_score_classes_second_tg[valid_indices_tg]
 
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
         self.lost_stracks_ids_tg *= ~remove_mask_tg
@@ -660,9 +657,6 @@ class BYTETracker(object):
         sorted_mask = not_in_mask[masked_idxs]
         count = int(sorted_mask.sum().item())
         keep_activated_tg = sorted_idxs[:count][::-1]
-
-        activated_stracks_values_tg = Tensor(activated_stracks_values,dtype=dtypes.float32)
-        activated_stracks_covs_tg = Tensor(activated_stracks_covs,dtype=dtypes.float32)
 
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(activated_stracks_ids_tg[keep_activated_tg])
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(activated_stracks_fids_tg[keep_activated_tg])

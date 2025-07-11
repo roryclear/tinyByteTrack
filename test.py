@@ -267,6 +267,7 @@ class BYTETracker(object):
         self.tracked_stracks_startframes = []
         self.tracked_stracks_states = []
         self.tracked_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
+        self.tracked_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
         self.lost_stracks_means = []
         self.lost_stracks_bools = []
         self.lost_stracks_covs = []
@@ -329,7 +330,6 @@ class BYTETracker(object):
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools,dtype=dtypes.bool)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
-        self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
 
@@ -347,13 +347,14 @@ class BYTETracker(object):
         unconfirmed_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
 
         tracked_stracks_states_tg = self.tracked_stracks_states_tg
+        tracked_stracks_values_tg = self.tracked_stracks_values_tg
         if len(self.lost_stracks_values_tg.shape) > 1 and self.lost_stracks_values_tg.shape[0] > 0:
             tracked_stracks_ids_tg = tracked_stracks_ids_tg.cat(self.lost_stracks_ids_tg)
             self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(self.lost_stracks_fids_tg)
             self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg.cat(self.lost_stracks_bools_tg)
             self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg.cat(self.lost_stracks_startframes_tg)
             tracked_stracks_states_tg = tracked_stracks_states_tg.cat(self.lost_stracks_states_tg)
-            self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
+            tracked_stracks_values_tg = tracked_stracks_values_tg.cat(self.lost_stracks_values_tg)
 
         
         id_mask_tg = nonzero_indices_1d(tracked_stracks_ids_tg != 0).cast(dtype=dtypes.int)
@@ -362,7 +363,7 @@ class BYTETracker(object):
         self.tracked_stracks_bools_tg = self.tracked_stracks_bools_tg[id_mask_tg]
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg[id_mask_tg]
         tracked_stracks_states_tg = tracked_stracks_states_tg[id_mask_tg]
-        self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[id_mask_tg]
+        tracked_stracks_values_tg = tracked_stracks_values_tg[id_mask_tg]
 
         tracked_stracks_states = tracked_stracks_states_tg.numpy().tolist()
         tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
@@ -433,7 +434,7 @@ class BYTETracker(object):
             itracked_tracked_tg = nonzero_indices_1d(itracked_tracked_tg).cast(dtype=dtypes.int)
 
             activated_stracks_means_tg = self.tracked_stracks_means_tg[original_indices_tg][itracked_tg[itracked_tracked_tg]]
-            activated_stracks_values_tg = self.tracked_stracks_values_tg[itracked_tg][itracked_tracked_tg]
+            activated_stracks_values_tg = tracked_stracks_values_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_states_tg = tracked_stracks_states_tg[itracked_tg][itracked_tracked_tg]
 
             itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
@@ -451,7 +452,7 @@ class BYTETracker(object):
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
 
             refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
-            refind_stracks_values_tg = self.tracked_stracks_values_tg[itracked_tg]
+            refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]
             x = itracked_untracked.sum()
             refind_stracks_ids2_tg = tracked_stracks_ids_tg[itracked_tg] * itracked_untracked_tg
             refind_stracks_bools_tg = Tensor(True).repeat(int(x))
@@ -514,11 +515,12 @@ class BYTETracker(object):
             self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_covs_tg
             self.tracked_stracks_fids_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = self.frame_id
             self.tracked_stracks_states_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = TrackState.Tracked
-            self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
+            #self.tracked_stracks_values[original_indices[u_track[matches[:, 0]]], 4] = dets_score_classes_second[matches[:, 1], 4]
+            self.tracked_stracks_values_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]] = dets_score_classes_second_tg[matches_tg[:, 1]]
 
             activated_stracks_means_tg = activated_stracks_means_tg.cat(self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
             
-            activated_stracks_values_tg = activated_stracks_values_tg.cat(self.tracked_stracks_values_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
+            activated_stracks_values_tg = activated_stracks_values_tg.cat(tracked_stracks_values_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
             activated_stracks_states_tg = activated_stracks_states_tg.cat(self.tracked_stracks_states_tg[u_track_tg[matches_tg[:, 0]]])
             activated_stracks_ids_tg = activated_stracks_ids_tg.cat(tracked_stracks_ids_tg[u_track_tg[matches_tg[:, 0]]])
 
@@ -527,10 +529,9 @@ class BYTETracker(object):
             activated_stracks_startframes += self.tracked_stracks_startframes[u_track[matches[:, 0]]].tolist()
             activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(matches)))
         
-  
+        #self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values,dtype=dtypes.float32)
         u_track3_tg = u_track_tg[u_track2_tg]
 
-        self.tracked_stracks_values_tg = Tensor(self.tracked_stracks_values)
         self.tracked_stracks_bools_tg = Tensor(self.tracked_stracks_bools)
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
@@ -732,7 +733,6 @@ class BYTETracker(object):
 
         self.tracked_stracks_ids2 = self.tracked_stracks_ids2_tg.numpy()
         self.tracked_stracks_fids = self.tracked_stracks_fids_tg.numpy()
-        self.tracked_stracks_values = self.tracked_stracks_values_tg.numpy()
         self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
         self.tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy()
 
@@ -753,10 +753,10 @@ class BYTETracker(object):
         zeros2_tg = nonzero_indices_1d(Tensor(zeros2) == True)
 
         self.tracked_stracks_states_tg = self.tracked_stracks_states_tg[zeros2_tg]
+        self.tracked_stracks_values_tg = self.tracked_stracks_values_tg[zeros2_tg]
 
         self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2]
         self.tracked_stracks_fids = self.tracked_stracks_fids[zeros2]
-        self.tracked_stracks_values = self.tracked_stracks_values[zeros2]
         self.tracked_stracks_startframes = self.tracked_stracks_startframes[zeros2]
         
         zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)
@@ -1236,7 +1236,7 @@ if __name__ == '__main__':
 
     out_writer.write(frame)
     
-
+    #outs.append(values)
     if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
         if not np.array_equal(np.array(expected_values[frame_count - 1]), values):
           print("wrong output")
@@ -1253,7 +1253,10 @@ if __name__ == '__main__':
       print(f"Processed frame {frame_count}")
       print(len(people))
 
-  #pickle.dump(outs, open('values.pkl', 'wb'))
+  #if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
+  #    pickle.dump(outs, open('values.pkl', 'wb'))
+  #else:
+  #   pickle.dump(outs, open('values2.pkl', 'wb'))
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")

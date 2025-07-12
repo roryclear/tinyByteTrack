@@ -401,6 +401,7 @@ class BYTETracker(object):
         tracked_stracks_fids_tg = self.tracked_stracks_fids_tg
         activated_stracks_startframes_tg = Tensor.empty((0,))
         tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg
+        refind_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
         if len(matches) > 0:
             tlwh_tg = det_values_arr_tg[:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
@@ -446,12 +447,13 @@ class BYTETracker(object):
             activated_stracks_startframes_tg = tracked_stracks_startframes_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[itracked_tg[itracked_tracked_tg]]]
             
-            tracked_stracks_ids_tg = Tensor(tracked_stracks_ids)
+
             refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)
             itracked_tg = Tensor(itracked)
             itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
 
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
+            refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
 
             refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
             refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]

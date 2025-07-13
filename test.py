@@ -401,6 +401,8 @@ class BYTETracker(object):
         tracked_stracks_fids_tg = self.tracked_stracks_fids_tg
         activated_stracks_startframes_tg = Tensor.empty((0,))
         tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg
+        tracked_stracks_bools_tg = self.tracked_stracks_bools_tg
+        activated_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         refind_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
         if len(matches) > 0:
             tlwh_tg = det_values_arr_tg[:, :4]
@@ -441,7 +443,7 @@ class BYTETracker(object):
             activated_stracks_states_tg = tracked_stracks_states_tg[itracked_tg][itracked_tracked_tg]
 
             itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
-            activated_stracks_bools = np.array(tracked_stracks_bools)[itracked][itracked_tracked].tolist()
+            activated_stracks_bools_tg = tracked_stracks_bools_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_ids_tg = tracked_stracks_ids_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_startframes_tg = tracked_stracks_startframes_tg[itracked_tg][itracked_tracked_tg]
@@ -515,6 +517,9 @@ class BYTETracker(object):
         self.tracked_stracks_means_tg = Tensor(self.tracked_stracks_means,dtype=dtypes.float32)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes,dtype=dtypes.int)
+
+        activated_stracks_bools = activated_stracks_bools_tg.numpy().tolist()
+        
         if len(matches) > 0:
             self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_means_tg
             self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_covs_tg

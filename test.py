@@ -605,25 +605,22 @@ class BYTETracker(object):
         if ids.size > 0:
             removed_stracks_ids.extend(ids.tolist())
         
-        u_detection = np.asarray(u_detection)
-        dets_score_classes_second = dets_score_classes_second_tg.numpy()
-        track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
-        valid_mask = track_scores >= self.det_thresh
-        valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
+        bools_tg = dets_score_classes_second_tg[u_detection_tg][:,4] >= self.det_thresh
+        idx_tg = nonzero_indices_1d(bools_tg).cast(dtype=dtypes.int)
+        idx_tg = u_detection_tg[idx_tg]
 
-        tlwh_tg = Tensor(dets_score_classes_second[u_detection[valid_mask]][:,:4])
+        tlwh_tg = dets_score_classes_second_tg[idx_tg][:,:4]
         xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
-        new_ids = len(valid_indices)
+        new_ids = idx_tg.shape[0]
         activated_stracks_ids_tg = activated_stracks_ids_tg.cat(Tensor.arange(self._count+1,self._count+new_ids+1))
         self._count += new_ids
         x_tg, y_tg = self.kalman_filter.initiate_batch(xyahs_tg)
-        x = x_tg.numpy()
         activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(new_ids))
 
         activated_stracks_bools_tg = Tensor(activated_stracks_bools,dtype=dtypes.bool)
 
         if self.frame_id == 1:
-            activated_stracks_bools_tg = Tensor(True).repeat(len(valid_indices))
+            activated_stracks_bools_tg = Tensor(True).repeat(idx_tg.shape[0])
         else:
             activated_stracks_bools_tg = activated_stracks_bools_tg.cat(Tensor(False).repeat(matches_tg.shape[0]))
 
@@ -636,7 +633,7 @@ class BYTETracker(object):
             activated_stracks_covs_tg = activated_stracks_covs_tg.cat(y_tg)
         else:
             activated_stracks_covs_tg = y_tg
-        valid_indices_tg = Tensor(valid_indices,dtype=dtypes.int)
+        valid_indices_tg = idx_tg
         if activated_stracks_values_tg.shape[0] > 0:
             activated_stracks_values_tg = activated_stracks_values_tg.cat(dets_score_classes_second_tg[valid_indices_tg])
         else:

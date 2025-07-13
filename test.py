@@ -321,7 +321,6 @@ class BYTETracker(object):
         dets_score_classes_tg = dets.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)
         dets_score_classes_second_tg = dets_second.cat(scores.reshape(-1,1), dim=1).cat(classes.reshape(-1,1), dim=1)    
 
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids)
         self.tracked_stracks_fids_tg = Tensor(self.tracked_stracks_fids,dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
         self.tracked_stracks_covs_tg = Tensor(self.tracked_stracks_covs,dtype=dtypes.float32)
@@ -333,12 +332,13 @@ class BYTETracker(object):
         original_indices = original_indices_tg.numpy()
 
         tracked_stracks_bools_tg = tracked_stracks_bools_tg.cast(dtype=dtypes.bool)
-
-        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg * tracked_stracks_bools_tg
-        unconfirmed_ids_tg = self.tracked_stracks_ids_tg * ~tracked_stracks_bools_tg
-
+        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+        tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+        unconfirmed_ids_tg = tracked_stracks_ids_tg * ~tracked_stracks_bools_tg
         id_mask_tg = nonzero_indices_1d(tracked_stracks_bools_tg != True).cast(dtype=dtypes.int)
-        unconfirmed_ids_tg = self.tracked_stracks_ids_tg[id_mask_tg]
+        unconfirmed_ids_tg = tracked_stracks_ids_tg[id_mask_tg]
+        tracked_stracks_ids_tg = tracked_stracks_ids_tg * tracked_stracks_bools_tg
+        
         unconfirmed_values_tg = self.tracked_stracks_values_tg[id_mask_tg]
         unconfirmed_covs_tg = self.tracked_stracks_covs_tg[id_mask_tg]
         unconfirmed_means_tg = self.tracked_stracks_means_tg[id_mask_tg]
@@ -535,7 +535,6 @@ class BYTETracker(object):
         activated_stracks_bools = activated_stracks_bools_tg.numpy().tolist()
         u_track3_tg = u_track_tg[u_track2_tg]
 
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids,dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
 
         lost_stracks_values_tg = self.tracked_stracks_values_tg[original_indices_tg][u_track3_tg]
@@ -1260,3 +1259,5 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
+

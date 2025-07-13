@@ -553,10 +553,8 @@ class BYTETracker(object):
         lost_stracks_states_tg = self.tracked_stracks_states_tg[original_indices_tg][u_track3_tg]
         lost_stracks_startframes_tg = self.tracked_stracks_startframes_tg[original_indices_tg][u_track3_tg]
                 
-        u_detection_np = np.array(u_detection)
-        dets_score_classes_second = np.array(dets_score_classes)[u_detection_np]
-        
-        dets_score_classes_second_tg = Tensor(dets_score_classes_second)
+        dets_score_classes_second_tg = dets_score_classes_tg[u_detection_tg]
+      
 
         atlbrs_tg = tlbr_np_batch2(unconfirmed_means_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_second_tg)
@@ -608,6 +606,7 @@ class BYTETracker(object):
             removed_stracks_ids.extend(ids.tolist())
         
         u_detection = np.asarray(u_detection)
+        dets_score_classes_second = dets_score_classes_second_tg.numpy()
         track_scores = dets_score_classes_second[u_detection, 4]  # Direct score access
         valid_mask = track_scores >= self.det_thresh
         valid_indices = u_detection[valid_mask].tolist()  # Convert to list of integers
@@ -1270,6 +1269,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 
 

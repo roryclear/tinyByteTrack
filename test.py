@@ -287,7 +287,7 @@ class BYTETracker(object):
         self.frame_id += 1
         activated_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float)
         activated_stracks_means_tg = Tensor.empty((0,6),dtype=dtypes.float)
-        activated_stracks_bools = []
+        activated_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         activated_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float)
         activated_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
         activated_stracks_fids_tg = Tensor.empty((0,),dtype=dtypes.int)
@@ -532,7 +532,6 @@ class BYTETracker(object):
             activated_stracks_startframes_tg = activated_stracks_startframes_tg.cat(self.tracked_stracks_startframes_tg[u_track_tg[matches_tg[:, 0]]])
             activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(matches)))
         
-        activated_stracks_bools = activated_stracks_bools_tg.numpy().tolist()
         u_track3_tg = u_track_tg[u_track2_tg]
 
         self.tracked_stracks_startframes_tg = Tensor(self.tracked_stracks_startframes)
@@ -609,7 +608,6 @@ class BYTETracker(object):
         x_tg, y_tg = self.kalman_filter.initiate_batch(xyahs_tg)
         activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(new_ids))
 
-        activated_stracks_bools_tg = Tensor(activated_stracks_bools,dtype=dtypes.bool)
 
         if self.frame_id == 1:
             activated_stracks_bools_tg = Tensor(True).repeat(idx_tg.shape[0])

@@ -404,13 +404,11 @@ class BYTETracker(object):
             means_tg = means_in_tg[matches_tg[:,0]]
             covs_tg = covs_in_tg[matches_tg[:,0]]
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
-            updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
 
             itracked_tg = matches_tg[:,0]
             itracked = itracked_tg.numpy()
             tracked_mask_tg = nonzero_indices_1d(itracked_tg < original_indices_tg.shape[0])
             lost_mask_tg = nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])
-            lost_mask = lost_mask_tg.numpy()
 
             valid_tracked_indices_tg = original_indices_tg[itracked_tg[tracked_mask_tg]]
             self.tracked_stracks_means_tg[valid_tracked_indices_tg] = updated_means_tg[tracked_mask_tg]
@@ -419,10 +417,10 @@ class BYTETracker(object):
             tracked_stracks_fids_tg[itracked_tg] = self.frame_id
             self.tracked_stracks_fids_tg[valid_tracked_indices_tg] = self.frame_id
 
-            if np.any(lost_mask):
-                valid_lost_indices = itracked[lost_mask] - len(original_indices)
-                self.lost_stracks_means[valid_lost_indices] = updated_means[lost_mask]
-                self.lost_stracks_covs[valid_lost_indices] = updated_covs[lost_mask]
+            if lost_mask_tg.shape[0] > 0:
+                valid_lost_indices_tg = itracked_tg[lost_mask_tg] - original_indices_tg.shape[0]
+                self.lost_stracks_means_tg[valid_lost_indices_tg] = updated_means_tg[lost_mask_tg]
+                self.lost_stracks_covs_tg[valid_lost_indices_tg] = updated_covs_tg[lost_mask_tg]
             itracked_tracked = np.array(tracked_stracks_states)[itracked] == TrackState.Tracked
             itracked_tracked_tg = Tensor(itracked_tracked)
             itracked_tracked_tg = nonzero_indices_1d(itracked_tracked_tg).cast(dtype=dtypes.int)
@@ -463,6 +461,8 @@ class BYTETracker(object):
             
 
             self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
+            self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
+            self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
             arrays = []
             if self.tracked_stracks_means_tg.shape[0] > 0:
                 arrays.append(np.array(self.tracked_stracks_means))

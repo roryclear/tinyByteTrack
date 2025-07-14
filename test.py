@@ -540,7 +540,6 @@ class BYTETracker(object):
             means_tg = unconfirmed_means_tg[itracked_arr_tg]
             covs_tg = unconfirmed_covs_tg[itracked_arr_tg]
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
-            updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             activated_stracks_means_tg = activated_stracks_means_tg.cat(updated_means_tg)
             activated_stracks_covs_tg = activated_stracks_covs_tg.cat(updated_covs_tg)
             activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(itracked_arr)))
@@ -694,9 +693,9 @@ class BYTETracker(object):
         self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
 
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
-        output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
+        bool_mask_tg = nonzero_indices_1d(self.tracked_stracks_bools_tg == 1)
+        output_stracks_ids2_tg = self.tracked_stracks_ids2_tg[bool_mask_tg]
 
-        output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         output_stracks_values = output_stracks_values_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         
         zeros = self.tracked_stracks_ids != 0
@@ -726,7 +725,7 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
 
-        v,m,i = output_stracks_values, self.tracked_stracks_means_tg.numpy(), output_stracks_ids2
+        v,m,i = output_stracks_values, self.tracked_stracks_means_tg.numpy(), output_stracks_ids2_tg.numpy()
         return v,m,i
 
 def nonzero_indices_1d(mask: Tensor) -> Tensor:
@@ -1220,6 +1219,8 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
+
 
 
 

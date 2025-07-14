@@ -293,10 +293,10 @@ class BYTETracker(object):
         activated_stracks_fids_tg = Tensor.empty((0,),dtype=dtypes.int)
         activated_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
         refind_stracks_means = []
-        refind_stracks_means2 = []
         refind_stracks_bools_tg = Tensor.empty()
         refind_stracks_bools2_tg = Tensor.empty()
         refind_stracks_states_tg = Tensor.empty()
+        refind_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
         refind_stracks_covs = []
         refind_stracks_ids = []
         removed_stracks_ids = []
@@ -394,7 +394,6 @@ class BYTETracker(object):
         tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg
         activated_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         refind_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
-        refind_stracks_means2_tg = Tensor.empty((0,8),dtype=dtypes.float32)
         refind_stracks_means_tg = Tensor.empty((0,8),dtype=dtypes.float32)
         refind_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float32)
         if matches_tg.shape[0] > 0:
@@ -454,8 +453,6 @@ class BYTETracker(object):
                 refind_stracks_means_tg = self.tracked_stracks_means_tg[original_indices_tg]
                 refind_stracks_covs_tg = self.tracked_stracks_covs_tg[original_indices_tg]
             
-            means_temp_tg = self.tracked_stracks_means_tg.cat(self.lost_stracks_means_tg)
-            refind_stracks_means2_tg = means_temp_tg[itracked_tg] * itracked_untracked_tg.reshape(-1,1)
             big_tg = itracked_tg[(nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])).cast(dtype=dtypes.int)] - original_indices_tg.shape[0]
 
             refind_stracks_means_tg = refind_stracks_means_tg.cat(self.lost_stracks_means_tg[big_tg])
@@ -654,9 +651,8 @@ class BYTETracker(object):
         if refind_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(refind_stracks_means_tg)
             self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(refind_stracks_covs_tg)
-        if refind_stracks_means2_tg.shape[0] > 0:
+        if refind_stracks_values_tg.shape[0] > 0:
             self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(refind_stracks_values_tg)
-            self.tracked_stracks_means2_tg = self.tracked_stracks_means2_tg.cat(refind_stracks_means2_tg)
             self.tracked_stracks_ids2_tg = self.tracked_stracks_ids2_tg.cat(refind_stracks_ids2_tg)
             self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(refind_stracks_fids_tg)
             self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(refind_stracks_states_tg)
@@ -698,12 +694,10 @@ class BYTETracker(object):
         self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
 
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
-        output_stracks_means2_tg = self.tracked_stracks_means2_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg
 
         output_stracks_ids2 = output_stracks_ids2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         output_stracks_values = output_stracks_values_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
-        output_stracks_means2 = output_stracks_means2_tg.numpy()[:self.tracked_stracks_bools_tg.shape[0]]
         
         zeros = self.tracked_stracks_ids != 0
         zeros_tg = nonzero_indices_1d(Tensor(zeros) == True)
@@ -732,7 +726,7 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
 
-        v,m,i = output_stracks_values, output_stracks_means2, output_stracks_ids2
+        v,m,i = output_stracks_values, self.tracked_stracks_means_tg.numpy(), output_stracks_ids2
         return v,m,i
 
 def nonzero_indices_1d(mask: Tensor) -> Tensor:

@@ -397,7 +397,9 @@ class BYTETracker(object):
         tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg
         activated_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         refind_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
-
+        refind_stracks_means2_tg = Tensor.empty((0,8),dtype=dtypes.float32)
+        refind_stracks_means_tg = Tensor.empty((0,8),dtype=dtypes.float32)
+        refind_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float32)
         if matches_tg.shape[0] > 0:
             tlwh_tg = det_values_arr_tg[:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
@@ -455,30 +457,17 @@ class BYTETracker(object):
 
             if self.frame_id == 2:
                 refind_stracks_means_tg = self.tracked_stracks_means_tg[original_indices_tg]
-                refind_stracks_means = refind_stracks_means_tg.numpy().tolist()
                 refind_stracks_covs_tg = self.tracked_stracks_covs_tg[original_indices_tg]
-                refind_stracks_covs = refind_stracks_covs_tg.numpy().tolist()
             
+            means_temp_tg = self.tracked_stracks_means_tg.cat(self.lost_stracks_means_tg)
+            refind_stracks_means2_tg = means_temp_tg[itracked_tg] * itracked_untracked_tg.reshape(-1,1)
+            big_tg = itracked_tg[(nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])).cast(dtype=dtypes.int)] - original_indices_tg.shape[0]
 
-            self.tracked_stracks_means = self.tracked_stracks_means_tg.numpy()
-            self.lost_stracks_covs = self.lost_stracks_covs_tg.numpy()
-            self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
-            arrays = []
-            if self.tracked_stracks_means_tg.shape[0] > 0:
-                arrays.append(np.array(self.tracked_stracks_means))
-            if len(self.lost_stracks_means) > 0:
-                arrays.append(np.array(self.lost_stracks_means))
+            refind_stracks_means_tg = refind_stracks_means_tg.cat(self.lost_stracks_means_tg[big_tg])
+            refind_stracks_covs_tg = refind_stracks_covs_tg.cat(self.lost_stracks_covs_tg[big_tg])
 
-            if arrays:
-                means_temp = np.concatenate(arrays, axis=0)
-            else:
-                means_temp = np.empty((0, 8)) 
-
-            refind_stracks_means2 = (means_temp[itracked]) * (np.array(itracked_untracked).reshape(-1,1)).tolist()
-            big = itracked[itracked >= len(original_indices)] - len(original_indices)
-
-            refind_stracks_means = refind_stracks_means + np.array(self.lost_stracks_means)[big].tolist()
-            refind_stracks_covs = refind_stracks_covs + np.array(self.lost_stracks_covs)[big].tolist()
+            refind_stracks_means = refind_stracks_means_tg.numpy().tolist()
+            refind_stracks_covs = refind_stracks_covs_tg.numpy().tolist()
 
         tracked_indices_tg = u_track_tg[nonzero_indices_1d(tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
@@ -655,7 +644,6 @@ class BYTETracker(object):
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
         refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
-        refind_stracks_means2_tg = Tensor(refind_stracks_means2,dtype=dtypes.float32)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
         refind_stracks_covs_tg = Tensor(refind_stracks_covs)
 
@@ -1243,6 +1231,8 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
+
 
 
 

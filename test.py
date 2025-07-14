@@ -390,9 +390,6 @@ class BYTETracker(object):
         dists_tg = fuse_score(dists_tg, dets_score_classes_tg)
         dists = dists_tg.numpy()
         matches_tg, u_track_tg, u_detection_tg = linear_assignment(dists, thresh=self.args.match_thresh)
-        matches = matches_tg.numpy()
-        u_track = u_track_tg.numpy()
-        u_detection = u_detection_tg.numpy()
 
 
         det_values_arr_tg = dets_score_classes_tg[matches_tg[:,1]]
@@ -401,7 +398,7 @@ class BYTETracker(object):
         activated_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         refind_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
 
-        if len(matches) > 0:
+        if matches_tg.shape[0] > 0:
             tlwh_tg = det_values_arr_tg[:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             means_tg = means_in_tg[matches_tg[:,0]]
@@ -443,7 +440,6 @@ class BYTETracker(object):
             
 
             refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)
-            itracked_tg = Tensor(itracked)
             itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
 
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()

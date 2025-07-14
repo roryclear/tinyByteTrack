@@ -420,9 +420,7 @@ class BYTETracker(object):
                 valid_lost_indices_tg = itracked_tg[lost_mask_tg] - original_indices_tg.shape[0]
                 self.lost_stracks_means_tg[valid_lost_indices_tg] = updated_means_tg[lost_mask_tg]
                 self.lost_stracks_covs_tg[valid_lost_indices_tg] = updated_covs_tg[lost_mask_tg]
-            itracked_tracked = np.array(tracked_stracks_states)[itracked] == TrackState.Tracked
-            itracked_tracked_tg = Tensor(itracked_tracked)
-            itracked_tracked_tg = nonzero_indices_1d(itracked_tracked_tg).cast(dtype=dtypes.int)
+            itracked_tracked_tg = nonzero_indices_1d(tracked_stracks_states_tg[itracked_tg] == TrackState.Tracked).cast(dtype=dtypes.int)
 
             activated_stracks_means_tg = tracked_stracks_means_tg[original_indices_tg][itracked_tg[itracked_tracked_tg]]
             activated_stracks_values_tg = tracked_stracks_values_tg[itracked_tg][itracked_tracked_tg]
@@ -436,7 +434,7 @@ class BYTETracker(object):
             activated_stracks_covs_tg = self.tracked_stracks_covs_tg[original_indices_tg[itracked_tg[itracked_tracked_tg]]]
             
 
-            refind_stracks_startframes_tg = Tensor(tracked_stracks_startframes)
+            refind_stracks_startframes_tg = tracked_stracks_startframes_tg
             itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
 
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
@@ -1228,7 +1226,6 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
 
 
 

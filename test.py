@@ -324,7 +324,6 @@ class BYTETracker(object):
         tracked_stracks_bools_tg = self.tracked_stracks_bools_tg 
 
         original_indices_tg = nonzero_indices_1d(self.tracked_stracks_bools_tg).cast(dtype=dtypes.int)
-        original_indices = original_indices_tg.numpy()
 
         tracked_stracks_bools_tg = tracked_stracks_bools_tg.cast(dtype=dtypes.bool)
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
@@ -371,8 +370,6 @@ class BYTETracker(object):
             self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
         if self.lost_stracks_means_tg.shape[0] > 0:
             self.lost_stracks_means_tg, self.lost_stracks_covs_tg = self.kalman_filter.multi_predict(self.lost_stracks_means_tg, self.lost_stracks_covs_tg)
-            self.lost_stracks_means = self.lost_stracks_means_tg.numpy()
-            self.lost_stracks_covs =  self.lost_stracks_covs_tg.numpy()
 
         tracked_stracks_means_tg = self.tracked_stracks_means_tg
         tracked_stracks_covs_tg = self.tracked_stracks_covs_tg

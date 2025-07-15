@@ -265,7 +265,6 @@ class BYTETracker(object):
         self.tracked_stracks_ids = []
         self.tracked_stracks_fids_tg = Tensor((0,),dtype=dtypes.int)
         self.tracked_stracks_startframes_tg = Tensor((0,),dtype=dtypes.int)
-        self.tracked_stracks_states = []
         self.tracked_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
         self.tracked_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
         self.lost_stracks_means = []
@@ -687,10 +686,6 @@ class BYTETracker(object):
             self.lost_stracks_startframes_tg = self.lost_stracks_startframes_tg.cat(lost_stracks_startframes_tg)
             self.lost_stracks_states_tg = self.lost_stracks_states_tg.cat(lost_stracks_states_tg)
 
-
-        self.tracked_stracks_ids2 = self.tracked_stracks_ids2_tg.numpy()
-        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
-
         output_stracks_values_tg = self.tracked_stracks_values_tg[:self.tracked_stracks_bools_tg.shape[0]] * self.tracked_stracks_bools2_tg[:self.tracked_stracks_bools_tg.shape[0]].unsqueeze(-1)
         output_stracks_ids2_tg = self.tracked_stracks_ids2_tg[:self.tracked_stracks_bools_tg.shape[0]] * self.tracked_stracks_bools2_tg[:self.tracked_stracks_bools_tg.shape[0]]
 
@@ -710,7 +705,8 @@ class BYTETracker(object):
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg[zeros2_tg]
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg[zeros2_tg]
 
-        self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2_tg.numpy()]
+        self.tracked_stracks_ids_tg = self.tracked_stracks_ids2_tg[zeros2_tg]
+        self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
         
         zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         self.lost_stracks_ids_tg = self.lost_stracks_ids_tg[zeros]

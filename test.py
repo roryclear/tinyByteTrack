@@ -362,8 +362,6 @@ class BYTETracker(object):
         tracked_stracks_states_tg = tracked_stracks_states_tg[id_mask_tg]
         tracked_stracks_values_tg = tracked_stracks_values_tg[id_mask_tg]
 
-        tracked_stracks_states = tracked_stracks_states_tg.numpy().tolist()
-        tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
         tracked_stracks_ids = tracked_stracks_ids_tg.numpy().tolist()
 
         if self.tracked_stracks_means_tg.shape[0] > 0:
@@ -425,7 +423,8 @@ class BYTETracker(object):
             activated_stracks_values_tg = tracked_stracks_values_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_states_tg = tracked_stracks_states_tg[itracked_tg][itracked_tracked_tg]
 
-            itracked_untracked = np.array(tracked_stracks_states)[itracked] != TrackState.Tracked
+            itracked_untracked_tg = tracked_stracks_states_tg[itracked_tg] != TrackState.Tracked
+            itracked_untracked = itracked_untracked_tg.numpy()
             activated_stracks_bools_tg = tracked_stracks_bools_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_ids_tg = tracked_stracks_ids_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg][itracked_tracked_tg]
@@ -726,6 +725,10 @@ class BYTETracker(object):
         self.lost_stracks_means_tg = self.lost_stracks_means_tg[zeros]
         self.lost_stracks_covs_tg = self.lost_stracks_covs_tg[zeros]
         
+        # todo fix recursion limit crash
+        tracked_stracks_states = tracked_stracks_states_tg.numpy().tolist()
+        tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
+
         v,m,i = output_stracks_values, self.tracked_stracks_means_tg.numpy(), output_stracks_ids2
         return v,m,i
 

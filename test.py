@@ -440,11 +440,11 @@ class BYTETracker(object):
 
             refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
             refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]
-            x = itracked_untracked.sum()
+            x = nonzero_indices_1d(itracked_untracked_tg).shape[0]
             refind_stracks_ids2_tg = tracked_stracks_ids_tg[itracked_tg] * itracked_untracked_tg
             refind_stracks_bools_tg = Tensor(True).repeat(int(x))
-            refind_stracks_bools2_tg = Tensor(itracked_untracked)
-            x = itracked.shape[0]
+            refind_stracks_bools2_tg = itracked_untracked_tg
+            x = itracked_tg.shape[0]
             refind_stracks_states_tg = Tensor(TrackState.Tracked).repeat(int(x))
             refind_stracks_startframes_tg = refind_stracks_startframes_tg[itracked_tg]
 
@@ -1223,6 +1223,7 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
+
 
 
 

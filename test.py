@@ -527,7 +527,6 @@ class BYTETracker(object):
         tracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
         if matches_tg.shape[0] > 0:
             itracked_arr_tg = matches_tg[:, 0]
-            itracked_arr = itracked_arr_tg.numpy()
             tracks_values_tg = unconfirmed_values_tg[itracked_arr_tg]
             scores_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, 4]
             tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
@@ -544,10 +543,7 @@ class BYTETracker(object):
 
             tracks_values_tg[:itracked_arr_tg.shape[0], 4] = scores_tg
             
-            unconfirmed_ids_arr = unconfirmed_ids_tg.numpy()
-            tracked_ids_arr = np.array(self.tracked_stracks_ids)
-            _, tracked_indices = np.where(unconfirmed_ids_arr[itracked_arr][:, None] == tracked_ids_arr)
-            tracked_indices_tg = Tensor(tracked_indices,dtype=dtypes.int)
+            tracked_indices_tg = exact_matching_indices_tinygrad(unconfirmed_ids_tg[itracked_arr_tg],Tensor(self.tracked_stracks_ids)) #todo this breaks it
             self.tracked_stracks_bools_tg[tracked_indices_tg] = True
             self.tracked_stracks_states_tg[tracked_indices_tg] = TrackState.Tracked
 
@@ -729,13 +725,21 @@ def nonzero_indices_1d(mask: Tensor) -> Tensor:
         return Tensor([])  # empty mask or all False
 
     if count == 1:
-        # quick path: single True → return its index
         return Tensor([(mask * Tensor.arange(size)).sum().item()])
 
     idxs = Tensor.arange(size)
     masked = idxs * mask
     sorted_vals, sorted_idxs = masked.sort(descending=True)
     return sorted_idxs[:count][::-1]
+
+def exact_matching_indices_tinygrad(source_ids_tg, target_ids_tg):
+    a_exp = source_ids_tg.reshape(-1, 1)
+    b_exp = target_ids_tg.reshape(1, -1)
+    matches = (a_exp == b_exp)
+    idxs = Tensor.arange(target_ids_tg.shape[0])
+    matched_idx_matrix = matches * idxs
+    tracked_indices_tg = matched_idx_matrix.max(axis=1)
+    return tracked_indices_tg
 
 
 def ious(atlbrs, btlbrs):

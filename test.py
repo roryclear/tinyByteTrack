@@ -474,7 +474,6 @@ class BYTETracker(object):
         dists = dists_tg.numpy()
 
         matches_tg, u_track2_tg, _ = linear_assignment(dists, thresh=0.5)
-        matches = matches_tg.numpy()
         self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.contiguous()
         self.tracked_stracks_states_tg[original_indices_tg[u_track_tg[u_track2_tg]]] = TrackState.Lost
 
@@ -487,7 +486,7 @@ class BYTETracker(object):
 
         updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
         
-        if len(matches) > 0:
+        if matches_tg.shape[0] > 0:
             self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_means_tg
             self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_covs_tg
             self.tracked_stracks_fids_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = self.frame_id
@@ -503,7 +502,7 @@ class BYTETracker(object):
             activated_stracks_bools_tg = activated_stracks_bools_tg.cat(self.tracked_stracks_bools_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
             activated_stracks_covs_tg = activated_stracks_covs_tg.cat(self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:, 0]]]])
             activated_stracks_startframes_tg = activated_stracks_startframes_tg.cat(self.tracked_stracks_startframes_tg[u_track_tg[matches_tg[:, 0]]])
-            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(matches)))
+            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(matches_tg.shape[0]))
         
         u_track3_tg = u_track_tg[u_track2_tg]
 

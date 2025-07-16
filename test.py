@@ -433,7 +433,6 @@ class BYTETracker(object):
             
 
             refind_stracks_startframes_tg = tracked_stracks_startframes_tg
-            itracked_untracked_tg = Tensor(itracked_untracked,dtype=dtypes.bool)
 
             refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
             refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
@@ -524,24 +523,21 @@ class BYTETracker(object):
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
         dists_tg = fuse_score(dists_tg, dets_score_classes_second_tg)
         dists = dists_tg.numpy()
-        matches_tg, u_unconfirmed_tg, u_detection_tg = linear_assignment(dists, thresh=0.7)
-        u_unconfirmed = u_unconfirmed_tg.numpy()
+        matches_tg, _, u_detection_tg = linear_assignment(dists, thresh=0.7)
         tracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
         if matches_tg.shape[0] > 0:
             itracked_arr_tg = matches_tg[:, 0]
             itracked_arr = itracked_arr_tg.numpy()
             tracks_values_tg = unconfirmed_values_tg[itracked_arr_tg]
             scores_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, 4]
-            scores = scores_tg.numpy()
             tlwh_tg = dets_score_classes_second_tg[matches_tg[:, 1]][:, :4]
             xyahs_tg = tlwh_to_xyah_batch(tlwh_tg)
             means_tg = unconfirmed_means_tg[itracked_arr_tg]
             covs_tg = unconfirmed_covs_tg[itracked_arr_tg]
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
-            updated_means, updated_covs = updated_means_tg.numpy(), updated_covs_tg.numpy()
             activated_stracks_means_tg = activated_stracks_means_tg.cat(updated_means_tg)
             activated_stracks_covs_tg = activated_stracks_covs_tg.cat(updated_covs_tg)
-            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(len(itracked_arr)))
+            activated_stracks_fids_tg = activated_stracks_fids_tg.cat(Tensor(self.frame_id).repeat(itracked_arr_tg.shape[0]))
             activated_stracks_states_tg = activated_stracks_states_tg.cat(Tensor(TrackState.Tracked).repeat(itracked_arr_tg.shape[0]))
             activated_stracks_ids_tg = activated_stracks_ids_tg.cat(unconfirmed_ids_tg[itracked_arr_tg])
             activated_stracks_startframes_tg = activated_stracks_startframes_tg.cat(unconfirmed_startframes_tg[itracked_arr_tg])
@@ -559,12 +555,6 @@ class BYTETracker(object):
             activated_stracks_values_tg = activated_stracks_values_tg.cat(tracks_values_tg)
         else:
            activated_stracks_values_tg = tracks_values_tg
-
-        u_unconfirmed_np = np.asarray(u_unconfirmed)
-        unconfirmed_ids = unconfirmed_ids_tg.numpy()
-        ids = unconfirmed_ids[u_unconfirmed_np]
-        if ids.size > 0:
-            removed_stracks_ids.extend(ids.tolist())
         
         bools_tg = dets_score_classes_second_tg[u_detection_tg][:,4] >= self.det_thresh
         idx_tg = nonzero_indices_1d(bools_tg).cast(dtype=dtypes.int)
@@ -1222,8 +1212,3 @@ if __name__ == '__main__':
 
 #https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4 73
 #https://motchallenge.net/sequenceVideos/MOT17-03-FRCNN-raw.mp4 173
-
-
-
-
-

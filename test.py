@@ -452,9 +452,6 @@ class BYTETracker(object):
             refind_stracks_means_tg = refind_stracks_means_tg.cat(self.lost_stracks_means_tg[big_tg])
             refind_stracks_covs_tg = refind_stracks_covs_tg.cat(self.lost_stracks_covs_tg[big_tg])
 
-            refind_stracks_means = refind_stracks_means_tg.numpy().tolist()
-            refind_stracks_covs = refind_stracks_covs_tg.numpy().tolist()
-
         tracked_indices_tg = u_track_tg[nonzero_indices_1d(tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
         atlbrs_tg = Tensor.empty((means_tg.shape[0]),dtype=dtypes.float32)
@@ -608,9 +605,6 @@ class BYTETracker(object):
            self.tracked_stracks_means_tg = activated_stracks_means_tg[keep_activated_tg]
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
-        refind_stracks_means_tg = Tensor(refind_stracks_means)
-        refind_stracks_covs_tg = Tensor(refind_stracks_covs)
-
         self.tracked_stracks_means2_tg = self.tracked_stracks_means_tg
         self.tracked_stracks_ids2_tg = self.tracked_stracks_ids_tg
         self.tracked_stracks_bools2_tg = self.tracked_stracks_bools_tg
@@ -701,6 +695,8 @@ class BYTETracker(object):
         # todo fix recursion limit crash
         tracked_stracks_states = tracked_stracks_states_tg.numpy().tolist()
         tracked_stracks_startframes = self.tracked_stracks_startframes_tg.numpy().tolist()
+        refind_stracks_means = refind_stracks_means_tg.numpy().tolist()
+        refind_stracks_covs = refind_stracks_covs_tg.numpy().tolist()
 
         v,m,i = output_stracks_values, self.tracked_stracks_means_tg.numpy(), output_stracks_ids2
         return v,m,i
@@ -1186,7 +1182,6 @@ if __name__ == '__main__':
         if not np.array_equal(np.array(expected_values2[frame_count - 1]), values):
           print("wrong output")
           exit()
-    
 
 
     if frame_count % 10 == 0:
@@ -1196,7 +1191,7 @@ if __name__ == '__main__':
   #if sys.argv[1] == "https://motchallenge.net/sequenceVideos/MOT17-08-DPM-raw.mp4":
   #    pickle.dump(outs, open('values.pkl', 'wb'))
   #else:
-  #   pickle.dump(outs, open('values2.pkl', 'wb'))
+  #    pickle.dump(outs, open('values2.pkl', 'wb'))
   cap.release()
   out_writer.release()
   print(f"Saved processed video to {out_path}")

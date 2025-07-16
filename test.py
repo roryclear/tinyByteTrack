@@ -589,15 +589,10 @@ class BYTETracker(object):
 
         a_exp = activated_stracks_ids_tg.reshape(-1, 1)
         b_exp = self.tracked_stracks_ids_tg.reshape(1, -1)
-        matches = (a_exp == b_exp)
-        match_counts = matches.sum(axis=1)
-        not_in_mask = (match_counts == 0)
-        idxs = Tensor.arange(activated_stracks_ids_tg.shape[0])
-        masked_idxs = (idxs * not_in_mask)
-        sorted_idxs = masked_idxs.sort(descending=True)[1]
-        sorted_mask = not_in_mask[masked_idxs]
-        count = int(sorted_mask.sum().item())
-        keep_activated_tg = sorted_idxs[:count][::-1]
+        matches_tg = (a_exp == b_exp)
+        not_in_mask_tg = (matches_tg.sum(axis=1) == 0)
+        not_in_mask_tg = nonzero_indices_1d(not_in_mask_tg).cast(dtype=dtypes.int)
+        keep_activated_tg = Tensor.arange(activated_stracks_ids_tg.shape[0])[not_in_mask_tg]
 
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.cat(activated_stracks_ids_tg[keep_activated_tg])
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg.cat(activated_stracks_fids_tg[keep_activated_tg])
@@ -733,7 +728,6 @@ def exact_matching_indices_tinygrad(source_ids_tg, target_ids_tg):
     matched_idx_matrix = matches * idxs
     tracked_indices_tg = matched_idx_matrix.max(axis=1)
     return tracked_indices_tg
-
 
 def ious(atlbrs, btlbrs):
     ious = Tensor.zeros((atlbrs.shape[0], btlbrs.shape[0]), dtype=dtypes.float32)

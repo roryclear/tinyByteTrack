@@ -586,11 +586,9 @@ class BYTETracker(object):
 
         mask_tg = self.tracked_stracks_states_tg == TrackState.Tracked
         self.tracked_stracks_ids_tg *= mask_tg
-        mask_tg = self.tracked_stracks_ids_tg != 0
 
-        self.tracked_stracks_ids2_tg = self.tracked_stracks_ids_tg * mask_tg
         a_exp = activated_stracks_ids_tg.reshape(-1, 1)
-        b_exp = self.tracked_stracks_ids2_tg.reshape(1, -1)
+        b_exp = self.tracked_stracks_ids_tg.reshape(1, -1)
         matches = (a_exp == b_exp)
         match_counts = matches.sum(axis=1)
         not_in_mask = (match_counts == 0)

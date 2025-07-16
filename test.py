@@ -363,8 +363,6 @@ class BYTETracker(object):
         tracked_stracks_states_tg = tracked_stracks_states_tg[id_mask_tg]
         tracked_stracks_values_tg = tracked_stracks_values_tg[id_mask_tg]
 
-        tracked_stracks_ids = tracked_stracks_ids_tg.numpy().tolist()
-
         if self.tracked_stracks_means_tg.shape[0] > 0:
             self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
         if self.lost_stracks_means_tg.shape[0] > 0:

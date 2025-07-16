@@ -402,7 +402,6 @@ class BYTETracker(object):
             updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
 
             itracked_tg = matches_tg[:,0]
-            itracked = itracked_tg.numpy()
             tracked_mask_tg = nonzero_indices_1d(itracked_tg < original_indices_tg.shape[0])
             lost_mask_tg = nonzero_indices_1d(itracked_tg >= original_indices_tg.shape[0])
 
@@ -424,7 +423,6 @@ class BYTETracker(object):
             activated_stracks_states_tg = tracked_stracks_states_tg[itracked_tg][itracked_tracked_tg]
 
             itracked_untracked_tg = tracked_stracks_states_tg[itracked_tg] != TrackState.Tracked
-            itracked_untracked = itracked_untracked_tg.numpy()
             activated_stracks_bools_tg = tracked_stracks_bools_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_ids_tg = tracked_stracks_ids_tg[itracked_tg][itracked_tracked_tg]
             activated_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg][itracked_tracked_tg]
@@ -433,15 +431,14 @@ class BYTETracker(object):
             
 
             refind_stracks_startframes_tg = tracked_stracks_startframes_tg
-
-            refind_stracks_ids = np.array(tracked_stracks_ids)[itracked][itracked_untracked].tolist()
-            refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
+            
+            itracked_untracked_mask_tg = nonzero_indices_1d(itracked_untracked_tg).cast(dtype=dtypes.int)
+            refind_stracks_ids_tg = tracked_stracks_ids_tg[itracked_tg][itracked_untracked_mask_tg]
 
             refind_stracks_fids_tg = tracked_stracks_fids_tg[itracked_tg]
             refind_stracks_values_tg = tracked_stracks_values_tg[itracked_tg]
-            x = nonzero_indices_1d(itracked_untracked_tg).shape[0]
             refind_stracks_ids2_tg = tracked_stracks_ids_tg[itracked_tg] * itracked_untracked_tg
-            refind_stracks_bools_tg = Tensor(True).repeat(int(x))
+            refind_stracks_bools_tg = Tensor(True).repeat(int(itracked_untracked_mask_tg.shape[0]))
             refind_stracks_bools2_tg = itracked_untracked_tg
             x = itracked_tg.shape[0]
             refind_stracks_states_tg = Tensor(TrackState.Tracked).repeat(int(x))
@@ -619,7 +616,6 @@ class BYTETracker(object):
            self.tracked_stracks_means_tg = activated_stracks_means_tg[keep_activated_tg]
            self.tracked_stracks_covs_tg = activated_stracks_covs_tg[keep_activated_tg]
 
-        refind_stracks_ids_tg = Tensor(refind_stracks_ids,dtype=dtypes.int)
         refind_stracks_means_tg = Tensor(refind_stracks_means)
         refind_stracks_covs_tg = Tensor(refind_stracks_covs)
 

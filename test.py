@@ -327,6 +327,7 @@ class BYTETracker(object):
 
         tracked_stracks_bools_tg = tracked_stracks_bools_tg.cast(dtype=dtypes.bool)
         self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+        self.tracked_stracks_ids2_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
         tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
         unconfirmed_ids_tg = tracked_stracks_ids_tg * ~tracked_stracks_bools_tg
         id_mask_tg = nonzero_indices_1d(tracked_stracks_bools_tg != True).cast(dtype=dtypes.int)
@@ -540,7 +541,7 @@ class BYTETracker(object):
 
             tracks_values_tg[:itracked_arr_tg.shape[0], 4] = scores_tg
             
-            tracked_indices_tg = exact_matching_indices_tinygrad(unconfirmed_ids_tg[itracked_arr_tg],Tensor(self.tracked_stracks_ids)) #todo this breaks it
+            tracked_indices_tg = exact_matching_indices_tinygrad(unconfirmed_ids_tg[itracked_arr_tg],self.tracked_stracks_ids2_tg)
             self.tracked_stracks_bools_tg[tracked_indices_tg] = True
             self.tracked_stracks_states_tg[tracked_indices_tg] = TrackState.Tracked
 

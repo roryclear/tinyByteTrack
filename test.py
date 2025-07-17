@@ -448,11 +448,10 @@ class BYTETracker(object):
         tracked_indices_tg = u_track_tg[nonzero_indices_1d(tracked_stracks_states_tg[u_track_tg] == TrackState.Tracked).cast(dtypes.int)]
         means_tg = tracked_stracks_means_tg[original_indices_tg[tracked_indices_tg]]
         atlbrs_tg = Tensor.empty((means_tg.shape[0]),dtype=dtypes.float32)
-        if tracked_indices_tg.shape[0] > 0:
-            atlbrs_tg = means_tg[:, :4].contiguous()
-            atlbrs_tg[:, 2] *= atlbrs_tg[:, 3]
-            atlbrs_tg[:, :2] -= atlbrs_tg[:, 2:] / 2
-            atlbrs_tg[:, 2:] += atlbrs_tg[:, :2]
+        atlbrs_tg = means_tg[:, :4].contiguous()
+        atlbrs_tg[:, 2] *= atlbrs_tg[:, 3]
+        atlbrs_tg[:, :2] -= atlbrs_tg[:, 2:] / 2
+        atlbrs_tg[:, 2:] += atlbrs_tg[:, :2]
         btlbrs_tg = dets_score_classes_second_tg[:, :4].contiguous()
         btlbrs_tg[:, 2:] += btlbrs_tg[:, :2]
         dists_tg = iou_distance(atlbrs_tg, btlbrs_tg)
@@ -471,7 +470,7 @@ class BYTETracker(object):
 
         updated_means_tg, updated_covs_tg = self.kalman_filter.update_batch(means_tg, covs_tg, xyahs_tg)
         
-        if matches_tg.shape[0] > 0:
+        if matches_tg.shape[0] > 0: #todo
             self.tracked_stracks_means_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_means_tg
             self.tracked_stracks_covs_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = updated_covs_tg
             self.tracked_stracks_fids_tg[original_indices_tg[u_track_tg[matches_tg[:,0]]]] = self.frame_id
@@ -533,10 +532,7 @@ class BYTETracker(object):
             self.tracked_stracks_bools0_tg[tracked_indices_tg] = True
             self.tracked_stracks_states_tg[tracked_indices_tg] = TrackState.Tracked
 
-        if self.activated_stracks_values_tg.shape[0] > 0:
-            self.activated_stracks_values_tg = self.activated_stracks_values_tg.cat(tracks_values_tg)
-        else:
-           self.activated_stracks_values_tg = tracks_values_tg
+        self.activated_stracks_values_tg = self.activated_stracks_values_tg.cat(tracks_values_tg)
         
         bools_tg = dets_score_classes_second_tg[u_detection_tg][:,4] >= self.det_thresh
         idx_tg = nonzero_indices_1d(bools_tg).cast(dtype=dtypes.int)
@@ -561,15 +557,10 @@ class BYTETracker(object):
         else:
             self.activated_stracks_means_tg = x_tg
         
-        if self.activated_stracks_covs_tg.shape[0] > 0:
-            self.activated_stracks_covs_tg = self.activated_stracks_covs_tg.cat(y_tg)
-        else:
-            self.activated_stracks_covs_tg = y_tg
-        valid_indices_tg = idx_tg
-        if self.activated_stracks_values_tg.shape[0] > 0:
-            self.activated_stracks_values_tg = self.activated_stracks_values_tg.cat(dets_score_classes_second_tg[valid_indices_tg])
-        else:
-           self.activated_stracks_values_tg = dets_score_classes_second_tg[valid_indices_tg]
+
+        self.activated_stracks_covs_tg = self.activated_stracks_covs_tg.cat(y_tg)
+        self.activated_stracks_values_tg = self.activated_stracks_values_tg.cat(dets_score_classes_second_tg[idx_tg])
+
 
         remove_mask_tg = (self.frame_id - self.lost_stracks_fids_tg) > self.max_time_lost
         self.lost_stracks_ids_tg *= ~remove_mask_tg

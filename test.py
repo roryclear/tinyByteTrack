@@ -656,9 +656,7 @@ class BYTETracker(object):
             self.lost_stracks_states_tg = self.lost_stracks_states_tg.cat(lost_stracks_states_tg)
 
         self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
-
         self.tracked_stracks_ids2 = self.tracked_stracks_ids2_tg.numpy()
-        self.tracked_stracks_states = self.tracked_stracks_states_tg.numpy()
 
         output_stracks_values_tg = self.tracked_stracks_values_tg * self.tracked_stracks_bools2_tg.unsqueeze(-1)
         output_stracks_ids2_tg = self.tracked_stracks_ids2_tg * self.tracked_stracks_bools2_tg

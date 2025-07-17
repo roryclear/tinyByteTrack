@@ -254,7 +254,7 @@ class BYTETracker(object):
         self.lost_stracks_bools_tg = Tensor.empty((0,),dtype=dtypes.bool)
         self.lost_stracks_values_tg = Tensor.empty((0,6))
         self.lost_stracks_means_tg = Tensor.empty((0,8),dtype=dtypes.float32)
-        self.lost_stracks_covs_tg = Tensor.empty(dtype=dtypes.float32)
+        self.lost_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float32)
 
         self.tracked_stracks_values = []
         self.lost_stracks_values = []
@@ -363,20 +363,16 @@ class BYTETracker(object):
         tracked_stracks_states_tg = tracked_stracks_states_tg[id_mask_tg]
         tracked_stracks_values_tg = tracked_stracks_values_tg[id_mask_tg]
 
-        if self.tracked_stracks_means_tg.shape[0] > 0:
-            self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
-        if self.lost_stracks_means_tg.shape[0] > 0:
-            self.lost_stracks_means_tg, self.lost_stracks_covs_tg = self.kalman_filter.multi_predict(self.lost_stracks_means_tg, self.lost_stracks_covs_tg)
+        self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg = self.kalman_filter.multi_predict(self.tracked_stracks_means_tg, self.tracked_stracks_covs_tg)
+        self.lost_stracks_means_tg, self.lost_stracks_covs_tg = self.kalman_filter.multi_predict(self.lost_stracks_means_tg, self.lost_stracks_covs_tg)
 
         tracked_stracks_means_tg = self.tracked_stracks_means_tg
         tracked_stracks_covs_tg = self.tracked_stracks_covs_tg
 
         means_in_tg = tracked_stracks_means_tg[original_indices_tg]
         covs_in_tg = tracked_stracks_covs_tg[original_indices_tg]
-        
-        if len(self.lost_stracks_means_tg.shape) > 0 and self.lost_stracks_means_tg.shape[0] > 0:
-            means_in_tg = means_in_tg.cat(self.lost_stracks_means_tg)
-            covs_in_tg = covs_in_tg.cat(self.lost_stracks_covs_tg)
+        means_in_tg = means_in_tg.cat(self.lost_stracks_means_tg)
+        covs_in_tg = covs_in_tg.cat(self.lost_stracks_covs_tg)
 
         atlbrs_tg = tlbr_np_batch2(means_in_tg)
         btlbrs_tg = tlbr_np_batch3(dets_score_classes_tg)

@@ -262,9 +262,9 @@ class BYTETracker(object):
         self.tracked_stracks_means_tg = Tensor.empty((0,8),dtype=dtypes.float32)
         self.tracked_stracks_bools_tg = Tensor.empty((0,))
         self.tracked_stracks_covs_tg = Tensor.empty((0,8,8),dtype=dtypes.float32)
-        self.tracked_stracks_ids = []
-        self.tracked_stracks_fids_tg = Tensor((0,),dtype=dtypes.int)
-        self.tracked_stracks_startframes_tg = Tensor((0,),dtype=dtypes.int)
+        self.tracked_stracks_ids_tg = Tensor.empty((0,),dtype=dtypes.int)
+        self.tracked_stracks_fids_tg = Tensor.empty((0,),dtype=dtypes.int)
+        self.tracked_stracks_startframes_tg = Tensor.empty((0,),dtype=dtypes.int)
         self.tracked_stracks_states = []
         self.tracked_stracks_states_tg = Tensor.empty((0,),dtype=dtypes.int)
         self.tracked_stracks_values_tg = Tensor.empty((0,6),dtype=dtypes.float32)
@@ -326,9 +326,11 @@ class BYTETracker(object):
         original_indices_tg = nonzero_indices_1d(self.tracked_stracks_bools_tg).cast(dtype=dtypes.int)
 
         tracked_stracks_bools_tg = tracked_stracks_bools_tg.cast(dtype=dtypes.bool)
-        self.tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+
+        self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
         self.tracked_stracks_ids2_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
         tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+        
         unconfirmed_ids_tg = tracked_stracks_ids_tg * ~tracked_stracks_bools_tg
         id_mask_tg = nonzero_indices_1d(tracked_stracks_bools_tg != True).cast(dtype=dtypes.int)
         unconfirmed_ids_tg = tracked_stracks_ids_tg[id_mask_tg]
@@ -680,6 +682,7 @@ class BYTETracker(object):
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg[zeros2_tg]
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg[zeros2_tg]
 
+        self.tracked_stracks_ids_tg = self.tracked_stracks_ids2_tg[zeros2_tg]
         self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2]
         
         zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)

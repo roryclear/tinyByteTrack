@@ -327,9 +327,8 @@ class BYTETracker(object):
 
         tracked_stracks_bools_tg = tracked_stracks_bools_tg.cast(dtype=dtypes.bool)
 
-        self.tracked_stracks_ids = self.tracked_stracks_ids_tg.numpy()
-        self.tracked_stracks_ids2_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
-        tracked_stracks_ids_tg = Tensor(self.tracked_stracks_ids, dtype=dtypes.int)
+        self.tracked_stracks_ids2_tg = self.tracked_stracks_ids_tg.clone()
+        tracked_stracks_ids_tg = self.tracked_stracks_ids_tg.clone()
         
         unconfirmed_ids_tg = tracked_stracks_ids_tg * ~tracked_stracks_bools_tg
         id_mask_tg = nonzero_indices_1d(tracked_stracks_bools_tg != True).cast(dtype=dtypes.int)
@@ -683,7 +682,6 @@ class BYTETracker(object):
         self.tracked_stracks_fids_tg = self.tracked_stracks_fids_tg[zeros2_tg]
 
         self.tracked_stracks_ids_tg = self.tracked_stracks_ids2_tg[zeros2_tg]
-        self.tracked_stracks_ids = self.tracked_stracks_ids2[zeros2]
         
         zeros = nonzero_indices_1d(self.lost_stracks_ids_tg != 0).cast(dtype=dtypes.int)
         self.lost_stracks_ids_tg = self.lost_stracks_ids_tg[zeros]

@@ -588,14 +588,10 @@ class BYTETracker(object):
         self.tracked_stracks_states_tg = self.tracked_stracks_states_tg.cat(self.activated_stracks_states_tg[in_mask_tg])
         self.tracked_stracks_startframes_tg = self.tracked_stracks_startframes_tg.cat(self.activated_stracks_startframes_tg[in_mask_tg])
         self.tracked_stracks_bools0_tg = self.tracked_stracks_bools0_tg.cat(self.activated_stracks_bools_tg[in_mask_tg])
-        if self.tracked_stracks_values_tg.shape[0] > 0:
-            self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.activated_stracks_values_tg[in_mask_tg])
-            self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(self.activated_stracks_means_tg[in_mask_tg])
-            self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(self.activated_stracks_covs_tg[in_mask_tg])
-        else:
-           self.tracked_stracks_values_tg = self.activated_stracks_values_tg[in_mask_tg]
-           self.tracked_stracks_means_tg = self.activated_stracks_means_tg[in_mask_tg]
-           self.tracked_stracks_covs_tg = self.activated_stracks_covs_tg[in_mask_tg]
+        self.tracked_stracks_values_tg = self.tracked_stracks_values_tg.cat(self.activated_stracks_values_tg[in_mask_tg])
+        self.tracked_stracks_means_tg = self.tracked_stracks_means_tg.cat(self.activated_stracks_means_tg[in_mask_tg])
+        self.tracked_stracks_covs_tg = self.tracked_stracks_covs_tg.cat(self.activated_stracks_covs_tg[in_mask_tg])
+
 
         self.tracked_stracks_means2_tg = self.tracked_stracks_means_tg
         self.tracked_stracks_ids2_tg = self.tracked_stracks_ids0_tg
